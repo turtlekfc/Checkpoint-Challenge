@@ -1,0 +1,3447 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🐚 實境解謎</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Fredoka+One&display=swap');
+:root{
+  --primary:#1a6fa3;--primary-dark:#0d4f7a;--primary-light:#2a9fd6;--primary-pale:#e0f2fb;
+  --sand:#f5c87a;--sand-dark:#e0a030;--coral:#f07050;--green:#3db87a;--green-pale:#eaf7ee;
+  --yellow:#f5c842;--text:#1a3a5c;--text-light:#5a8aaa;--bg:#d4eaf5;--radius:16px;
+  --shadow:0 4px 20px rgba(26,111,163,0.15);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);min-height:100vh;color:var(--text);overflow-x:hidden}
+.screen{display:none;min-height:100vh;flex-direction:column}.screen.active{display:flex}
+
+/* ── LOGIN ── */
+#loginScreen{background:linear-gradient(160deg,var(--primary-dark),var(--primary),var(--primary-light));align-items:center;justify-content:center;padding:20px}
+.login-box{background:rgba(255,255,255,0.96);border-radius:28px;padding:24px 22px;width:100%;max-width:360px;box-shadow:0 12px 48px rgba(0,0,0,0.25)}
+.login-logo{text-align:center;margin-bottom:14px}
+.activity-logo{max-width:120px;max-height:80px;width:auto;height:auto;object-fit:contain;border-radius:10px;display:block;margin:0 auto 8px}
+.default-logo svg{width:80px;height:64px}
+.login-logo h1{font-family:'Fredoka One',cursive;font-size:20px;color:var(--primary);line-height:1.3;margin-top:6px}
+.login-logo .subtitle{font-size:11px;color:var(--text-light);letter-spacing:2px;margin-top:3px}
+.login-welcome{font-size:12px;color:var(--text-light);text-align:center;margin-bottom:12px;line-height:1.6;background:var(--primary-pale);border-radius:10px;padding:9px 13px}
+.field-label{font-size:12px;color:var(--text-light);font-weight:500;margin-bottom:5px;margin-top:10px}
+select,input[type="password"],input[type="text"]{width:100%;padding:11px 13px;border:2px solid #cde7f5;border-radius:12px;font-size:15px;font-family:'Noto Sans TC',sans-serif;color:var(--text);background:#f5fafd;outline:none;transition:border-color 0.2s}
+select:focus,input:focus{border-color:var(--primary-light)}
+.btn-login{width:100%;padding:13px;background:linear-gradient(90deg,var(--primary),var(--primary-light));color:white;border:none;border-radius:14px;font-size:15px;font-weight:700;font-family:'Noto Sans TC',sans-serif;cursor:pointer;margin-top:14px;box-shadow:0 4px 14px rgba(26,111,163,0.3)}
+.btn-login:active{transform:scale(0.97)}
+.btn-login:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+.error-msg{color:var(--coral);font-size:12px;margin-top:7px;text-align:center;min-height:16px}
+.loading-hint{font-size:12px;color:var(--text-light);text-align:center;margin-top:6px;min-height:16px}
+
+/* ── 等待頁面 ── */
+#waitScreen{background:linear-gradient(160deg,var(--primary-dark),var(--primary),var(--primary-light));flex-direction:column}
+.wait-header{background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);padding:12px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,0.15)}
+.wait-header-logo{max-width:50px;max-height:36px;object-fit:contain;border-radius:6px}
+.wait-header-title{color:white;font-size:16px;font-weight:700}
+.wait-header-team{color:rgba(255,255,255,0.7);font-size:12px;margin-top:2px}
+.wait-content{flex:1;overflow-y:auto;padding:16px}
+/* 故事卡片 */
+.story-card{background:rgba(255,255,255,0.95);border-radius:20px;padding:20px;margin-bottom:14px;box-shadow:0 4px 24px rgba(0,0,0,0.2)}
+.story-title{font-size:17px;font-weight:700;color:var(--primary);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.story-body{font-size:14px;color:var(--text);line-height:1.8;white-space:pre-wrap}
+.story-image{width:100%;border-radius:12px;margin-top:12px;object-fit:cover;max-height:200px}
+/* 規則卡片 */
+.rules-card{background:rgba(255,255,255,0.95);border-radius:20px;padding:20px;margin-bottom:14px;box-shadow:0 4px 24px rgba(0,0,0,0.2)}
+.rules-title{font-size:15px;font-weight:700;color:var(--primary);margin-bottom:12px}
+.rule-item{display:flex;gap:10px;margin-bottom:8px;font-size:13px;color:var(--text);line-height:1.5}
+.rule-num{width:22px;height:22px;border-radius:50%;background:var(--primary);color:white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+/* 隊伍資訊卡 */
+.team-info-card{background:rgba(255,255,255,0.95);border-radius:20px;padding:20px;margin-bottom:14px;box-shadow:0 4px 24px rgba(0,0,0,0.2)}
+.team-info-title{font-size:15px;font-weight:700;color:var(--primary);margin-bottom:12px}
+.team-info-row{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid #eef2f8}
+.team-info-row:last-child{border-bottom:none}
+.team-info-label{color:var(--text-light)}
+.team-info-value{font-weight:600;color:var(--text)}
+/* 等待底部 */
+.wait-footer{padding:16px;background:rgba(0,0,0,0.2);backdrop-filter:blur(10px)}
+.wait-status-bar{background:rgba(255,255,255,0.15);border-radius:12px;padding:12px 16px;margin-bottom:12px;text-align:center}
+.wait-status-text{color:white;font-size:14px;font-weight:600;margin-bottom:4px}
+.wait-status-sub{color:rgba(255,255,255,0.65);font-size:12px}
+.wait-pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:#6ee89a;animation:pulse 1.5s infinite;margin-right:6px}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
+.btn-start-game{width:100%;padding:16px;background:linear-gradient(90deg,var(--green),#5dd490);color:white;border:none;border-radius:16px;font-size:17px;font-weight:700;font-family:'Noto Sans TC',sans-serif;cursor:pointer;box-shadow:0 4px 20px rgba(61,184,122,0.4);animation:glow 2s infinite}
+@keyframes glow{0%,100%{box-shadow:0 4px 20px rgba(61,184,122,0.4)}50%{box-shadow:0 4px 32px rgba(61,184,122,0.7)}}
+.btn-start-game:disabled{opacity:0.5;cursor:not-allowed;animation:none;background:rgba(255,255,255,0.3)}
+
+/* ── PAUSED ── */
+#pausedScreen{background:linear-gradient(160deg,var(--primary-dark),var(--primary));align-items:center;justify-content:center;padding:32px;text-align:center}
+.paused-box{background:rgba(255,255,255,0.95);border-radius:24px;padding:36px 28px;max-width:320px}
+.paused-icon{font-size:56px;margin-bottom:14px}
+.paused-title{font-size:22px;font-weight:700;color:var(--primary);margin-bottom:8px}
+.paused-msg{font-size:14px;color:var(--text-light);line-height:1.6}
+
+/* ── GAME ── */
+#gameScreen{background:var(--bg)}
+.game-header{background:linear-gradient(135deg,var(--primary-dark),var(--primary));overflow:hidden}
+.game-banner{width:100%;max-height:120px;object-fit:cover;display:block}
+.header-info{padding:8px 14px 8px;display:flex;align-items:center;justify-content:space-between}
+.team-dot{width:8px;height:8px;border-radius:50%;background:#6ee89a;flex-shrink:0}
+.team-name{color:white;font-weight:700;font-size:14px}
+.stage-label{color:rgba(255,255,255,0.7);font-size:11px}
+.timers{display:flex;gap:6px;padding:0 12px 8px}
+.timer-card{flex:1;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);border-radius:10px;padding:5px 7px;text-align:center}
+.timer-card .label{color:rgba(255,255,255,0.65);font-size:9px}
+.timer-card .value{color:white;font-size:16px;font-weight:700;font-family:monospace}
+.timer-card .value.warn{color:#ffd04a}
+.score-bar{display:flex;align-items:center;justify-content:center;padding:4px 14px 8px}
+.score-val{color:var(--sand);font-size:15px;font-weight:700}
+.score-label{color:rgba(255,255,255,0.6);font-size:10px}
+.progress-bar{display:flex;align-items:center;gap:5px;padding:6px 12px 10px}
+.prog-dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,0.25);border:1.5px solid rgba(255,255,255,0.35);transition:all 0.3s}
+.prog-dot.done{background:white;border-color:white}
+.prog-dot.active{background:var(--sand);border-color:var(--sand-dark);width:13px;height:13px}
+.prog-label{color:rgba(255,255,255,0.65);font-size:10px;margin-left:3px}
+.game-content{flex:1;padding:12px;overflow-y:auto}
+.state-card{background:white;border-radius:var(--radius);padding:16px;margin-bottom:10px;box-shadow:var(--shadow)}
+/* 位置說明卡 */
+.location-card{background:linear-gradient(135deg,#1a7a40,#27ae60);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow)}
+.location-card .loc-title{color:rgba(255,255,255,0.8);font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.location-card .loc-text{color:white;font-size:14px;font-weight:700;line-height:1.5}
+/* GPS */
+.gps-card{text-align:center;border:2px dashed #b8ddf0}
+.gps-icon{font-size:40px;margin-bottom:6px}
+.gps-title{font-size:15px;font-weight:700;color:var(--primary);margin-bottom:5px}
+.gps-desc{font-size:13px;color:var(--text-light);line-height:1.5;margin-bottom:12px}
+.gps-status{font-size:12px;color:var(--text-light);margin-top:10px;min-height:18px;line-height:1.5}
+.btn-gps{padding:11px 22px;background:var(--green);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;font-family:'Noto Sans TC',sans-serif;cursor:pointer}
+.btn-gps:disabled{opacity:0.6;cursor:not-allowed}
+/* QUESTION */
+.q-tag{display:inline-block;background:var(--primary-pale);color:var(--primary);font-size:10px;font-weight:700;border-radius:7px;padding:2px 9px;margin-bottom:8px}
+.q-title{font-size:15px;font-weight:700;line-height:1.6;margin-bottom:4px}
+.q-desc{font-size:13px;color:var(--text-light);line-height:1.6;margin-bottom:10px}
+.q-image{width:100%;border-radius:10px;margin-bottom:10px;object-fit:cover;max-height:180px}
+/* HINT */
+.hint-box{background:#fffbe6;border:1.5px solid #f5c842;border-radius:10px;padding:10px 13px;margin-bottom:10px;font-size:13px;color:#7a5a00;line-height:1.5}
+.hint-label{font-size:10px;font-weight:700;color:#b08000;margin-bottom:4px;text-transform:uppercase}
+/* PHOTO */
+.photo-upload-area{border:2px dashed #90c8e8;border-radius:12px;padding:14px;text-align:center;cursor:pointer;transition:background 0.2s;margin-bottom:10px}
+.photo-upload-area:hover{background:#f0f8fd}
+.photo-upload-area .icon{font-size:28px;margin-bottom:5px}
+.photo-upload-area .text{font-size:12px;color:var(--text-light)}
+.photo-preview{width:100%;border-radius:10px;margin-bottom:10px;max-height:180px;object-fit:cover;display:none}
+.photo-verify-status{border-radius:10px;padding:10px 13px;margin-bottom:10px;font-size:13px;line-height:1.5;display:none}
+.photo-verify-status.checking{background:#f0f8fd;border:1.5px solid #90c8e8;color:var(--primary)}
+.photo-verify-status.pass{background:var(--green-pale);border:1.5px solid var(--green);color:#1a7a40}
+.photo-verify-status.fail{background:#fff0ee;border:1.5px solid var(--coral);color:#c03020}
+#photoInput{display:none}
+/* OPTIONS */
+.options-list{display:flex;flex-direction:column;gap:7px;margin-bottom:10px}
+.option-btn{display:flex;align-items:flex-start;gap:9px;padding:11px 12px;background:#f5fafd;border:2px solid #c8e4f5;border-radius:12px;cursor:pointer;font-size:13px;color:var(--text);line-height:1.5;transition:all 0.15s;text-align:left;width:100%;font-family:'Noto Sans TC',sans-serif}
+.option-btn:hover{border-color:var(--primary-light);background:#e8f4fc}
+.option-btn.selected{border-color:var(--sand-dark);background:#fff8e6}
+.option-btn.correct{border-color:var(--green);background:#eaf7ee}
+.option-btn.wrong{border-color:var(--coral);background:#fff0ee}
+.opt-letter{min-width:24px;height:24px;border-radius:50%;background:#daeef8;color:var(--primary);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.option-btn.selected .opt-letter{background:var(--sand);color:white}
+.option-btn.correct .opt-letter{background:var(--green);color:white}
+.option-btn.wrong .opt-letter{background:var(--coral);color:white}
+.btn-submit{width:100%;padding:12px;background:linear-gradient(90deg,var(--primary),var(--primary-light));color:white;border:none;border-radius:13px;font-size:14px;font-weight:700;font-family:'Noto Sans TC',sans-serif;cursor:pointer}
+.btn-submit:disabled{opacity:0.5;cursor:not-allowed}
+/* 是非題 */
+.tf-btn{display:flex;align-items:center;justify-content:center;gap:10px;padding:16px;border-radius:16px;border:2.5px solid var(--border);background:#f8f8f8;cursor:pointer;font-size:20px;font-weight:700;font-family:'Noto Sans TC',sans-serif;transition:all 0.15s;width:100%;margin-bottom:10px}
+.tf-btn:active{transform:scale(0.97)}
+.tf-btn.tf-true{border-color:#3db87a;background:#eaf7ee;color:#1a7a40}
+.tf-btn.tf-false{border-color:var(--coral);background:#fff0ee;color:#c03020}
+.tf-btn.selected{box-shadow:0 0 0 3px rgba(26,111,163,0.2)}
+.tf-btn.correct{border-color:var(--green);background:#eaf7ee}
+.tf-btn.wrong{border-color:var(--coral);background:#fff0ee;opacity:0.6}
+/* 行動列 */
+.action-bar{display:flex;gap:8px;margin-bottom:10px}
+.action-btn{flex:1;padding:9px 6px;border:none;border-radius:12px;font-size:12px;font-weight:700;font-family:'Noto Sans TC',sans-serif;cursor:pointer;text-align:center;transition:all 0.15s}
+.action-btn:active{transform:scale(0.96)}
+.btn-help{background:#fff0ee;color:#c03020;border:1.5px solid #f09070}
+.btn-help:disabled{opacity:0.5;cursor:not-allowed}
+.btn-rank{background:var(--primary-pale);color:var(--primary);border:1.5px solid #90c8e8}
+.btn-rank.hidden-rank{display:none}
+.btn-hint{background:#fffbe6;color:#7a5a00;border:1.5px solid #f5c842}
+.btn-hint:disabled{opacity:0.5;cursor:not-allowed}
+/* 跳過照片 */
+.skip-photo-area{text-align:center;margin-bottom:10px;padding:10px;background:#fff0ee;border-radius:10px;border:1px solid #f09070}
+.skip-photo-area .skip-msg{font-size:12px;color:var(--coral);margin-bottom:8px}
+.skip-photo-btns{display:flex;gap:8px;justify-content:center}
+.btn-skip{padding:8px 16px;background:var(--coral);color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',sans-serif}
+.btn-retake{padding:8px 16px;background:var(--primary-pale);color:var(--primary);border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',sans-serif}
+/* FEEDBACK */
+.feedback-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+.feedback-box{background:white;border-radius:22px;padding:26px 20px;text-align:center;max-width:310px;width:100%;box-shadow:0 16px 48px rgba(0,0,0,0.3)}
+.feedback-icon{font-size:52px;margin-bottom:10px}
+.feedback-title{font-size:20px;font-weight:900;margin-bottom:6px}
+.feedback-title.correct{color:var(--green)}.feedback-title.wrong{color:var(--coral)}
+.feedback-msg{font-size:13px;color:var(--text-light);line-height:1.6;margin-bottom:8px}
+.feedback-score{font-size:13px;font-weight:700;color:var(--primary);margin-bottom:14px}
+.btn-next{width:100%;padding:12px;background:linear-gradient(90deg,var(--green),#5dd490);color:white;border:none;border-radius:13px;font-size:14px;font-weight:700;font-family:'Noto Sans TC',sans-serif;cursor:pointer}
+.btn-retry{width:100%;padding:12px;background:linear-gradient(90deg,var(--coral),#f09070);color:white;border:none;border-radius:13px;font-size:14px;font-weight:700;font-family:'Noto Sans TC',sans-serif;cursor:pointer}
+/* 排行 OVERLAY */
+.rank-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+.rank-box{background:white;border-radius:22px;padding:22px;max-width:340px;width:100%;box-shadow:0 16px 48px rgba(0,0,0,0.3);max-height:80vh;overflow-y:auto}
+.rank-box h3{font-size:16px;font-weight:700;margin-bottom:14px;text-align:center;color:var(--primary)}
+.rank-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;margin-bottom:8px;background:#f5fafd}
+.rank-item.me{background:var(--primary-pale);border:1.5px solid var(--primary-light)}
+.rank-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.rank-num.gold{background:#ffd700;color:#7a5a00}
+.rank-num.silver{background:#c0c0c0;color:#444}
+.rank-num.bronze{background:#cd7f32;color:white}
+.rank-num.other{background:#eee;color:#666}
+.rank-info{flex:1}
+.rank-name{font-size:13px;font-weight:700}
+.rank-detail{font-size:11px;color:var(--text-light)}
+.rank-score{font-size:15px;font-weight:700;color:var(--primary)}
+.btn-close-rank{width:100%;padding:10px;background:var(--primary-pale);color:var(--primary);border:none;border-radius:12px;font-size:14px;font-weight:700;font-family:'Noto Sans TC',sans-serif;cursor:pointer;margin-top:10px}
+/* 求救 OVERLAY */
+.help-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:flex-end;justify-content:center;z-index:100}
+.help-box{background:white;border-radius:22px 22px 0 0;padding:22px;width:100%;max-width:480px;box-shadow:0 -8px 32px rgba(0,0,0,0.2)}
+.help-box h3{font-size:15px;font-weight:700;margin-bottom:4px;color:var(--coral)}
+.help-box .help-subtitle{font-size:12px;color:var(--text-light);margin-bottom:14px}
+.help-textarea{width:100%;padding:10px 13px;border:2px solid #f0c8c0;border-radius:12px;font-size:14px;font-family:'Noto Sans TC',sans-serif;color:var(--text);resize:none;outline:none;margin-bottom:10px}
+.help-cost{font-size:12px;color:var(--coral);margin-bottom:12px;text-align:center}
+.help-btns{display:flex;gap:8px}
+.btn-send-help{flex:1;padding:12px;background:var(--coral);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;font-family:'Noto Sans TC',sans-serif;cursor:pointer}
+.btn-cancel-help{flex:1;padding:12px;background:#f5f5f5;color:#666;border:none;border-radius:12px;font-size:14px;font-weight:700;font-family:'Noto Sans TC',sans-serif;cursor:pointer}
+.reply-toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#1a3a5c;color:white;padding:12px 20px;border-radius:14px;font-size:13px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.3);max-width:300px;text-align:center;animation:slideDown 0.4s ease}
+@keyframes slideDown{from{opacity:0;transform:translateX(-50%) translateY(-20px)}}
+/* 廣播 */
+.broadcast-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:200;padding:24px}
+.broadcast-box{background:white;border-radius:20px;padding:24px;max-width:320px;width:100%;text-align:center}
+.broadcast-icon{font-size:48px;margin-bottom:10px}
+.broadcast-title{font-size:16px;font-weight:700;color:var(--primary);margin-bottom:8px}
+.broadcast-msg{font-size:14px;color:var(--text);line-height:1.6;margin-bottom:16px}
+.btn-broadcast-ok{width:100%;padding:11px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;font-family:'Noto Sans TC',sans-serif;cursor:pointer}
+/* FINISH */
+#finishScreen{background:linear-gradient(160deg,var(--primary-dark),var(--primary),var(--primary-light));align-items:center;justify-content:center;padding:24px;text-align:center}
+.finish-box{background:rgba(255,255,255,0.96);border-radius:28px;padding:28px 22px;max-width:340px;width:100%}
+.finish-icon{font-size:60px;margin-bottom:12px}
+.finish-title{font-family:'Fredoka One',cursive;font-size:24px;color:var(--primary);margin-bottom:6px}
+.finish-team{font-size:14px;color:var(--text-light);margin-bottom:16px}
+.finish-score-big{font-size:48px;font-weight:900;color:var(--primary);margin-bottom:4px}
+.finish-score-label{font-size:12px;color:var(--text-light);margin-bottom:16px}
+.finish-stats{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.stat-box{flex:1;min-width:70px;background:var(--primary-pale);border-radius:10px;padding:10px 6px;text-align:center}
+.stat-label{font-size:10px;color:var(--text-light);margin-bottom:3px}
+.stat-value{font-size:18px;font-weight:700;color:var(--primary)}
+.finish-rank-section{background:#f8f4ff;border-radius:12px;padding:12px;margin-bottom:12px}
+.finish-rank-title{font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px}
+.finish-msg{font-size:13px;color:var(--text-light);line-height:1.7}
+/* 音樂控制 */
+.music-btn{position:fixed;top:12px;right:12px;z-index:200;background:rgba(255,255,255,0.9);border:none;border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);align-items:center;justify-content:center;transition:all 0.2s}
+.music-btn:active{transform:scale(0.9)}
+
+
+
+.music-vol input[type=range]{writing-mode:vertical-lr;direction:rtl;width:24px;height:80px;cursor:pointer;accent-color:var(--primary)}
+/* 故事片段 */
+.story-popup{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:150;display:flex;align-items:flex-end;justify-content:center;padding:0}
+.story-popup-box{background:white;border-radius:24px 24px 0 0;padding:24px 20px 32px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;box-shadow:0 -8px 40px rgba(0,0,0,0.3);animation:slideUp 0.35s ease}
+@keyframes slideUp{from{transform:translateY(100%)}}
+.story-popup-tag{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.story-popup-tag.intro{color:var(--purple)}
+.story-popup-tag.outro{color:var(--green)}
+.story-popup-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:10px}
+.story-popup-body{font-size:14px;color:var(--text);line-height:1.9;white-space:pre-wrap;margin-bottom:14px}
+.story-next-hint{background:linear-gradient(135deg,var(--primary-pale),#f0e8ff);border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--text);line-height:1.7}
+.story-next-hint .hint-label{font-size:11px;font-weight:700;color:var(--primary);margin-bottom:4px;display:flex;align-items:center;gap:4px}
+.btn-story-next{width:100%;padding:14px;background:linear-gradient(90deg,var(--green),#5dd490);color:white;border:none;border-radius:14px;font-size:15px;font-weight:700;font-family:'Noto Sans TC',sans-serif;cursor:pointer;box-shadow:0 4px 14px rgba(61,184,122,0.3)}
+.btn-story-next:active{transform:scale(0.97)}
+.btn-story-close{width:100%;padding:12px;background:var(--primary-pale);color:var(--primary);border:none;border-radius:12px;font-size:14px;font-weight:700;font-family:'Noto Sans TC',sans-serif;cursor:pointer;margin-top:8px}
+/* 套圖相機 */
+.overlay-camera-wrap{position:relative;width:100%;background:#000;border-radius:12px;overflow:hidden;margin-bottom:10px}
+.overlay-video{width:100%;display:block;max-height:60vh;object-fit:cover}
+.overlay-png{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}
+.overlay-shutter{width:64px;height:64px;border-radius:50%;background:white;border:4px solid #ddd;cursor:pointer;margin:0 auto;display:block;box-shadow:0 2px 12px rgba(0,0,0,0.3);transition:transform 0.1s}
+.overlay-shutter:active{transform:scale(0.92)}
+.overlay-hint{font-size:12px;color:var(--text-light);text-align:center;margin:6px 0 10px}
+.overlay-result{width:100%;border-radius:10px;display:none;margin-bottom:10px}
+.overlay-retry{width:100%;padding:9px;background:var(--primary-pale);color:var(--primary);border:none;border-radius:10px;font-size:13px;font-weight:700;font-family:'Noto Sans TC',sans-serif;cursor:pointer;margin-bottom:8px}
+/* UTILS */
+.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,0.88);display:flex;align-items:center;justify-content:center;z-index:200;flex-direction:column;gap:10px;font-size:13px;color:var(--primary)}
+.spinner{width:36px;height:36px;border:4px solid var(--primary-pale);border-top-color:var(--primary);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.hidden{display:none!important}
+
+/* ══════════════════════════════════════════════
+   RWD — iOS / 平板 / 手機 響應式排版
+   ══════════════════════════════════════════════ */
+
+/* iOS 防自動放大字體 */
+html { -webkit-text-size-adjust: 100%; }
+
+/* iOS safe-area (瀏海 / home bar) */
+body {
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* iOS 彈性捲動 */
+.wait-content, .game-content, .rank-box, .story-popup-box {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── 大手機 & 小平板 (≥480px) ── */
+@media (min-width: 480px) {
+  .login-box { max-width: 420px; padding: 30px 28px; }
+  .login-logo h1 { font-size: 22px; }
+  select, input[type="password"], input[type="text"] { font-size: 16px; padding: 13px 15px; }
+  .btn-login { font-size: 16px; padding: 15px; }
+
+  .game-header .header-info { padding: 10px 18px 10px; }
+  .team-name { font-size: 16px; }
+  .timers { padding: 0 16px 10px; gap: 8px; }
+  .timer-card { padding: 7px 10px; }
+  .timer-card .value { font-size: 18px; }
+  .timer-card .label { font-size: 10px; }
+  .score-bar { padding: 5px 18px 10px; }
+  .score-val { font-size: 17px; }
+  .progress-bar { padding: 7px 16px 12px; }
+  .prog-dot { width: 11px; height: 11px; }
+  .prog-dot.active { width: 15px; height: 15px; }
+
+  .game-content { padding: 14px; }
+  .state-card { padding: 18px; border-radius: 18px; }
+  .q-title { font-size: 16px; }
+  .q-desc { font-size: 14px; }
+  .option-btn { font-size: 14px; padding: 13px 14px; }
+  .opt-letter { min-width: 28px; height: 28px; font-size: 12px; }
+  .btn-submit { font-size: 15px; padding: 14px; }
+  .action-btn { font-size: 13px; padding: 11px 8px; }
+  .tf-btn { font-size: 22px; padding: 18px; }
+
+  .feedback-box { padding: 30px 24px; max-width: 360px; border-radius: 24px; }
+  .feedback-icon { font-size: 60px; }
+  .feedback-title { font-size: 22px; }
+  .btn-next, .btn-retry { font-size: 16px; padding: 14px; }
+
+  .help-box { max-width: 480px; padding: 24px 26px; }
+  .help-textarea { font-size: 15px; }
+
+  .finish-box { max-width: 400px; padding: 34px 28px; }
+  .finish-icon { font-size: 68px; }
+  .finish-title { font-size: 26px; }
+  .finish-score-big { font-size: 54px; }
+  .stat-box { padding: 12px 8px; }
+  .stat-value { font-size: 20px; }
+  .stat-label { font-size: 11px; }
+
+  .story-popup-box { padding: 28px 24px 36px; }
+  .story-popup-body { font-size: 15px; }
+  .btn-story-next { font-size: 16px; padding: 16px; }
+
+  .wait-status-text { font-size: 15px; }
+  .btn-start-game { font-size: 18px; padding: 18px; }
+}
+
+/* ── iPad / 平板直向 (≥768px) ── */
+@media (min-width: 768px) {
+  /* 登入頁置中 */
+  .login-box { max-width: 460px; padding: 36px 36px; border-radius: 32px; }
+  .login-logo h1 { font-size: 26px; }
+  .default-logo svg { width: 96px; height: 76px; }
+  .activity-logo { max-width: 140px; max-height: 100px; }
+  select, input[type="password"], input[type="text"] { font-size: 17px; padding: 14px 16px; border-radius: 14px; }
+  .btn-login { font-size: 17px; padding: 17px; border-radius: 16px; margin-top: 18px; }
+  .login-welcome { font-size: 13px; padding: 12px 16px; }
+
+  /* 等待頁 */
+  #waitScreen { align-items: center; }
+  .wait-header { padding: 16px 24px; }
+  .wait-header-title { font-size: 19px; }
+  .wait-header-team { font-size: 13px; }
+  .wait-content { max-width: 600px; width: 100%; margin: 0 auto; padding: 20px 24px; }
+  .story-card, .rules-card { padding: 24px; border-radius: 20px; }
+  .story-title { font-size: 18px; }
+  .story-body { font-size: 15px; }
+  .rule-item { font-size: 14px; }
+  .wait-footer { padding: 20px 24px calc(20px + env(safe-area-inset-bottom)); }
+  .btn-start-game { font-size: 19px; padding: 20px; border-radius: 18px; max-width: 600px; margin: 0 auto; display: block; }
+  .wait-status-text { font-size: 16px; }
+
+  /* 遊戲畫面 — header */
+  .game-banner { max-height: 160px; }
+  .game-header .header-info { padding: 12px 24px 10px; }
+  .team-name { font-size: 17px; }
+  .stage-label { font-size: 12px; }
+  .timers { padding: 0 20px 12px; gap: 10px; }
+  .timer-card { padding: 8px 14px; border-radius: 12px; }
+  .timer-card .value { font-size: 20px; }
+  .timer-card .label { font-size: 11px; }
+  .score-bar { padding: 6px 24px 12px; }
+  .score-val { font-size: 18px; }
+  .score-label { font-size: 11px; }
+  .progress-bar { padding: 8px 20px 14px; gap: 7px; }
+  .prog-dot { width: 12px; height: 12px; }
+  .prog-dot.active { width: 17px; height: 17px; }
+  .prog-label { font-size: 12px; }
+
+  /* 遊戲內容 — 限寬置中 */
+  .game-content { padding: 18px 24px; max-width: 680px; margin: 0 auto; width: 100%; align-self: center; }
+  #gameScreen { align-items: stretch; }
+  #gameScreen .game-content { align-self: center; }
+
+  .state-card { padding: 22px; border-radius: 20px; margin-bottom: 14px; }
+  .q-tag { font-size: 11px; padding: 3px 12px; border-radius: 8px; }
+  .q-title { font-size: 18px; margin-bottom: 6px; }
+  .q-desc { font-size: 15px; margin-bottom: 14px; }
+  .q-image { max-height: 240px; border-radius: 14px; }
+  .options-list { gap: 9px; margin-bottom: 14px; }
+  .option-btn { font-size: 15px; padding: 15px 16px; border-radius: 14px; gap: 12px; }
+  .opt-letter { min-width: 32px; height: 32px; font-size: 13px; }
+  .btn-submit { font-size: 16px; padding: 16px; border-radius: 14px; }
+  .action-bar { gap: 10px; margin-bottom: 14px; }
+  .action-btn { font-size: 14px; padding: 13px 10px; border-radius: 14px; }
+  .tf-btn { font-size: 24px; padding: 20px; border-radius: 18px; margin-bottom: 14px; }
+
+  /* GPS 卡 */
+  .gps-icon { font-size: 52px; }
+  .gps-title { font-size: 17px; }
+  .gps-desc { font-size: 14px; }
+  .btn-gps { font-size: 16px; padding: 14px 28px; border-radius: 14px; }
+
+  /* 位置說明 */
+  .location-card { padding: 16px 20px; border-radius: 18px; }
+  .location-card .loc-text { font-size: 16px; }
+
+  /* 提示框 */
+  .hint-box { font-size: 14px; padding: 12px 16px; border-radius: 12px; }
+
+  /* 照片 */
+  .photo-upload-area { padding: 18px; border-radius: 14px; }
+  .photo-upload-area .icon { font-size: 34px; }
+  .photo-upload-area .text { font-size: 13px; }
+  .photo-preview { max-height: 240px; border-radius: 14px; }
+
+  /* feedback overlay */
+  .feedback-overlay { padding: 24px; }
+  .feedback-box { padding: 34px 28px; max-width: 400px; border-radius: 26px; }
+  .feedback-icon { font-size: 68px; }
+  .feedback-title { font-size: 24px; }
+  .feedback-msg { font-size: 14px; }
+  .feedback-score { font-size: 14px; margin-bottom: 18px; }
+  .btn-next, .btn-retry { font-size: 17px; padding: 16px; border-radius: 15px; }
+
+  /* 求救 */
+  .help-box { padding: 28px 32px; border-radius: 28px 28px 0 0; }
+  .help-box h3 { font-size: 17px; }
+  .help-textarea { font-size: 16px; padding: 13px 16px; }
+  .btn-send-help, .btn-cancel-help { font-size: 16px; padding: 14px; }
+
+  /* 排行榜 */
+  .rank-box { max-width: 440px; padding: 26px; border-radius: 24px; }
+  .rank-box h3 { font-size: 18px; }
+  .rank-item { padding: 12px 16px; border-radius: 14px; }
+  .rank-name { font-size: 15px; }
+  .rank-detail { font-size: 12px; }
+  .rank-score { font-size: 17px; }
+
+  /* 故事彈窗 */
+  .story-popup-box { max-width: 600px; padding: 32px 28px 40px; border-radius: 28px 28px 0 0; }
+  .story-popup-body { font-size: 16px; line-height: 2; }
+  .story-next-hint { font-size: 14px; padding: 14px 18px; border-radius: 14px; }
+  .btn-story-next { font-size: 17px; padding: 17px; border-radius: 16px; }
+  .btn-story-close { font-size: 15px; padding: 14px; }
+
+  /* 完賽頁 */
+  .finish-box { max-width: 460px; padding: 40px 34px; border-radius: 32px; }
+  .finish-icon { font-size: 80px; }
+  .finish-title { font-size: 30px; }
+  .finish-team { font-size: 16px; }
+  .finish-score-big { font-size: 64px; }
+  .finish-score-label { font-size: 13px; margin-bottom: 20px; }
+  .finish-stats { gap: 10px; margin-bottom: 20px; }
+  .stat-box { padding: 14px 10px; border-radius: 14px; }
+  .stat-value { font-size: 24px; }
+  .stat-label { font-size: 12px; }
+  .finish-msg { font-size: 15px; }
+
+  /* 廣播 */
+  .broadcast-box { max-width: 380px; padding: 30px; border-radius: 24px; }
+  .broadcast-icon { font-size: 56px; }
+  .broadcast-title { font-size: 18px; }
+  .broadcast-msg { font-size: 15px; }
+  .btn-broadcast-ok { font-size: 15px; padding: 14px; }
+
+  /* 暫停頁 */
+  .paused-box { max-width: 380px; padding: 44px 34px; border-radius: 28px; }
+  .paused-icon { font-size: 68px; }
+  .paused-title { font-size: 26px; }
+  .paused-msg { font-size: 15px; }
+
+  /* 音樂按鈕 */
+  .music-btn { width: 42px; height: 42px; font-size: 18px; top: 16px; right: 16px; }
+}
+
+/* ── iPad Pro / 大平板橫向 (≥1024px) ── */
+@media (min-width: 1024px) {
+  .login-box { max-width: 500px; }
+  .wait-content { max-width: 700px; }
+  .btn-start-game { max-width: 700px; }
+  .game-content { max-width: 760px; padding: 22px 32px; }
+  .feedback-box { max-width: 440px; }
+  .story-popup-box { max-width: 700px; }
+  .finish-box { max-width: 520px; }
+  .rank-box { max-width: 500px; }
+}
+
+/* ── iOS safe-area footer fix ── */
+.wait-footer {
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+}
+.help-box {
+  padding-bottom: calc(22px + env(safe-area-inset-bottom));
+}
+
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="screen active">
+  <div class="login-box">
+    <div class="login-logo">
+      <div id="defaultLogo" class="default-logo">
+        <svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100" height="80" fill="#1a6fa3" rx="12"/>
+          <rect x="25" y="42" width="50" height="32" fill="#e8f4f8" rx="3"/>
+          <polygon points="18,42 50,18 82,42" fill="#2abde0"/>
+          <rect x="30" y="50" width="12" height="10" fill="#b8e4f7" rx="2"/>
+          <rect x="44" y="50" width="12" height="10" fill="#b8e4f7" rx="2"/>
+          <rect x="58" y="50" width="12" height="10" fill="#b8e4f7" rx="2"/>
+          <rect x="43" y="57" width="14" height="17" fill="#7dd4f8" rx="2"/>
+          <ellipse cx="50" cy="20" rx="10" ry="8" fill="#f5c87a" transform="rotate(-20,50,20)"/>
+          <path d="M44,14 Q50,6 57,13 Q62,19 57,23 Q50,27 44,23 Q40,19 44,14" fill="none" stroke="#e08030" stroke-width="1.5" stroke-linecap="round"/>
+          <ellipse cx="46" cy="17" rx="3" ry="2.5" fill="#f0a84a" transform="rotate(-20,46,17)"/>
+          <path d="M57,12 Q64,4 62,3 Q60,2 58,11" fill="#f5c87a"/>
+        </svg>
+      </div>
+      <img id="activityLogo" class="activity-logo hidden" alt="LOGO"/>
+      <h1 id="loginTitle">實境解謎</h1>
+      <div class="subtitle" id="loginSubtitle">ADVENTURE</div>
+    </div>
+    <div class="login-welcome hidden" id="loginWelcome"></div>
+    <div class="loading-hint" id="loadingHint">⏳ 載入活動資訊中...</div>
+
+    <!-- 個人登入選擇區：LINE 登入為主，免登入為備援 -->
+    <div id="loginChoiceArea">
+      <button class="btn-login" id="loginBtn" onclick="startLineLogin()" disabled style="background:#06C755">⏳ 載入中...</button>
+      <button class="btn-login hidden" id="googleLoginBtn" onclick="startGoogleLogin()" style="background:white;color:#444;border:1.5px solid #ddd;margin-top:8px">🔵 用 Google 登入</button>
+      <button class="btn-login hidden" id="fbLoginBtn" onclick="startFacebookLogin()" style="background:#1877F2;margin-top:8px">📘 用 Facebook 登入</button>
+      <div style="display:flex;align-items:center;gap:10px;margin:14px 0">
+        <div style="flex:1;height:1px;background:#e0e0e0"></div>
+        <span style="font-size:12px;color:#aaa">或</span>
+        <div style="flex:1;height:1px;background:#e0e0e0"></div>
+      </div>
+      <button class="btn-login" id="guestEntryBtn" onclick="showGuestForm()" style="background:var(--primary-pale,#e8f4f8);color:var(--primary,#1a6fa3)" disabled>🙋 免登入，直接開始</button>
+    </div>
+
+    <!-- 免登入表單（暱稱必填、手機選填）-->
+    <div id="guestFormArea" class="hidden">
+      <div class="field-label">你的暱稱</div>
+      <input type="text" id="guestNickname" placeholder="請輸入暱稱" maxlength="20"/>
+      <div class="field-label">手機號碼 <span style="font-weight:400;color:var(--text-light)">（選填，供活動聯絡/兌獎用）</span></div>
+      <input type="tel" id="guestPhone" placeholder="選填" maxlength="15"/>
+      <div class="error-msg" id="loginError"></div>
+      <button class="btn-login" onclick="doGuestLogin()">🐚 開始闖關！</button>
+      <button class="btn-login" style="background:transparent;color:var(--text-light);box-shadow:none;margin-top:2px" onclick="hideGuestForm()">‹ 返回</button>
+    </div>
+
+    <!-- 已完成過活動，且主辦方不開放重複闖關時顯示 -->
+    <div id="alreadyDoneArea" class="hidden" style="text-align:center">
+      <div style="font-size:40px;margin-bottom:8px">🎉</div>
+      <div style="font-weight:700;margin-bottom:6px">你已經完成過這個活動囉！</div>
+      <div style="font-size:13px;color:var(--text-light);margin-bottom:4px" id="alreadyDoneScore"></div>
+      <div style="font-size:12px;color:var(--text-light)" id="alreadyDoneNote">本活動限一人一次，感謝你的參與</div>
+    </div>
+  </div>
+</div>
+
+<!-- 等待頁面 -->
+<div id="waitScreen" class="screen">
+  <div class="wait-header">
+    <img id="waitHeaderLogo" class="wait-header-logo hidden" alt="LOGO"/>
+    <div>
+      <div class="wait-header-title" id="waitActivityName">實境解謎</div>
+      <div class="wait-header-team" id="waitTeamName">隊伍名稱</div>
+    </div>
+  </div>
+  <div class="wait-content">
+    <!-- 故事介紹 -->
+    <div class="story-card" id="storyCard">
+      <div class="story-title">📖 <span id="storyTitle">活動故事</span></div>
+      <div class="story-body" id="storyBody">載入中...</div>
+      <img id="storyImage" class="story-image hidden" alt="故事圖片"/>
+    </div>
+    <!-- 活動規則 -->
+    <div class="rules-card" id="rulesCard">
+      <div class="rules-title">📋 活動規則</div>
+      <div id="rulesList"></div>
+    </div>
+    <!-- 隊伍資訊卡片已移除，狀態直接顯示在等待底部 -->
+    <div id="infoTeamName" style="display:none"></div>
+    <div id="infoStageCount" style="display:none"></div>
+    <div id="infoHelpTimes" style="display:none"></div>
+    <div id="infoStatus" style="display:none"></div>
+  </div>
+  <div class="wait-footer" id="wait-footer">
+    <div class="wait-status-bar" id="waitStatusBar">
+      <div class="wait-status-text"><span class="wait-pulse"></span><span id="waitStatusText">等待管理者開始活動...</span></div>
+      <div class="wait-status-sub" id="waitStatusSub">管理者按下開始後，下方按鈕將自動解鎖</div>
+    </div>
+    <button class="btn-start-game" id="btnStartGame" onclick="startGame()" disabled>
+      🚀 開始闖關！
+    </button>
+    <button onclick="playerLogout()" style="width:100%;padding:10px;background:transparent;border:1px solid rgba(255,255,255,0.3);border-radius:12px;color:rgba(255,255,255,0.6);font-size:13px;font-family:'Noto Sans TC',sans-serif;cursor:pointer;margin-top:8px">
+      ← 返回（換隊或重新登入）
+    </button>
+  </div>
+</div>
+
+<!-- PAUSED -->
+<div id="pausedScreen" class="screen">
+  <div class="paused-box">
+    <div class="paused-icon">⏸</div>
+    <div class="paused-title">活動暫停中</div>
+    <div class="paused-msg">活動暫時暫停，請稍候工作人員通知後繼續。</div>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="gameScreen" class="screen">
+  <div class="game-header">
+    <img id="gameBanner" class="game-banner hidden" alt="Banner"/>
+    <div class="header-info">
+      <div style="display:flex;align-items:center;gap:7px">
+        <div class="team-dot" id="teamDot"></div>
+        <div>
+          <div class="team-name" id="displayTeamName"></div>
+          <div class="stage-label" id="displayStageLabel">第 1 關</div>
+        </div>
+      </div>
+      <div style="text-align:right;display:flex;align-items:center;gap:8px">
+        <div>
+          <div style="color:rgba(255,255,255,0.65);font-size:10px">進度</div>
+          <div style="color:white;font-size:13px;font-weight:700" id="displayProgress">1/?</div>
+        </div>
+        <button onclick="playerLogout()" title="登出" style="background:rgba(255,255,255,0.15);border:none;border-radius:8px;color:rgba(255,255,255,0.7);font-size:11px;padding:4px 8px;cursor:pointer;font-family:'Noto Sans TC',sans-serif">登出</button>
+      </div>
+    </div>
+    <div class="timers">
+      <div class="timer-card"><div class="label">⏱ 本關</div><div class="value warn" id="stageTimer">00:00</div></div>
+      <div class="timer-card"><div class="label">🕐 總計</div><div class="value" id="totalTimer">00:00</div></div>
+      <div class="timer-card"><div class="label">⏰ 剩餘</div><div class="value" id="countdownTimer">--:--</div></div>
+    </div>
+    <div class="score-bar">
+      <div style="text-align:center"><div class="score-label">目前分數</div><div class="score-val" id="currentScore">0 分</div></div>
+    </div>
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+  <div class="game-content" id="gameContent"></div>
+</div>
+
+<!-- FINISH -->
+<div id="finishScreen" class="screen">
+  <div class="finish-box">
+    <div class="finish-icon">🏆</div>
+    <div class="finish-title">闖關完成！</div>
+    <div class="finish-team" id="finishTeamName"></div>
+    <div class="finish-score-big" id="finishScore">0</div>
+    <div class="finish-score-label">總分</div>
+    <div class="finish-stats">
+      <div class="stat-box"><div class="stat-label">完成關卡</div><div class="stat-value" id="finishStages">-</div></div>
+      <div class="stat-box"><div class="stat-label">總時間</div><div class="stat-value" id="finishTime">-</div></div>
+      <div class="stat-box"><div class="stat-label">答題次數</div><div class="stat-value" id="finishAttempts">-</div></div>
+      <div class="stat-box"><div class="stat-label">求救次數</div><div class="stat-value" id="finishHelps">-</div></div>
+    </div>
+    <div class="finish-rank-section" id="finishRankSection">
+      <div class="finish-rank-title" id="finishRankTitle">🏆 高分榜</div>
+      <div id="finishRankList"></div>
+    </div>
+    <div class="finish-msg" id="finishMsg">🐚 恭喜完成所有挑戰！</div>
+  </div>
+</div>
+
+<!-- 音樂控制 -->
+<div id="musicControl" style="position:fixed;top:12px;right:12px;z-index:200;display:none;align-items:center;gap:8px">
+  <div id="musicVol" style="background:white;border-radius:12px;padding:6px 10px;box-shadow:0 2px 8px rgba(0,0,0,0.15);display:flex;align-items:center;gap:8px">
+    <span style="font-size:11px;color:#888">🔊</span>
+    <input type="range" id="musicVolSlider" min="0" max="100" value="40" oninput="setMusicVolume(this.value)" style="width:70px;cursor:pointer;accent-color:var(--primary)"/>
+    <span style="font-size:10px;color:#888;width:28px" id="musicVolLabel">40%</span>
+  </div>
+  <button class="music-btn visible" id="musicBtn" onclick="toggleMute()" title="靜音/播放" style="display:flex">🎵</button>
+</div>
+
+<!-- 故事彈窗 -->
+<div class="story-popup hidden" id="storyPopup">
+  <div class="story-popup-box">
+    <div class="story-popup-tag" id="storyPopupTag">📖 故事</div>
+    <div class="story-popup-title" id="storyPopupTitle"></div>
+    <div class="story-popup-body" id="storyPopupBody"></div>
+    <div class="story-next-hint hidden" id="storyNextHintBox">
+      <div class="hint-label">🗺️ 前往下一關</div>
+      <div id="storyNextHintText"></div>
+    </div>
+    <button class="btn-story-next hidden" id="btnStoryNext" onclick="closeStoryPopup()">🚀 出發！</button>
+    <button class="btn-story-close hidden" id="btnStoryClose" onclick="closeStoryPopup()">我知道了</button>
+  </div>
+</div>
+
+<!-- OVERLAYS -->
+<div class="loading-overlay hidden" id="loadingOverlay">
+  <div class="spinner"></div><div id="loadingMsg">載入中...</div>
+</div>
+
+<div class="feedback-overlay hidden" id="feedbackOverlay">
+  <div class="feedback-box">
+    <div class="feedback-icon" id="feedbackIcon">🎉</div>
+    <div class="feedback-title" id="feedbackTitle"></div>
+    <div class="feedback-msg" id="feedbackMsg"></div>
+    <div class="feedback-score" id="feedbackScore"></div>
+    <button id="feedbackBtn" onclick="closeFeedback()">繼續</button>
+  </div>
+</div>
+
+<div class="help-overlay hidden" id="helpOverlay">
+  <div class="help-box">
+    <h3 id="helpTitle">🆘 向小幫手求救</h3>
+    <div class="help-subtitle" id="helpSubtitle">剩餘次數：<span id="helpRemain">2</span>次</div>
+    <textarea class="help-textarea" id="helpMsg" rows="3" placeholder="說明你遇到的問題..."></textarea>
+    <div class="help-cost" id="helpCost">⚠️ 每次求救扣 30 分</div>
+    <div class="help-btns">
+      <button class="btn-cancel-help" onclick="closeHelp()">取消</button>
+      <button class="btn-send-help" onclick="sendHelp()">送出求救</button>
+    </div>
+  </div>
+</div>
+
+<div class="broadcast-overlay hidden" id="broadcastOverlay">
+  <div class="broadcast-box">
+    <div class="broadcast-icon">📢</div>
+    <div class="broadcast-title" id="broadcastTitle">活動通知</div>
+    <div class="broadcast-msg" id="broadcastMsg"></div>
+    <button class="btn-broadcast-ok" onclick="closeBroadcast()">我知道了</button>
+  </div>
+</div>
+
+<!-- QR Code 產生套件 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- LINE Login（LIFF SDK）：需要専案管理者在 LINE Developers Console 申請 LIFF 頻道，並在下方 module script 的 LIFF_ID 填入 -->
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script type="module">
+// ── 手機除錯用：把錯誤顯示在畫面上 ──
+window.addEventListener('error', function(e){
+  showDebugError('JS錯誤: '+e.message+' (行'+e.lineno+')');
+});
+window.addEventListener('unhandledrejection', function(e){
+  showDebugError('Promise錯誤: '+(e.reason&&e.reason.message||e.reason));
+});
+function showDebugError(msg){
+  let box=document.getElementById('_debugErrorBox');
+  if(!box){
+    box=document.createElement('div');
+    box.id='_debugErrorBox';
+    box.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#c0392b;color:white;font-size:12px;padding:8px 12px;max-height:40vh;overflow-y:auto;font-family:monospace;line-height:1.6;white-space:pre-wrap';
+    document.body.appendChild(box);
+  }
+  const line=document.createElement('div');
+  line.style.cssText='border-top:1px solid rgba(255,255,255,0.3);padding-top:4px;margin-top:4px';
+  line.textContent='⚠️ '+msg;
+  box.appendChild(line);
+}
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get, set, push, onValue, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getStorage, ref as sRef, uploadBytes, getDownloadURL }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+import { getAuth, signInAnonymously, GoogleAuthProvider, FacebookAuthProvider, signInWithPopup }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA51pVs3QZJ3p6eIeVpMVOGqFlNXExEjKo",
+  authDomain: "real-world-puzzle-d5efc.firebaseapp.com",
+  databaseURL: "https://real-world-puzzle-d5efc-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "real-world-puzzle-d5efc",
+  storageBucket: "real-world-puzzle-d5efc.firebasestorage.app",
+  messagingSenderId: "25902212869",
+  appId: "1:25902212869:web:8955631b9c9395233a796c"
+};
+const fbApp = initializeApp(firebaseConfig);
+const db = getDatabase(fbApp);
+const storage = getStorage(fbApp);
+const auth = getAuth(fbApp);
+
+// ══ 多活動架構：此連結對應哪個活動，由網址參數 ?a=活動代碼 決定 ══
+let ACTIVITY_ID=null;
+function aRef(path){
+  if(!ACTIVITY_ID)throw new Error('尚未解析活動代碼(ACTIVITY_ID)，無法存取活動資料：'+path);
+  return ref(db,`activities/${ACTIVITY_ID}/${path}`);
+}
+function aStorageRef(path){
+  if(!ACTIVITY_ID)throw new Error('尚未解析活動代碼(ACTIVITY_ID)，無法存取活動檔案：'+path);
+  return sRef(storage,`activities/${ACTIVITY_ID}/${path}`);
+}
+function gRef(path){return ref(db,path);}
+function getURLActivityParam(){try{return new URLSearchParams(location.search).get('a')||'';}catch(e){return '';}}
+// 本機記住「上次用哪個身分登入這個活動」的 key，依活動代碼區隔，換活動不會互相干擾
+function playerLoginKey(){return 'playerLogin_'+ACTIVITY_ID;}
+// 驗證並設定 ACTIVITY_ID；失敗時回傳 false，呼叫端要中止後續初始化並顯示錯誤
+async function resolveActivityId(){
+  const code=getURLActivityParam();
+  if(!code)return false;
+  try{
+    const snap=await get(gRef(`activitiesIndex/${code}`));
+    if(!snap.exists())return false;
+    ACTIVITY_ID=code;
+    return true;
+  }catch(e){return false;}
+}
+
+// ── 偵測常見「App內建瀏覽器」(LINE / FB / IG / 微信) ──
+// 這類內建瀏覽器常會限制 IndexedDB／第三方資源，導致 Firebase 匿名登入卡住不動、永遠停在「載入中」
+function detectInAppBrowser(){
+  const ua=navigator.userAgent||'';
+  if(/Line\//i.test(ua))return 'LINE';
+  if(/FBAN|FBAV/i.test(ua))return 'Facebook';
+  if(/Instagram/i.test(ua))return 'Instagram';
+  if(/MicroMessenger/i.test(ua))return '微信';
+  return null;
+}
+const inAppBrowser=detectInAppBrowser();
+// 若偵測到內建瀏覽器，且載入超過 5 秒仍卡在初始畫面，主動提示玩家改用一般瀏覽器開啟
+if(inAppBrowser){
+  setTimeout(()=>{
+    const hintEl=document.getElementById('loadingHint');
+    if(hintEl&&hintEl.textContent.includes('載入活動資訊中')){
+      hintEl.style.color='var(--sand-dark)';
+      hintEl.textContent=`💡 偵測到您正在 ${inAppBrowser} 內開啟，若畫面卡住請改用右上角選單「在瀏覽器中開啟」（Safari／Chrome）`;
+    }
+  },5000);
+}
+
+// ── 為 Promise 加上逾時保護 ──
+// 避免 signInAnonymously() 或資料庫讀取在某些環境下卡住不動、既不成功也不報錯，
+// 導致畫面永遠停在「載入中」且按鈕/下拉選單無法使用
+function withTimeout(promise,ms,timeoutErr){
+  return new Promise((resolve,reject)=>{
+    const timer=setTimeout(()=>reject(timeoutErr),ms);
+    promise.then(v=>{clearTimeout(timer);resolve(v);},e=>{clearTimeout(timer);reject(e);});
+  });
+}
+
+// ── 匿名登入（讓 Firebase Rules 允許讀取）──
+// 玩家不需要 Google 帳號，用匿名 auth 即可通過 Rules
+// 注意：無痕模式可能導致第三方 Cookie 被擋，建議使用一般視窗
+// 匿名登入成功後才載入設定（Rules 需要 auth != null）
+// 15 秒逾時保護：不管是卡住還是真的失敗，都會走到下面的 .catch()，不會無限期停在「載入中」
+withTimeout(signInAnonymously(auth),15000,Object.assign(new Error('登入逾時'),{code:'auth/timeout'})).then(async ()=>{
+  console.log('匿名登入成功，開始載入設定');
+  // ── 多活動：先確認網址帶的活動代碼有效，否則無法得知要連到哪個活動 ──
+  const activityOk=await resolveActivityId();
+  if(!activityOk){
+    const hintEl=document.getElementById('loadingHint');
+    const loginBtn=document.getElementById('loginBtn');
+    if(hintEl){hintEl.style.color='var(--coral)';hintEl.textContent='⚠️ 找不到活動，請確認掃描的QR Code或連結是否正確（缺少或錯誤的活動代碼）';}
+    if(loginBtn)loginBtn.style.display='none';
+    return;
+  }
+  // 先載入活動設定（LOGO、故事、計分規則…），不管等等是要恢復進度還是全新登入都需要
+  await initLogin();
+
+  // ── 個人闖關：嘗試用本機記住的身分（LINE或訪客）直接恢復，不需要重新登入 ──
+  const saved=localStorage.getItem(playerLoginKey());
+  if(saved&&saved.trim()){
+    try{
+      const {identityKey,displayName}=JSON.parse(saved);
+      if(identityKey){
+        await resumeOrStartWithIdentity(identityKey,displayName||'玩家',null);
+        return;
+      }
+    }catch(e){
+      localStorage.removeItem(playerLoginKey());
+    }
+  }
+  // 沒有記住的身分 → 顯示登入選擇畫面（LINE / 免登入）
+  setupLoginChoices();
+}).catch(e=>{
+  console.warn('匿名登入失敗:',e);
+  const hintEl=document.getElementById('loadingHint');
+  const loginBtn=document.getElementById('loginBtn');
+  if(hintEl){hintEl.style.color='var(--coral)';}
+  if(e.code==='auth/timeout'){
+    const tip=inAppBrowser?`偵測到您正在 ${inAppBrowser} 內建瀏覽器中開啟，部分手機上這會導致登入卡住不動。請改用右上角選單「在瀏覽器中開啟」（Safari／Chrome）後再試一次。`:'登入逾時，請確認網路連線後重新整理；若是用 LINE／FB／IG 內的連結開啟，建議改用 Safari 或 Chrome 開啟。';
+    if(hintEl)hintEl.textContent='⚠️ '+tip;
+    if(loginBtn){loginBtn.disabled=false;loginBtn.textContent='🔄 重新整理';loginBtn.onclick=()=>location.reload();}
+  } else if(e.code==='auth/network-request-failed'){
+    if(hintEl)hintEl.textContent='⚠️ 網路連線失敗，請確認網路後重新整理';
+    if(loginBtn){loginBtn.disabled=false;loginBtn.textContent='🔄 重新整理';loginBtn.onclick=()=>location.reload();}
+  } else if(e.code==='auth/too-many-requests'){
+    if(hintEl)hintEl.textContent='⚠️ 請求次數過多，請稍後重試';
+    if(loginBtn){loginBtn.disabled=false;loginBtn.textContent='🔄 重試';loginBtn.onclick=()=>location.reload();}
+  } else {
+    if(hintEl)hintEl.textContent=`⚠️ 請用 Chrome 或 Safari（一般視窗，非無痕）開啟（${e.code||e.message||''}）`;
+    if(loginBtn){loginBtn.disabled=false;loginBtn.textContent='🔄 重新整理';loginBtn.onclick=()=>location.reload();}
+  }
+});
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+// 問答題答案正規化：必須跟 admin.html 的 qaNormalize() 完全一致，兩邊算出的雜湊才會對得起來
+function qaNormalize(str){return String(str||'').trim().toLowerCase().replace(/\s+/g,' ');}
+
+// 照片壓縮：上傳前先縮小尺寸＋降低JPEG品質，減少Firebase Storage儲存/流量用量
+// maxDim：長邊上限(px)，quality：JPEG壓縮品質(0~1)。若瀏覽器無法解碼(例如少數HEIC情況)則自動退回原檔，不影響闖關。
+function compressImage(file,maxDim=1280,quality=0.8){
+  return new Promise(resolve=>{
+    if(!file||!file.type||!file.type.startsWith('image/')){resolve(file);return;}
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        let w=img.width,h=img.height;
+        if(w<=0||h<=0){resolve(file);return;}
+        if(w>maxDim||h>maxDim){
+          if(w>=h){h=Math.round(h*maxDim/w);w=maxDim;}
+          else{w=Math.round(w*maxDim/h);h=maxDim;}
+        }
+        const canvas=document.createElement('canvas');
+        canvas.width=w;canvas.height=h;
+        const ctx=canvas.getContext('2d');
+        ctx.drawImage(img,0,0,w,h);
+        canvas.toBlob(blob=>{
+          if(!blob){resolve(file);return;}
+          const newName=(file.name||'photo').replace(/\.[^.]+$/,'')+'.jpg';
+          resolve(new File([blob],newName,{type:'image/jpeg'}));
+        },'image/jpeg',quality);
+      };
+      img.onerror=()=>resolve(file);// 解碼失敗就用原始檔案，不擋闖關
+      img.src=e.target.result;
+    };
+    reader.onerror=()=>resolve(file);
+    reader.readAsDataURL(file);
+  });
+}
+
+let state = {
+  teamKey:null, teamName:null, teamColor:null, stages:[],
+  currentIdx:0, stageSeconds:0, totalSeconds:0,
+  gameStartTime:null, loginTime:null, timerInterval:null, countdownInterval:null,
+  selectedOption:null, tfAnswer:null, totalAttempts:0, stageAttempts:0,
+  photoFile:null, sessionKey:null, lastCorrect:false, _lastHelpTime:null, _staffLastStage:0, _staffSkipping:false, _lastSkipGPSTs:null,
+  settings:{}, scoring:{}, gpsLogCount:0,
+  score:0, helpUsed:0, hintUsed:0,
+  photoFailCount:0, lastBroadcastId:null,
+  waitingToStart:false
+};
+
+window.startGame=startGame; window.notifyConfirm=notifyConfirm; window.listenSessionForceLogout=listenSessionForceLogout; window.playerLogout=playerLogout; window.overlayShoot=overlayShoot; window.overlayRetake=overlayRetake; window.doLoginResume=doLoginResume;
+window.checkGPS=checkGPS; window.selectOpt=selectOpt;
+window.submitAns=submitAns; window.closeFeedback=closeFeedback;
+window.triggerPhoto=triggerPhoto; window.handlePhoto=handlePhoto;
+window.handlePhotoOnly=handlePhotoOnly; window.submitPasscode=submitPasscode;
+window.showHelp=showHelp; window.closeHelp=closeHelp; window.sendHelp=sendHelp;
+window.closeBroadcast=closeBroadcast; window.useHint=useHint;
+window.skipPhotoVerify=skipPhotoVerify; window.retakePhoto=retakePhoto;
+
+function showLoading(msg){msg=msg||'載入中...';document.getElementById('loadingMsg').textContent=msg;document.getElementById('loadingOverlay').classList.remove('hidden')}
+function hideLoading(){document.getElementById('loadingOverlay').classList.add('hidden')}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
+
+function getDefaultScoring(){
+  return{baseScore:100,timeBonus:50,wrongPenalty:10,hintPenalty:5,helpPenalty:30,skipPhotoPenalty:20,skipGPSPenalty:20,completionBonus:200};
+}
+
+// ── 初始化登入頁 ──
+async function initLogin() {
+  const hintEl=document.getElementById('loadingHint');
+  const loginBtn=document.getElementById('loginBtn');
+  try {
+    const [cfgSnap,themeSnap]=await withTimeout(Promise.all([
+      get(aRef('config/settings')),
+      get(aRef('config/settings/theme'))
+    ]),15000,Object.assign(new Error('讀取逾時'),{code:'rtdb/timeout'}));
+    const cfg=cfgSnap.exists()?cfgSnap.val():{};
+    state.settings=cfg;
+    state.scoring=cfg.scoring||getDefaultScoring();
+    LIFF_ID=cfg.liffId||'';
+    if(themeSnap.exists()){const t=themeSnap.val();document.documentElement.style.setProperty('--primary',t.primary);document.documentElement.style.setProperty('--primary-dark',t.dark);document.documentElement.style.setProperty('--primary-light',t.light);}
+    if(cfg.activityName){document.getElementById('loginTitle').textContent=cfg.activityName;document.title=cfg.activityName;}
+    if(cfg.subtitle)document.getElementById('loginSubtitle').textContent=cfg.subtitle;
+    if(cfg.welcome){const w=document.getElementById('loginWelcome');w.textContent=cfg.welcome;w.classList.remove('hidden');}
+    if(cfg.logoUrl){const img=document.getElementById('activityLogo');img.src=cfg.logoUrl;img.onload=()=>{img.classList.remove('hidden');document.getElementById('defaultLogo').classList.add('hidden');};}
+    hintEl.textContent='';
+    state._initLoginRetryCount=0;
+  } catch(e) {
+    console.error('initLogin 失敗:', e);
+    if(e&&(e.code==='PERMISSION_DENIED'||e.message&&e.message.includes('PERMISSION_DENIED'))){
+      hintEl.style.color='var(--coral)';
+      hintEl.textContent='⚠️ Firebase 權限不足，請確認 Database Rules 允許匿名讀取 config/settings';
+      loginBtn.disabled=false;
+      loginBtn.textContent='🔄 重試';
+      loginBtn.onclick=()=>{ loginBtn.onclick=null; loginBtn.disabled=true; hintEl.style.color=''; hintEl.textContent=''; initLogin(); };
+    } else if(e&&e.code==='rtdb/timeout'){
+      hintEl.style.color='var(--coral)';
+      hintEl.textContent='⚠️ 讀取活動資訊逾時，請確認網路後點此重試'+(inAppBrowser?`（偵測到您在 ${inAppBrowser} 中開啟，建議改用 Safari／Chrome）`:'');
+      loginBtn.disabled=false;
+      loginBtn.textContent='🔄 重試';
+      loginBtn.onclick=()=>{ loginBtn.onclick=null; loginBtn.disabled=true; hintEl.style.color=''; hintEl.textContent=''; initLogin(); };
+    } else if(e&&(e.code==='auth/network-request-failed'||(e.message&&e.message.toLowerCase().includes('network')))){
+      hintEl.style.color='var(--coral)';
+      hintEl.textContent='⚠️ 網路連線失敗，請確認網路後點此重試';
+      loginBtn.disabled=false;
+      loginBtn.textContent='🔄 重新載入';
+      loginBtn.onclick=()=>{ loginBtn.onclick=null; loginBtn.disabled=true; hintEl.style.color=''; hintEl.textContent=''; initLogin(); };
+    } else {
+      // 修正：原本這裡只會無限期自動重試、卻從未重新啟用登入按鈕，
+      // 一旦持續失敗（例如未預期的錯誤格式），下拉選單與按鈕就會永遠停在「載入中」且無法操作。
+      // 現在改為最多自動重試 3 次，超過後改成可手動點擊的重試按鈕，確保畫面一定有路可走。
+      state._initLoginRetryCount=(state._initLoginRetryCount||0)+1;
+      hintEl.style.color='var(--coral)';
+      if(state._initLoginRetryCount<=3){
+        hintEl.textContent=`⚠️ 載入失敗：${e.message||e.code||'未知錯誤'} — 3秒後自動重試 (${state._initLoginRetryCount}/3)`;
+        setTimeout(()=>{ hintEl.style.color=''; hintEl.textContent=''; initLogin(); },3000);
+      } else {
+        hintEl.textContent='⚠️ 載入失敗：'+(e.message||e.code||'未知錯誤')+' — 請檢查網路後點此重試';
+        loginBtn.disabled=false;
+        loginBtn.textContent='🔄 重試';
+        loginBtn.onclick=()=>{ loginBtn.onclick=null; loginBtn.disabled=true; hintEl.style.color=''; hintEl.textContent=''; state._initLoginRetryCount=0; initLogin(); };
+      }
+    }
+  }
+}
+// initLogin() 已移到 signInAnonymously.then() 裡面執行
+
+// ── 報到狀態：手動開關 + 選填的排程時間 ──
+// 排程一定會讓報到「提前關閉/尚未開放」（優先於一切）；
+// 若専案管理者從未手動按過開放/暫停/停止（manualStatus 為 null），排程時間一到會自動開放，
+// 不需要有人在現場按按鈕。但只要管理者手動按過任何按鈕，之後就以手動狀態為準。
+let _lastManualStatus=null;
+function computeEffectiveCheckinStatus(manualStatus){
+  const cfg=state.settings||{};
+  const now=Date.now();
+  const hasSchedule=!!(cfg.checkinStartTime||cfg.checkinEndTime);
+  if(cfg.checkinStartTime&&now<cfg.checkinStartTime)return 'closed';
+  if(cfg.checkinEndTime&&now>cfg.checkinEndTime)return 'closed';
+  if(manualStatus==null)return hasSchedule?'open':'closed';
+  return manualStatus;
+}
+function renderCheckinStatus(){
+  if(!(state.waitingToStart&&!state.sessionKey))return;// 只有在等待頁面且尚未開始才更新按鈕
+  const status=computeEffectiveCheckinStatus(_lastManualStatus);
+  const btn=document.getElementById('btnStartGame');
+  const statusText=document.getElementById('waitStatusText');
+  const statusSub=document.getElementById('waitStatusSub');
+  const infoStatus=document.getElementById('infoStatus');
+  if(!btn||!statusText)return;
+  if(status==='open'){
+    btn.disabled=false;
+    btn.style.background='';
+    statusText.textContent='✅ 開放報到中，可以出發了！';
+    statusSub.textContent='點下方按鈕開始闖關';
+    if(infoStatus)infoStatus.textContent='✅ 開放報到中';
+  } else if(status==='paused'){
+    btn.disabled=true;
+    statusText.textContent='⏸ 暫停報到中...';
+    statusSub.textContent='請等待工作人員通知後再報到（已經在闖關的人不受影響）';
+    if(infoStatus)infoStatus.textContent='⏸ 暫停報到';
+  } else if(status==='closed'){
+    btn.disabled=true;
+    btn.style.background='rgba(200,200,200,0.5)';
+    btn.textContent='目前未開放報到';
+    statusText.textContent='⏹ 尚未開放報到';
+    const cfg=state.settings||{};
+    statusSub.textContent=(cfg.checkinStartTime&&Date.now()<cfg.checkinStartTime)?'活動尚未開始，請稍後再來':'請稍後再來，或洽工作人員';
+    if(infoStatus)infoStatus.textContent='⏹ 未開放';
+    const waitBar=document.getElementById('waitStatusBar');
+    if(waitBar)waitBar.style.background='rgba(240,112,80,0.2)';
+  } else {
+    btn.disabled=true;
+    statusText.textContent='⏳ 等待管理者開始活動...';
+    statusSub.textContent='管理者按下開始後，下方按鈕將自動解鎖';
+    if(infoStatus)infoStatus.textContent='⏳ 等待開始';
+  }
+}
+// ── 監聽活動狀態（手動開關）──
+onValue(aRef('config/activityStatus'),snap=>{
+  _lastManualStatus=snap.exists()?snap.val():null;
+  renderCheckinStatus();
+  // 開放式/持續闖關模式：報到狀態只控制「能不能新報到」，已經在玩的人不受影響，
+  // 就算専案管理者把報到關閉或暫停，正在闖關的人也能繼續玩到結束（除非被強制登出）。
+});
+// 每30秒重新檢查一次排定的開放/停止報到時間，時間到了不用等使用者重新整理就會自動反映
+setInterval(renderCheckinStatus,30000);
+
+// ── 監聽強制登出旗標 ──
+onValue(aRef('config/forceLogout'),snap=>{
+  if(!snap.exists()||!state.teamKey)return;// 尚未登入不處理
+  const fl=snap.val();
+  if(!fl||!fl.ts)return;
+  // 若旗標時間比登入時間新，代表是新的強制登出指令
+  // 注意：等待室階段 gameStartTime 尚未設定（為 0），單用它比較會讓任何歷史的
+  // forceLogout 時間戳都被誤判為「新指令」，把剛登入、還在等待室的隊伍立刻踢回登入頁。
+  // 改用登入當下就記錄的 state.loginTime 為主，gameStartTime 為備援。
+  const loginTime=state.loginTime||state.gameStartTime||0;
+  if(fl.ts>loginTime){
+    // 清除狀態，跳回登入頁
+    clearInterval(state.timerInterval);
+    clearInterval(state.countdownInterval);
+    state.teamKey=null;state.sessionKey=null;state.waitingToStart=false;
+    // 顯示提示
+    const toast=document.createElement('div');
+    toast.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:12px;color:white;font-family:inherit';
+    toast.innerHTML='<div style="font-size:48px">⏏️</div><div style="font-size:18px;font-weight:700">管理者已重置活動</div><div style="font-size:14px;opacity:0.7">即將返回登入頁面...</div>';
+    document.body.appendChild(toast);
+    try{localStorage.removeItem(playerLoginKey());}catch(e){}
+    setTimeout(()=>{
+      document.body.removeChild(toast);
+      showScreen('loginScreen');
+      document.getElementById('alreadyDoneArea').classList.add('hidden');
+      document.getElementById('guestFormArea').classList.add('hidden');
+      document.getElementById('loginChoiceArea').classList.remove('hidden');
+      signInAnonymously(auth).then(()=>initLogin()).then(()=>setupLoginChoices()).catch(()=>initLogin().then(()=>setupLoginChoices()));
+    },2500);
+  }
+});
+
+// 監聽個別 session 的強制登出
+// 監聽工作人員協助過關
+function listenStaffSkip(){
+  if(!state.sessionKey)return;
+  // 用 state._staffLastStage 記錄「已知的 Firebase currentStage 值」
+  // 玩家自己過關時也要同步更新這個值，避免誤判
+  state._staffLastStage=state.currentIdx;
+  state._staffSkipping=false;
+  onValue(aRef(`sessions/${state.sessionKey}/currentStage`),snap=>{
+    if(!snap.exists())return;
+    const newIdx=snap.val();
+    if(newIdx===null||newIdx===undefined)return;
+    // 若 Firebase 的值等於我們記錄的值，不觸發（初次載入或自己更新的）
+    if(newIdx===state._staffLastStage){return;}
+    // 若 Firebase 的值比 state.currentIdx 大，表示管理者跳關了
+    if(newIdx>state.currentIdx&&!state._staffSkipping){
+      state._staffSkipping=true;
+      state._staffLastStage=newIdx;
+      get(aRef(`sessions/${state.sessionKey}/score`)).then(scoreSnap=>{
+        const newScore=scoreSnap.val()||state.score;
+        get(aRef(`sessions/${state.sessionKey}/status`)).then(statusSnap=>{
+          const isFinished=statusSnap.val()==='finished';
+          showStaffSkipOverlay(isFinished,newIdx,newScore);
+        });
+      });
+    } else {
+      // 同步記錄（可能是其他合法更新）
+      state._staffLastStage=newIdx;
+    }
+  });
+}
+
+function showStaffSkipOverlay(isFinished,newIdx,newScore){
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px';
+  const box=document.createElement('div');
+  box.style.cssText='background:white;border-radius:20px;padding:24px;max-width:320px;width:100%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.3)';
+  const icon=document.createElement('div');icon.style.cssText='font-size:48px;margin-bottom:12px';icon.textContent=isFinished?'🏆':'⏭️';
+  const title=document.createElement('div');title.style.cssText='font-size:17px;font-weight:700;color:#1a7a40;margin-bottom:8px';
+  title.textContent=isFinished?'工作人員已協助完賽！':'工作人員協助跳過此關';
+  const msg=document.createElement('div');msg.style.cssText='font-size:13px;color:#5a8aaa;margin-bottom:18px;line-height:1.6';
+  msg.textContent=isFinished?'恭喜！請前往集合地點。':'已跳過此關卡，繼續前往下一關！';
+  const btn=document.createElement('button');
+  btn.style.cssText='width:100%;padding:13px;background:linear-gradient(90deg,#1a7a40,#3db87a);color:white;border:none;border-radius:13px;font-size:15px;font-weight:700;cursor:pointer';
+  btn.textContent='✅ 確定';
+  btn.onclick=()=>{
+    overlay.remove();
+    state._staffSkipping=false;
+    if(isFinished){state.score=newScore;showFinish();}
+    else{
+      state.currentIdx=newIdx;
+      state._staffLastStage=newIdx;// 同步更新，防止二次觸發
+      state.score=newScore;state.hintUsed=0;
+      document.getElementById('currentScore').textContent=`${state.score} 分`;
+      renderStage();
+    }
+  };
+  box.appendChild(icon);box.appendChild(title);box.appendChild(msg);box.appendChild(btn);
+  overlay.appendChild(box);document.body.appendChild(overlay);
+}
+window.showStaffSkipOverlay=showStaffSkipOverlay;
+window.listenStaffSkip=listenStaffSkip;
+
+// 監聽管理者遠端跳過GPS
+function listenSkipGPS(){
+  if(!state.sessionKey)return;
+  onValue(aRef(`sessions/${state.sessionKey}/skipGPS`),snap=>{
+    if(!snap.exists()||!snap.val())return;
+    const ts=snap.val();
+    if(state._lastSkipGPSTs===ts)return;// 防重複
+    state._lastSkipGPSTs=ts;
+    // 若目前在GPS驗證畫面，自動跳過
+    const gpsCard=document.getElementById('gpsCard');
+    if(gpsCard&&gpsCard.style.display!=='none'){
+      const t=document.createElement('div');
+      t.style.cssText='position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#1a6fa3;color:white;padding:10px 22px;border-radius:14px;font-size:13px;font-weight:700;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.25);white-space:nowrap';
+      t.textContent='📡 管理者已協助跳過GPS驗證！';
+      document.body.appendChild(t);
+      setTimeout(()=>{t.remove();},2500);
+      // 記錄 arrivedAt（重整後不再要求GPS）
+      set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/arrivedAt`),serverTimestamp());
+      set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/gpsSkippedByAdmin`),true);
+      // 進入題目
+      gpsCard.style.display='none';
+      const qCard=document.getElementById('questionCard');
+      const stage=state.stages[state.currentIdx];
+      if(stage&&stage.storyIntro){
+        showStoryIntro(stage,()=>{if(qCard)qCard.style.display='';});
+      } else {
+        if(qCard)qCard.style.display='';
+      }
+    }
+  });
+}
+window.listenSkipGPS=listenSkipGPS;
+
+function listenSessionForceLogout(){
+  if(!state.sessionKey)return;
+  onValue(aRef(`sessions/${state.sessionKey}/forceLogout`),snap=>{
+    if(snap.val()===true){
+      clearInterval(state.timerInterval);
+      clearInterval(state.countdownInterval);
+      state.teamKey=null;state.sessionKey=null;state.waitingToStart=false;
+      const toast=document.createElement('div');
+      toast.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:12px;color:white;font-family:inherit';
+      toast.innerHTML='<div style="font-size:48px">⏏️</div><div style="font-size:18px;font-weight:700">管理者已重置此隊伍</div><div style="font-size:14px;opacity:0.7">即將返回登入頁面...</div>';
+      document.body.appendChild(toast);
+      try{localStorage.removeItem(playerLoginKey());}catch(e){}
+      setTimeout(()=>{
+        document.body.removeChild(toast);
+        showScreen('loginScreen');
+        document.getElementById('alreadyDoneArea').classList.add('hidden');
+        document.getElementById('guestFormArea').classList.add('hidden');
+        document.getElementById('loginChoiceArea').classList.remove('hidden');
+        signInAnonymously(auth).then(()=>initLogin()).then(()=>setupLoginChoices()).catch(()=>initLogin().then(()=>setupLoginChoices()));
+      },2500);
+    }
+  });
+}
+
+// 廣播
+onValue(aRef('config/broadcast'),snap=>{
+  if(!snap.exists()||!state.sessionKey)return;
+  const bc=snap.val();
+  if(!bc||!bc.msg)return;
+  if(bc.id===state.lastBroadcastId)return;
+  state.lastBroadcastId=bc.id;
+  document.getElementById('broadcastMsg').textContent=bc.msg;
+  document.getElementById('broadcastTitle').textContent=bc.title||'活動通知';
+  document.getElementById('broadcastOverlay').classList.remove('hidden');
+  // 廣播必須按確定才關閉（closeBroadcast 已有按鈕）
+});
+
+// ── 登入 ──
+// 直接用已有的 session 恢復進度（不需要密碼驗證）
+async function doLoginResume(teamKey, sessKey, sessData){
+  showLoading('恢復進度中...');
+  try{
+    const cfg=state.settings;
+    const snap=await get(aRef('stages'));
+    if(!snap.exists()){hideLoading();return;}
+    const stagesMap=Object.fromEntries(
+      Object.entries(snap.val()).map(([k,v])=>{const{answerIndex,...safe}=v;return[k,{key:k,answerHash:v.answerHash||'',...safe}];})
+    );
+    state.teamKey=teamKey;
+    state.loginTime=Date.now();// 同步記錄登入時間（強制登出比較用）
+    // 個人闖關：優先用 session 內儲存的暱稱/顏色，不再依賴固定隊伍設定
+    state.teamName=sessData.teamName||'玩家';
+    state.teamColor=sessData.teamColor||'#6ee89a';
+    state.scoring=cfg.scoring||getDefaultScoring();
+    state.sessionKey=sessKey;
+    state.currentIdx=sessData.currentStage||0;
+    state.score=sessData.score||0;
+    state.gameStartTime=Date.now()-(sessData.totalSec||0)*1000;
+    state.totalSeconds=sessData.totalSec||0;
+    state.waitingToStart=false;
+    if(sessData.stageOrder&&sessData.stageOrder.length){
+      state.stages=sessData.stageOrder.map(k=>stagesMap[k]).filter(Boolean);
+    } else {
+      const arr=Object.values(snap.val()).map((v,i)=>({key:Object.keys(snap.val())[i],...v}));
+      arr.sort((a,b)=>(a.order||0)-(b.order||0));
+      state.stages=arr;
+    }
+    // Bug 防呆：stageOrder key 失效時 stages 會是空陣列，直接進遊戲會觸發 showFinish
+    if(state.stages.length===0){
+      console.warn('[doLoginResume] stageOrder keys 全部失效，放棄恢復進度');
+      set(aRef(`sessions/${sessKey}/status`),'abandoned').catch(()=>{});
+      hideLoading();
+      showScreen('loginScreen');
+      try{localStorage.removeItem(playerLoginKey());}catch(e){}
+      return;
+    }
+    hideLoading();
+    showScreen('gameScreen');
+    document.getElementById('teamDot').style.background=state.teamColor;
+    document.getElementById('displayTeamName').textContent=state.teamName;
+    if(cfg.bannerUrl){const b=document.getElementById('gameBanner');b.src=cfg.bannerUrl;b.classList.remove('hidden');}
+    startCountdown(cfg.activityEndTime);
+    listenForHelpReplies();
+    listenSessionForceLogout();
+    listenStaffSkip();// 監聽工作人員協助過關
+    listenSkipGPS();// 監聽管理者跳過GPS
+    const resumedStage=state.stages[state.currentIdx];
+    if(resumedStage&&(resumedStage.stageType==='confirm'||resumedStage.stageType==='qrcode')){
+      listenForStageConfirm(state.currentIdx);
+    }
+    renderStage();
+    // 若此關已通過GPS驗證（有 arrivedAt），直接顯示題目跳過GPS
+    const curLog=(sessData.stageLogs||{})[state.currentIdx];
+    if(curLog&&curLog.arrivedAt){
+      setTimeout(()=>{
+        const gpsCard=document.getElementById('gpsCard');
+        const qCard=document.getElementById('questionCard');
+        if(gpsCard)gpsCard.style.display='none';
+        if(qCard)qCard.style.display='';
+        // 套圖關卡：questionCard 顯示後才能啟動相機（否則videoWidth取不到正確尺寸）
+        if(resumedStage&&resumedStage.stageType==='overlay')startOverlayCamera();
+      },100);
+    }
+    const t=document.createElement('div');t.className='reply-toast';
+    t.textContent=`✅ 已自動恢復進度！目前第 ${state.currentIdx+1} 關`;
+    document.body.appendChild(t);setTimeout(()=>t.remove(),3000);
+  }catch(e){hideLoading();console.error(e);}
+}
+
+// ══ 個人化登入（LINE Login 為主，免登入為備援）══
+// LIFF_ID 由専案管理者在後台「活動設定」填入（到 LINE Developers Console 建立 LIFF 頻道取得），
+// 未填則自動隱藏LINE登入、只留免登入，不需要改程式碼
+let LIFF_ID='';
+let liffReady=false;
+async function initLiff(){
+  if(!LIFF_ID)return false;
+  try{ await liff.init({liffId:LIFF_ID}); liffReady=true; return true; }
+  catch(e){ console.warn('LIFF 初始化失敗:',e); return false; }
+}
+
+async function setupLoginChoices(){
+  const loginBtn=document.getElementById('loginBtn');
+  const guestBtn=document.getElementById('guestEntryBtn');
+  const googleBtn=document.getElementById('googleLoginBtn');
+  const fbBtn=document.getElementById('fbLoginBtn');
+  const cfg=state.settings||{};
+  // Google／Facebook 登入是否顯示，由専案管理者在活動設定裡各自開關決定（Firebase 專案本身要先啟用該登入方式一次，詳見設定頁說明）
+  if(googleBtn){googleBtn.classList.toggle('hidden',!cfg.enableGoogleLogin);googleBtn.disabled=false;}
+  if(fbBtn){fbBtn.classList.toggle('hidden',!cfg.enableFacebookLogin);fbBtn.disabled=false;}
+  const ok=await initLiff();
+  if(ok){
+    loginBtn.disabled=false;loginBtn.textContent='💬 用 LINE 登入';
+    guestBtn.disabled=false;
+    if(liff.isLoggedIn()){
+      try{
+        const profile=await liff.getProfile();
+        await resumeOrStartWithIdentity('line_'+profile.userId,profile.displayName||'玩家',null,'line');
+        return;
+      }catch(e){ console.warn('取得LINE個人資料失敗:',e); }
+    }
+  } else {
+    loginBtn.style.display='none';// 尚未設定 LIFF_ID：隱藏LINE登入，只留免登入(或Google/Facebook)
+    guestBtn.disabled=false;
+  }
+}
+
+function startLineLogin(){
+  if(!liffReady)return;
+  if(!liff.isLoggedIn()){ liff.login(); return; }// 導到LINE登入頁，完成後導回本頁
+  liff.getProfile().then(profile=>resumeOrStartWithIdentity('line_'+profile.userId,profile.displayName||'玩家',null,'line'));
+}
+window.startLineLogin=startLineLogin;
+
+// ── Google／Facebook 登入（Firebase Auth 原生支援，需先在 Firebase Console 的
+// Authentication → Sign-in method 裡啟用對應登入方式一次，這是專案層級設定，詳見交接文件）──
+async function startGoogleLogin(){
+  const errEl=document.getElementById('loginError');
+  try{
+    const result=await signInWithPopup(auth,new GoogleAuthProvider());
+    const u=result.user;
+    await resumeOrStartWithIdentity('google_'+u.uid,u.displayName||'玩家',null,'google');
+  }catch(e){
+    console.warn('Google登入失敗:',e);
+    if(e&&e.code==='auth/popup-closed-by-user')return;// 使用者自己關掉視窗，不用顯示錯誤
+    if(errEl)errEl.textContent='Google登入失敗：'+(e.message||e.code||'請改用其他方式登入');
+  }
+}
+window.startGoogleLogin=startGoogleLogin;
+
+async function startFacebookLogin(){
+  const errEl=document.getElementById('loginError');
+  try{
+    const result=await signInWithPopup(auth,new FacebookAuthProvider());
+    const u=result.user;
+    await resumeOrStartWithIdentity('fb_'+u.uid,u.displayName||'玩家',null,'facebook');
+  }catch(e){
+    console.warn('Facebook登入失敗:',e);
+    if(e&&e.code==='auth/popup-closed-by-user')return;
+    if(errEl)errEl.textContent='Facebook登入失敗：'+(e.message||e.code||'請改用其他方式登入');
+  }
+}
+window.startFacebookLogin=startFacebookLogin;
+
+function showGuestForm(){
+  document.getElementById('loginChoiceArea').classList.add('hidden');
+  document.getElementById('guestFormArea').classList.remove('hidden');
+  try{
+    const saved=localStorage.getItem('guestProfile_'+ACTIVITY_ID);
+    if(saved){const p=JSON.parse(saved);document.getElementById('guestNickname').value=p.name||'';document.getElementById('guestPhone').value=p.phone||'';}
+  }catch(e){}
+}
+window.showGuestForm=showGuestForm;
+function hideGuestForm(){
+  document.getElementById('guestFormArea').classList.add('hidden');
+  document.getElementById('loginChoiceArea').classList.remove('hidden');
+}
+window.hideGuestForm=hideGuestForm;
+
+// 裝置指紋：存在瀏覽器 localStorage 裡的一組隨機ID，同一支手機/瀏覽器每次都會拿到同一個值。
+// 不管用哪一種方式登入（LINE／Google／Facebook／免登入）都會一起記錄這組ID，
+// 目的是防止同一人换登入方式反覆闖關繞過「限一次／間隔N天」的限制（見下方 resumeOrStartWithIdentity）。
+function getOrCreateDeviceId(){
+  const key='deviceId_'+ACTIVITY_ID;
+  let id=localStorage.getItem(key);
+  if(!id){ id='d'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); localStorage.setItem(key,id); }
+  return id;
+}
+
+async function doGuestLogin(){
+  const name=document.getElementById('guestNickname').value.trim();
+  const phone=document.getElementById('guestPhone').value.trim();
+  const errEl=document.getElementById('loginError');
+  errEl.textContent='';
+  if(!name){errEl.textContent='請輸入暱稱';return;}
+  try{ localStorage.setItem('guestProfile_'+ACTIVITY_ID,JSON.stringify({name,phone})); }catch(e){}
+  await resumeOrStartWithIdentity('guest_'+getOrCreateDeviceId(),name,phone,'guest');
+}
+window.doGuestLogin=doGuestLogin;
+
+// 個人闖關核心：不管是LINE或免登入，統一走這裡判斷「恢復進行中/已完成過(視設定擋下)/全新開始」
+async function resumeOrStartWithIdentity(identityKey,displayName,phone,source){
+  const errEl=document.getElementById('loginError');
+  showLoading('驗證身分中...');
+  try{
+    state.teamKey=identityKey;
+    state.teamName=displayName||'玩家';
+    state.teamColor='#6ee89a';
+    state.phone=phone||'';
+    state.loginSource=source||'';
+    state.loginTime=Date.now();
+    state.scoring=(state.settings&&state.settings.scoring)||getDefaultScoring();
+    try{ localStorage.setItem(playerLoginKey(),JSON.stringify({identityKey,displayName:state.teamName})); }catch(e){}
+
+    // 裝置指紋：不管這次用哪種方式登入，都記錄同一個裝置ID，
+    // 讓「已完賽/限一次/間隔N天」的判斷可以額外參考「這台裝置玩過了沒」，
+    // 防止同一人换一種登入方式（例如LINE→Google）就能繞過重玩限制。
+    const deviceId=getOrCreateDeviceId();
+    state.deviceId=deviceId;
+
+    const sessSnap=await get(aRef('sessions'));
+    let playingSession=null,playingKey=null,finishedSession=null,latestFinishedAt=0;
+    if(sessSnap.exists()){
+      Object.entries(sessSnap.val()).forEach(([k,s])=>{
+        const sameIdentity=s.teamKey===identityKey;
+        const sameDevice=!!(deviceId&&s.deviceId&&s.deviceId===deviceId);
+        if(s.status==='playing'){
+          // 恢復「進行中」的關卡只認同一身分，不看裝置——避免同一台裝置換人登入時，
+          // 誤把畫面接到別人還在玩的進度（例如朋友輪流用同一支手機，各自用自己的帳號登入）
+          if(!sameIdentity)return;
+          if(!playingSession||(s.startTimeMs||0)>(playingSession.startTimeMs||0)){playingSession=s;playingKey=k;}
+        } else if(s.status==='finished'){
+          // 完賽紀錄的比對放寬成「同一身分」或「同一裝置」任一符合即算數，
+          // 才能防住「同一人换登入方式重玩」這個漏洞
+          if(!sameIdentity&&!sameDevice)return;
+          if(!finishedSession||(s.score||0)>(finishedSession.score||0))finishedSession=s;
+          // 冷卻期要看「最近一次完賽時間」，跟取最佳成績（上面那行）是分開的兩件事
+          const fAt=(typeof s.finishedAt==='number'&&s.finishedAt)||((s.startTimeMs||0)+(s.totalSec||0)*1000);
+          if(fAt>latestFinishedAt)latestFinishedAt=fAt;
+        }
+      });
+    }
+
+    if(playingSession){
+      hideLoading();
+      await doLoginResume(identityKey,playingKey,playingSession);
+      return;
+    }
+
+    // 同一身分能不能重複闖關，由専案管理者在「活動設定」決定：不限制／限一次／間隔N天才能再玩
+    // 舊資料相容：只有布林值 allowRetry 時，false 視同 once，其餘視同 unlimited
+    const retryMode=state.settings.retryMode||(state.settings.allowRetry===false?'once':'unlimited');
+    if(finishedSession&&retryMode==='once'){
+      hideLoading();
+      showScreen('loginScreen');
+      document.getElementById('loginChoiceArea').classList.add('hidden');
+      document.getElementById('guestFormArea').classList.add('hidden');
+      document.getElementById('alreadyDoneArea').classList.remove('hidden');
+      document.getElementById('alreadyDoneScore').textContent=`你的成績：${finishedSession.score||0} 分`;
+      document.getElementById('alreadyDoneNote').textContent='本活動限一人一次，感謝你的參與';
+      return;
+    }
+    if(finishedSession&&retryMode==='cooldown'&&latestFinishedAt){
+      const cooldownDays=state.settings.retryCooldownDays||1;
+      // 用「日曆天」而不是滿24小時計算，符合「當天不能玩、隔天可以」這種直覺說法
+      const stripTime=ms=>{const d=new Date(ms);return new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();};
+      const dayDiff=Math.round((stripTime(Date.now())-stripTime(latestFinishedAt))/86400000);
+      if(dayDiff<cooldownDays){
+        hideLoading();
+        showScreen('loginScreen');
+        document.getElementById('loginChoiceArea').classList.add('hidden');
+        document.getElementById('guestFormArea').classList.add('hidden');
+        document.getElementById('alreadyDoneArea').classList.remove('hidden');
+        document.getElementById('alreadyDoneScore').textContent=`你的成績：${finishedSession.score||0} 分`;
+        const nextEligibleMs=stripTime(latestFinishedAt)+cooldownDays*86400000;
+        const nd=new Date(nextEligibleMs);
+        const nextDateStr=`${nd.getFullYear()}/${nd.getMonth()+1}/${nd.getDate()}`;
+        document.getElementById('alreadyDoneNote').textContent=`需間隔 ${cooldownDays} 天才能再次挑戰，最快可於 ${nextDateStr} 再來闖關！`;
+        return;
+      }
+      // 冷卻期已過，允許開始全新一輪挑戰（走下面的全新登入流程）
+    }
+
+    // ── 全新登入：讀取關卡、決定路線、進入等待頁面 ──
+    const snap=await get(aRef('stages'));
+    if(!snap.exists()){hideLoading();if(errEl)errEl.textContent='尚未建立關卡！';return;}
+    let arr=Object.entries(snap.val()).map(([k,v])=>{const{answerIndex,...safe}=v;return{key:k,answerHash:v.answerHash||'',...safe};});
+    arr.sort((a,b)=>(a.order||0)-(b.order||0));
+    const cfg=state.settings;
+    state.stages=(cfg.routeMode||'fixed')==='random'?shuffleForTeam(arr,identityKey):arr;
+    state.waitingToStart=true;
+    state.sessionKey=null;
+    hideLoading();
+    showWaitScreen(cfg,{});
+  }catch(e){
+    hideLoading();
+    console.error('resumeOrStartWithIdentity error:',e);
+    const msg='載入失敗：'+(e.message||e.code||'未知錯誤');
+    if(errEl)errEl.textContent=msg;
+    const hintEl=document.getElementById('loadingHint');
+    if(hintEl){hintEl.style.color='var(--coral)';hintEl.textContent='⚠️ '+msg;}
+  }
+}
+
+function showWaitScreen(cfg,teamCfg){
+  initMusic();
+  playBGM('wait');
+  // 填入等待頁面資料
+  const actName=cfg.activityName||'實境解謎';
+  document.getElementById('waitActivityName').textContent=actName;
+  document.getElementById('waitTeamName').textContent=state.teamName;
+  document.getElementById('infoTeamName').textContent=state.teamName;
+  document.getElementById('infoStageCount').textContent=`${state.stages.length} 關`;
+  document.getElementById('infoHelpTimes').textContent=`${cfg.helpMaxTimes||2} 次`;
+  // LOGO
+  if(cfg.logoUrl){const img=document.getElementById('waitHeaderLogo');img.src=cfg.logoUrl;img.classList.remove('hidden');}
+  // 故事
+  const storyTitle=cfg.storyTitle||'活動故事';
+  const storyBody=cfg.storyBody||'活動故事載入中...';
+  document.getElementById('storyTitle').textContent=storyTitle;
+  document.getElementById('storyBody').textContent=storyBody;
+  if(cfg.storyImageUrl){const img=document.getElementById('storyImage');img.src=cfg.storyImageUrl;img.classList.remove('hidden');}
+  // 規則
+  const rules=cfg.rules||['準時抵達各關卡地點','每關需拍照記錄','遵守活動規則，不可作弊','有問題可使用求救功能'];
+  const rulesList=document.getElementById('rulesList');
+  rulesList.innerHTML='';
+  rules.forEach((rule,i)=>{
+    const div=document.createElement('div');div.className='rule-item';
+    div.innerHTML=`<div class="rule-num">${i+1}</div>`;
+    const span=document.createElement('span');span.textContent=rule;
+    div.appendChild(span);rulesList.appendChild(div);
+  });
+  showScreen('waitScreen');
+}
+
+// ── 開始闖關 ──
+async function startGame(){
+  // 防呆：即使按鈕畫面沒即時更新，實際建立紀錄前還是要再驗證一次目前是否真的開放報到
+  if(computeEffectiveCheckinStatus(_lastManualStatus)!=='open'){
+    renderCheckinStatus();
+    return;
+  }
+  // 清除舊的錯誤訊息
+  document.querySelectorAll('.start-err-msg').forEach(el=>el.remove());
+  // 重置按鈕文字
+  const sgBtn=document.getElementById('btnStartGame');
+  if(sgBtn)sgBtn.textContent='🚀 開始闖關！';
+  showLoading('建立隊伍紀錄...');
+  try{
+    state.currentIdx=0;state.totalAttempts=0;state.stageAttempts=0;
+    state.score=0;state.helpUsed=0;state.hintUsed=0;
+    state.gameStartTime=Date.now();state.gpsLogCount=0;state.photoFailCount=0;
+    state.waitingToStart=false;
+    // 產生唯一 session key（不用 push 避開根節點寫入限制）
+    const newSessKey=state.teamKey+'_'+Date.now();
+    state.sessionKey=newSessKey;
+    await set(aRef('sessions/'+newSessKey),{
+      teamKey:state.teamKey,teamName:state.teamName,teamColor:state.teamColor||'',
+      loginSource:state.loginSource||'',deviceId:state.deviceId||'',
+      startTime:serverTimestamp(),startTimeMs:Date.now(),currentStage:0,
+      totalStages:state.stages.length,stageOrder:state.stages.map(s=>s.key),
+      status:'playing',stageLogs:{},gpsLogs:{},score:0,helpLogs:{}
+    });
+    // 電話號碼是個人資料，另外寫到獨立節點（不放進 sessions），
+    // 因為 sessions 會被完賽排行榜/監控功能整包讀取，放在裡面等於讓其他玩家的瀏覽器也能讀到別人的電話。
+    if(state.phone){
+      set(aRef('sessionPhones/'+newSessKey),state.phone).catch(()=>{});
+    }
+    hideLoading();
+    showScreen('gameScreen');
+    document.getElementById('teamDot').style.background=state.teamColor;
+    document.getElementById('displayTeamName').textContent=state.teamName;
+    const cfg=state.settings;
+    if(cfg.bannerUrl){const b=document.getElementById('gameBanner');b.src=cfg.bannerUrl;b.classList.remove('hidden');}
+    startCountdown(cfg.activityEndTime);
+    listenForHelpReplies();
+    listenSessionForceLogout();// 監聽此 session 的個別強制登出
+    // 開始闖關換BGM
+    playBGM('game');
+    // 顯示第一關位置提示（若有設定）
+    const firstStage=state.stages[0];
+    if(firstStage&&firstStage.nextHint){
+      showFirstStageHint(firstStage.nextHint,firstStage.title||'第1關',()=>renderStage(),firstStage.imageUrl||'');
+    } else {
+      renderStage();
+    }
+  }catch(e){
+    hideLoading();
+    console.error('startGame error:',e);
+    // 清除舊的錯誤訊息
+    document.querySelectorAll('.start-err-msg').forEach(el=>el.remove());
+    // 顯示錯誤提示（可重試）
+    const errMsg=document.createElement('div');
+    errMsg.className='start-err-msg';
+    errMsg.style.cssText='background:var(--coral);color:white;padding:10px 16px;border-radius:12px;font-size:13px;text-align:center;margin:10px 0';
+    errMsg.textContent='⚠️ 連線失敗（'+e.message+'），請確認網路後再試';
+    const footer=document.getElementById('wait-footer');
+    if(footer)footer.prepend(errMsg);
+    // 讓按鈕可以重按
+    const btn=document.getElementById('btnStartGame');
+    if(btn){btn.disabled=false;btn.textContent='🚀 重試！';}
+    // 重置 session key 讓下次可以重新建立
+    state.sessionKey=null;
+    state.waitingToStart=true;
+  }
+}
+
+function shuffleForTeam(arr,teamKey){
+  // 真正隨機：每次活動不同順序，但同局遊戲重整後保持相同
+  // 用 sessionStorage 儲存本局的隨機順序
+  const storageKey=`stageOrder_${teamKey}`;
+  let savedOrder=null;
+  try{
+    const saved=sessionStorage.getItem(storageKey);
+    if(saved&&saved.trim())savedOrder=JSON.parse(saved);
+  }catch(e){}
+
+  const a=[...arr];
+  // 支援固定第一關/最後一關
+  const firstFixed=a.find(s=>s.fixedFirst);
+  const lastFixed=a.find(s=>s.fixedLast);
+  let middle=a.filter(s=>!s.fixedFirst&&!s.fixedLast);
+
+  if(savedOrder&&savedOrder.length>0){
+    // 用上次儲存的順序重排（重整後維持相同順序）
+    const byKey={};middle.forEach(s=>byKey[s.key]=s);
+    const restored=savedOrder.map(k=>byKey[k]).filter(Boolean);
+    // 若有新增的關卡，補在最後
+    const included=new Set(restored.map(s=>s.key));
+    middle.filter(s=>!included.has(s.key)).forEach(s=>restored.push(s));
+    middle=restored;
+  } else {
+    // 真正隨機洗牌（Math.random）
+    for(let i=middle.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [middle[i],middle[j]]=[middle[j],middle[i]];
+    }
+    // 儲存本局順序供重整使用
+    try{sessionStorage.setItem(storageKey,JSON.stringify(middle.map(s=>s.key)));}catch(e){}
+  }
+
+  const result=[];
+  if(firstFixed)result.push(firstFixed);
+  result.push(...middle);
+  if(lastFixed)result.push(lastFixed);
+  return result;
+}
+
+function startCountdown(endTimeMs){
+  if(!endTimeMs){document.getElementById('countdownTimer').textContent='無限制';return;}
+  // 防呆：若結束時間已是過去（例如上次活動留下的過期時間），視同未設定，不觸發倒數
+  if(endTimeMs<=Date.now()){document.getElementById('countdownTimer').textContent='無限制';console.warn('[startCountdown] activityEndTime 已過期，忽略倒數設定');return;}
+  clearInterval(state.countdownInterval);
+  state.countdownInterval=setInterval(()=>{
+    const remain=endTimeMs-Date.now();
+    if(remain<=0){document.getElementById('countdownTimer').textContent='時間到！';clearInterval(state.countdownInterval);showFinish();return;}
+    const m=Math.floor(remain/60000),s=Math.floor((remain%60000)/1000);
+    document.getElementById('countdownTimer').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  },1000);
+}
+
+function updateProgress(){
+  const total=state.stages.length,cur=state.currentIdx;
+  const showProgress=state.settings.showProgress!==false;
+  // 進度條顯示控制
+  const progressBarEl=document.getElementById('progressBar');
+  if(progressBarEl){
+    if(showProgress){
+      let html='';
+      for(let i=0;i<total;i++){let cls='prog-dot';if(i<cur)cls+=' done';else if(i===cur)cls+=' active';html+=`<div class="${cls}"></div>`;}
+      html+=`<span class="prog-label">第${cur+1}/${total}關</span>`;
+      progressBarEl.innerHTML=html;
+      progressBarEl.style.display='';
+    } else {
+      progressBarEl.style.display='none';
+    }
+  }
+  // header右上角進度數字也依開關顯示
+  const progEl=document.getElementById('displayProgress');
+  if(progEl){
+    progEl.textContent=showProgress?`${cur+1}/${total}`:'--';
+    if(progEl&&progEl.closest('div')&&progEl.closest('div').style)progEl.closest('div').style.setProperty('display',showProgress?'':'none');
+  }
+  document.getElementById('displayStageLabel').textContent=`第 ${cur+1} 關`;
+  document.getElementById('currentScore').textContent=`${state.score} 分`;
+}
+
+function renderStage(){
+  stopOverlayCamera();// 換關前先停止舊的相機串流
+  state.selectedOption=null;state.photoFile=null;state.stageAttempts=0;state.lastCorrect=false;state.photoFailCount=0;state.hintUsed=0;
+  updateProgress();
+  const stage=state.stages[state.currentIdx];
+  if(!stage){showFinish();return;}
+  clearInterval(state.timerInterval);state.stageSeconds=0;
+  state.timerInterval=setInterval(tickTimer,1000);
+  set(aRef(`sessions/${state.sessionKey}/currentStage`),state.currentIdx);
+  state._staffLastStage=state.currentIdx;// 同步更新，防止listenStaffSkip誤判
+
+  const stageType=stage.stageType||'quiz';
+  const hasGPS=!!(stage.lat&&stage.lng);
+  const hasLocation=!!(stage.locationHint);
+  const letters=['A','B','C','D'];
+  const sc=state.scoring;
+  const cfg=state.settings;
+  const maxHelp=cfg.helpMaxTimes||2;
+  const helpRemain=Math.max(0,maxHelp-state.helpUsed);
+  const maxHintPerStage=parseInt(cfg.hintAfter)||2;// 從設定讀取，預設2次
+
+  // 各類型的題目卡 HTML
+  let questionCardInner='';
+
+  if(stageType==='truefalse'){
+    questionCardInner=`
+      <div class="q-tag" style="background:#e8f4ff;color:#0d4f7a">⭕ 是非題</div>
+      <div id="stageImgWrap"></div>
+      <div class="q-title" id="stageTitle"></div>
+      <div class="q-desc" id="stageDesc"></div>
+      <div id="hintArea"></div>
+      ${stage.requirePhoto?`
+      <div onclick="triggerPhoto()" class="photo-upload-area" id="photoArea">
+        <div class="icon">📷</div><div class="text">📌 此關需拍照上傳</div>
+      </div>
+      <img id="photoPreview" class="photo-preview" alt="照片預覽"/>
+      <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handlePhoto()"/>
+      `:''}
+      <div class="action-bar">
+        <button class="action-btn btn-help" id="helpBtn" onclick="showHelp()" ${helpRemain<=0?'disabled':''}>🆘 求救（${helpRemain}次）</button>
+        <button class="action-btn btn-hint" id="hintBtn" onclick="useHint()" ${state.hintUsed>=maxHintPerStage?'disabled':''}>💡 提示（${maxHintPerStage-state.hintUsed}次）</button>
+      </div>
+      <button class="tf-btn tf-true" id="tfBtnTrue" onclick="selectTF(true)">⭕ 對（是）</button>
+      <button class="tf-btn tf-false" id="tfBtnFalse" onclick="selectTF(false)">✕ 錯（否）</button>
+      <button class="btn-submit" id="submitBtn" onclick="submitTF()" disabled>確認答案 🐚</button>`;
+
+  } else   if(stageType==='quiz'){
+    questionCardInner=`
+      <div class="q-tag">📝 解謎題目</div>
+      <div id="stageImgWrap"></div>
+      <div class="q-title" id="stageTitle"></div>
+      <div class="q-desc" id="stageDesc"></div>
+      <div id="hintArea"></div>
+      ${stage.requirePhoto?`
+      <div onclick="triggerPhoto()" class="photo-upload-area" id="photoArea">
+        <div class="icon">📷</div>
+        <div class="text">📌 此關需拍照上傳（點此拍照）</div>
+      </div>
+      <img id="photoPreview" class="photo-preview" alt="照片預覽"/>
+      <div class="photo-verify-status" id="photoVerifyStatus"></div>
+      <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handlePhoto()"/>
+      `:''}
+      <div class="action-bar">
+        <button class="action-btn btn-help" id="helpBtn" onclick="showHelp()" ${helpRemain<=0?'disabled':''}>🆘 求救（${helpRemain}次）</button>
+        <button class="action-btn btn-hint" id="hintBtn" onclick="useHint()" ${state.hintUsed>=maxHintPerStage?'disabled':''}>💡 提示（${maxHintPerStage-state.hintUsed}次）</button>
+      </div>
+      <div class="options-list" id="optionsList">
+        ${(stage.options||[]).map((opt,i)=>`<button class="option-btn" id="opt${i}" onclick="selectOpt(${i})"><div class="opt-letter">${letters[i]}</div><div id="optText${i}"></div></button>`).join('')}
+      </div>
+      <button class="btn-submit" id="submitBtn" onclick="submitAns()" disabled>確認答案 🐚</button>`;
+
+  } else if(stageType==='photo'){
+    questionCardInner=`
+      <div class="q-tag" style="background:#f0e8ff;color:#7c5cbf">📷 照片關卡</div>
+      <div id="stageImgWrap"></div>
+      <div class="q-title" id="stageTitle"></div>
+      <div class="q-desc" id="stageDesc"></div>
+      <div id="hintArea"></div>
+      <div style="background:#f0e8ff;border:1.5px solid #c0a0f0;border-radius:10px;padding:10px 13px;margin-bottom:10px;font-size:12px;color:#7c5cbf;line-height:1.6">
+        📷 請拍攝符合任務要求的照片，AI 會自動辨識是否通過
+      </div>
+      <div onclick="triggerPhoto()" class="photo-upload-area" id="photoArea" style="border-color:#c0a0f0">
+        <div class="icon">📷</div>
+        <div class="text">點擊拍照，AI 辨識通過後即可過關</div>
+      </div>
+      <img id="photoPreview" class="photo-preview" alt="照片預覽"/>
+      <div class="photo-verify-status" id="photoVerifyStatus"></div>
+      <div class="skip-photo-area hidden" id="skipPhotoArea">
+        <div class="skip-msg">已失敗 3 次，是否跳過照片驗證？（扣 ${sc.skipPhotoPenalty||20} 分）</div>
+        <div class="skip-photo-btns">
+          <button class="btn-skip" onclick="skipPhotoVerify()">跳過（扣分）</button>
+          <button class="btn-retake" onclick="retakePhoto()">繼續嘗試</button>
+        </div>
+      </div>
+      <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handlePhotoOnly()"/>
+      <div class="action-bar">
+        <button class="action-btn btn-help" id="helpBtn" onclick="showHelp()" ${helpRemain<=0?'disabled':''}>🆘 求救（${helpRemain}次）</button>
+        <button class="action-btn btn-hint" id="hintBtn" onclick="useHint()" ${state.hintUsed>=maxHintPerStage?'disabled':''}>💡 提示（${maxHintPerStage-state.hintUsed}次）</button>
+      </div>`;
+
+  } else if(stageType==='qa'){
+    questionCardInner=`
+      <div class="q-tag" style="background:#e8f8f0;color:#1a7a40">❓ 問答題</div>
+      <div id="stageImgWrap"></div>
+      <div class="q-title" id="stageTitle"></div>
+      <div class="q-desc" id="stageDesc"></div>
+      <div id="hintArea"></div>
+      ${stage.requirePhoto?`
+      <div onclick="triggerPhoto()" class="photo-upload-area" id="photoArea">
+        <div class="icon">📷</div><div class="text">📌 此關需拍照上傳</div>
+      </div>
+      <img id="photoPreview" class="photo-preview" alt="照片預覽"/>
+      <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handlePhoto()"/>
+      `:''}
+      <div style="margin-bottom:10px">
+        <label style="font-size:12px;color:var(--text-light);font-weight:500;display:block;margin-bottom:5px">請輸入你的答案</label>
+        <input type="text" id="qaAnswerInput" placeholder="在這裡輸入答案..." style="width:100%;padding:12px 14px;border:2px solid #3db87a;border-radius:12px;font-size:16px;font-family:'Noto Sans TC',sans-serif;outline:none;text-align:center"/>
+        <div id="qaAnswerError" style="color:var(--coral);font-size:12px;margin-top:5px;min-height:16px;text-align:center"></div>
+      </div>
+      <div class="action-bar">
+        <button class="action-btn btn-help" id="helpBtn" onclick="showHelp()" ${helpRemain<=0?'disabled':''}>🆘 求救（${helpRemain}次）</button>
+        <button class="action-btn btn-hint" id="hintBtn" onclick="useHint()" ${state.hintUsed>=maxHintPerStage?'disabled':''}>💡 提示（${maxHintPerStage-state.hintUsed}次）</button>
+      </div>
+      <button class="btn-submit" id="submitBtn" onclick="submitQA()">✅ 確認答案</button>`;
+
+  } else if(stageType==='password'){
+    questionCardInner=`
+      <div class="q-tag" style="background:#fff8e6;color:#b08000">🔑 關主確認關卡</div>
+      <div id="stageImgWrap"></div>
+      <div class="q-title" id="stageTitle"></div>
+      <div class="q-desc" id="stageDesc"></div>
+      <div id="hintArea"></div>
+      <div style="background:#fff8e6;border:1.5px solid #f5c842;border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:13px;color:#7a5a00;line-height:1.6">
+        🔑 完成關主交辦的任務後，向關主取得本關密碼，輸入下方欄位即可過關。
+      </div>
+      ${stage.requirePhoto?`
+      <div onclick="triggerPhoto()" class="photo-upload-area" id="photoArea">
+        <div class="icon">📷</div><div class="text">📌 需上傳現場照片</div>
+      </div>
+      <img id="photoPreview" class="photo-preview" alt="照片預覽"/>
+      <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handlePhoto()"/>
+      `:''}
+      <div style="margin-bottom:10px">
+        <label style="font-size:12px;color:var(--text-light);font-weight:500;display:block;margin-bottom:5px">輸入關主告知的密碼</label>
+        <input type="text" id="passcodeInput" placeholder="請輸入密碼..." style="width:100%;padding:12px 14px;border:2px solid #f5c842;border-radius:12px;font-size:16px;font-family:'Noto Sans TC',sans-serif;outline:none;letter-spacing:2px;text-align:center"/>
+        <div id="passcodeError" style="color:var(--coral);font-size:12px;margin-top:5px;min-height:16px;text-align:center"></div>
+      </div>
+      <div class="action-bar">
+        <button class="action-btn btn-help" id="helpBtn" onclick="showHelp()" ${helpRemain<=0?'disabled':''}>🆘 求救（${helpRemain}次）</button>
+        <button class="action-btn btn-hint" id="hintBtn" onclick="useHint()" ${state.hintUsed>=maxHintPerStage?'disabled':''}>💡 提示（${maxHintPerStage-state.hintUsed}次）</button>
+      </div>
+      <button class="btn-submit" id="submitBtn" onclick="submitPasscode()">🔑 確認密碼</button>`;
+
+  } else if(stageType==='confirm'){
+    // 類型4：關主按確認
+    questionCardInner=`
+      <div class="q-tag" style="background:#e8f8f0;color:#1a7a40">👆 關主確認關卡</div>
+      <div id="stageImgWrap"></div>
+      <div class="q-title" id="stageTitle"></div>
+      <div class="q-desc" id="stageDesc"></div>
+      <div id="hintArea"></div>
+      <div style="background:#e8f8f0;border:1.5px solid var(--green);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:13px;color:#1a7a40;line-height:1.6" id="confirmTaskDesc"></div>
+      ${stage.requirePhoto?`
+      <div onclick="triggerPhoto()" class="photo-upload-area" id="photoArea" style="border-color:#3db87a">
+        <div class="icon">📷</div><div class="text">📌 拍照供關主審核</div>
+      </div>
+      <img id="photoPreview" class="photo-preview" alt="照片預覽"/>
+      <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handlePhoto()"/>
+      `:''}
+      <div id="confirmWaiting" class="hidden" style="text-align:center;padding:20px;background:#e8f8f0;border-radius:12px;margin-bottom:12px">
+        <div style="font-size:32px;margin-bottom:8px;animation:spin 2s linear infinite;display:inline-block">⏳</div>
+        <div style="font-size:14px;font-weight:700;color:#1a7a40;margin-bottom:4px">等待關主確認中...</div>
+        <div style="font-size:12px;color:var(--text-light)">關主確認後將自動過關</div>
+      </div>
+      <div class="action-bar">
+        <button class="action-btn btn-help" id="helpBtn" onclick="showHelp()" ${helpRemain<=0?'disabled':''}>🆘 求救（${helpRemain}次）</button>
+        <button class="action-btn btn-hint" id="hintBtn" onclick="useHint()" ${state.hintUsed>=maxHintPerStage?'disabled':''}>💡 提示（${maxHintPerStage-state.hintUsed}次）</button>
+      </div>
+      <button class="btn-submit" id="confirmBtn" onclick="notifyConfirm()" style="background:linear-gradient(90deg,var(--green),#5dd490)">
+        ✋ 我已完成，通知關主確認
+      </button>`;
+
+  } else if(stageType==='overlay'){
+    const verifyType=stage.overlayVerify||'ai';
+    questionCardInner=`
+      <div class="q-tag" style="background:#fff3e0;color:#e65100">🖼️ 套圖拍照</div>
+      <div id="stageImgWrap"></div>
+      <div class="q-title" id="stageTitle"></div>
+      <div class="q-desc" id="stageDesc"></div>
+      <div id="hintArea"></div>
+      <div class="overlay-hint" id="overlayTaskDesc"></div>
+<div class="overlay-camera-wrap" id="overlayCameraWrap">
+        <video class="overlay-video" id="overlayVideo" autoplay playsinline muted></video>
+        <img id="overlayPNG" class="overlay-png hidden" alt="套圖"/>
+      </div>
+<canvas id="overlayCanvas" style="display:none"></canvas>
+      <img id="overlayResult" class="overlay-result" alt="拍照結果"/>
+      <div class="photo-verify-status" id="photoVerifyStatus"></div>
+      <div class="skip-photo-area hidden" id="skipPhotoArea">
+        <div class="skip-msg">已失敗 3 次，是否跳過？（扣 ${sc.skipPhotoPenalty||20} 分）</div>
+        <div class="skip-photo-btns">
+          <button class="btn-skip" onclick="skipPhotoVerify()">跳過（扣分）</button>
+          <button class="btn-retake" onclick="overlayRetake()">重新拍照</button>
+        </div>
+      </div>
+<div id="overlayControls">
+        <button class="overlay-shutter" id="overlayShutterBtn" onclick="overlayShoot()" title="拍照">📷</button>
+        <div class="overlay-hint">對準後按下拍照鍵</div>
+      </div>
+      <button class="overlay-retry hidden" id="overlayRetryBtn" onclick="overlayRetake()">🔄 重新拍照</button>
+      <div class="action-bar">
+        <button class="action-btn btn-help" id="helpBtn" onclick="showHelp()" ${helpRemain<=0?'disabled':''}>🆘 求救（${helpRemain}次）</button>
+        <button class="action-btn btn-hint" id="hintBtn" onclick="useHint()" ${state.hintUsed>=maxHintPerStage?'disabled':''}>💡 提示（${maxHintPerStage-state.hintUsed}次）</button>
+      </div>`;
+
+  } else if(stageType==='qrcode'){
+    // 類型5：QR Code 掃描
+    questionCardInner=`
+      <div class="q-tag" style="background:#f0e8ff;color:#5b3f9e">📱 QR Code 關卡</div>
+      <div id="stageImgWrap"></div>
+      <div class="q-title" id="stageTitle"></div>
+      <div class="q-desc" id="stageDesc"></div>
+      <div id="hintArea"></div>
+      <div style="background:#f0e8ff;border:1.5px solid var(--purple);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:13px;color:#5b3f9e;line-height:1.6" id="qrTaskDesc"></div>
+      ${stage.requirePhoto?`
+      <div onclick="triggerPhoto()" class="photo-upload-area" id="photoArea" style="border-color:#9b59b6">
+        <div class="icon">📷</div><div class="text">📌 需上傳現場照片</div>
+      </div>
+      <img id="photoPreview" class="photo-preview" alt="照片預覽"/>
+      <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handlePhoto()"/>
+      `:''}
+<div style="text-align:center;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">📱 出示此 QR Code 給關主掃描</div>
+        <div id="qrCodeContainer" style="display:inline-block;padding:12px;background:white;border-radius:12px;border:2px solid #c0a0f0;box-shadow:0 2px 12px rgba(124,92,191,0.2)"></div>
+        <div style="font-size:11px;color:var(--text-light);margin-top:8px">關主掃描後點擊確認，即可自動過關</div>
+      </div>
+      <div id="qrWaiting" class="hidden" style="text-align:center;padding:16px;background:#f0e8ff;border-radius:12px;margin-bottom:12px">
+        <div style="font-size:28px;margin-bottom:6px;animation:spin 2s linear infinite;display:inline-block">⏳</div>
+        <div style="font-size:14px;font-weight:700;color:#5b3f9e">等待關主掃描確認中...</div>
+      </div>
+      <div class="action-bar">
+        <button class="action-btn btn-help" id="helpBtn" onclick="showHelp()" ${helpRemain<=0?'disabled':''}>🆘 求救（${helpRemain}次）</button>
+        <button class="action-btn btn-hint" id="hintBtn" onclick="useHint()" ${state.hintUsed>=maxHintPerStage?'disabled':''}>💡 提示（${maxHintPerStage-state.hintUsed}次）</button>
+      </div>`;
+  }
+
+  const content=document.getElementById('gameContent');
+  content.innerHTML=`
+    ${hasLocation?`<div class="location-card"><div class="loc-title">📍 前往地點</div><div class="loc-text" id="locText"></div></div>`:''}
+    ${hasGPS?`<div class="state-card gps-card" id="gpsCard">
+      <div class="gps-icon">📍</div>
+      <div class="gps-title">抵達後驗證位置</div>
+      <div class="gps-desc" id="gpsHint"></div>
+      <button class="btn-gps" id="gpsBtn" onclick="checkGPS()">📡 驗證我的位置</button>
+      <div class="gps-status" id="gpsStatus"></div>
+      <button onclick="skipGPSVerify()" style="margin-top:8px;width:100%;padding:9px;background:#f0f4ff;color:#1a6fa3;border:1.5px dashed #9ac4e8;border-radius:12px;font-size:12px;font-weight:700;cursor:pointer">⏩ 跳過GPS驗證（扣 ${state.scoring.skipGPSPenalty!=null?state.scoring.skipGPSPenalty:20} 分）</button>
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:center">
+        <button class="action-btn btn-help" id="gpsHelpBtn" onclick="showHelp()" style="max-width:180px" ${helpRemain<=0?'disabled':''}>🆘 求救（${helpRemain}次）</button>
+        <button class="action-btn btn-hint" id="gpsHintBtn" onclick="useHint()" style="max-width:180px" ${state.hintUsed>=maxHintPerStage?'disabled':''}>💡 提示（${maxHintPerStage-state.hintUsed}次）</button>
+      </div>
+    </div>`:''}
+    <div class="state-card" id="questionCard" ${hasGPS?'style="display:none"':''}>
+      ${questionCardInner}
+    </div>`;
+
+  // 填入文字內容
+  if(hasLocation)document.getElementById('locText').textContent=stage.locationHint;
+  if(hasGPS)document.getElementById('gpsHint').textContent=stage.locationHint||'請前往指定地點，按下按鈕驗證位置。';
+  const titleEl=document.getElementById('stageTitle');if(titleEl)titleEl.textContent=stage.title||'';
+  const descEl=document.getElementById('stageDesc');if(descEl)descEl.textContent=stage.description||'';
+  if(stageType==='quiz')(stage.options||[]).forEach((opt,i)=>{const el=document.getElementById('optText'+i);if(el)el.textContent=opt;});
+  // 問題五：沒有提示時隱藏提示按鈕
+  const hasHints=!!(stage.hints&&(stage.hints.h1||stage.hints.h2));
+  const hintBtns=document.querySelectorAll('#hintBtn,#gpsHintBtn');
+  hintBtns.forEach(btn=>{
+    if(!hasHints){
+      btn.disabled=true;
+      btn.title='此關卡無提示';
+      btn.style.opacity='0.4';
+    }
+  });
+
+  // 無 GPS 關卡：直接顯示開場故事
+  if(!hasGPS && stage.storyIntro){
+    // 延遲一點讓畫面先渲染
+    setTimeout(()=>{
+      showStoryIntro(stage,()=>{});// 關閉後直接繼續（題目已顯示）
+    },300);
+  }
+
+  // 套圖拍照：填入任務說明 + 載入 PNG（相機延後到 questionCard 顯示時才啟動）
+  if(stageType==='overlay'){
+    const oDesc=document.getElementById('overlayTaskDesc');
+    if(oDesc)oDesc.textContent=stage.overlayTask||'對準目標後按下拍照';
+    if(stage.overlayImageUrl){
+      const png=document.getElementById('overlayPNG');
+      if(png){png.src=stage.overlayImageUrl;png.classList.remove('hidden');}
+    }
+    // 重要：若此關有GPS，questionCard 此時是 display:none，
+    // 相機在隱藏容器內啟動會導致 videoWidth 取不到正確尺寸（拍照按鈕永遠卡住）
+    // 所以只有「沒有GPS」時才立即啟動；有GPS則等 arriveAtStage() 顯示後才啟動
+    if(!hasGPS){
+      startOverlayCamera();
+    }
+  } else if(stage.imageUrl){
+    // 其他類型：填入題目圖（避免重複，原本在最後面有處理，這裡不重複）
+  }
+  if(stage.imageUrl){const img=document.createElement('img');img.className='q-image';img.alt='關卡圖片';img.src=stage.imageUrl;const wrap=document.getElementById('stageImgWrap');if(wrap)wrap.appendChild(img);}
+  // 填入新類型文字（XSS安全）
+  const confirmTaskEl=document.getElementById('confirmTaskDesc');
+  if(confirmTaskEl)confirmTaskEl.textContent=stage.confirmTask||'';
+  const qrTaskEl=document.getElementById('qrTaskDesc');
+  if(qrTaskEl)qrTaskEl.textContent=stage.qrTask||'';
+  // QR Code 產生：進入關卡時立即寫入 waitingConfirm + token
+  if(stageType==='qrcode'){
+    const token=Math.random().toString(36).substring(2,10).toUpperCase();
+    state.qrToken=token;
+    set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/waitingConfirm`),true);
+    set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/waitSince`),Date.now());
+    set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/qrToken`),token);
+    set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/stageName`),(state.stages[state.currentIdx]&&state.stages[state.currentIdx].title||''));
+    setTimeout(()=>generateQRCode(token),300);
+  }
+  // 關主確認：監聽Firebase確認狀態
+  if(stageType==='confirm'||stageType==='qrcode'){
+    listenForStageConfirm(state.currentIdx);
+  }
+}
+
+// 跳過 GPS 驗證（扣分）
+async function skipGPSVerify(){
+  const penalty=state.scoring.skipGPSPenalty!=null?state.scoring.skipGPSPenalty:20;
+  if(!confirm(`確定要跳過GPS驗證嗎？\n將扣除 ${penalty} 分`))return;
+  state.score=Math.max(0,state.score-penalty);
+  set(aRef(`sessions/${state.sessionKey}/score`),state.score);
+  document.getElementById('currentScore').textContent=`${state.score} 分`;
+  // 記錄跳過GPS
+  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/gpsSkipped`),true);
+  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/arrivedAt`),serverTimestamp());
+  // 直接進入關卡（與 arriveAtStage 相同流程）
+  const gpsCard=document.getElementById('gpsCard');
+  const qCard=document.getElementById('questionCard');
+  if(gpsCard)gpsCard.style.display='none';
+  const stage=state.stages[state.currentIdx];
+  if(stage&&stage.storyIntro){
+    showStoryIntro(stage,()=>{if(qCard)qCard.style.display='';});
+  } else {
+    if(qCard)qCard.style.display='';
+  }
+}
+window.skipGPSVerify=skipGPSVerify;
+
+function checkGPS(){
+  const stage=state.stages[state.currentIdx];
+  const statusEl=document.getElementById('gpsStatus');
+  const btn=document.getElementById('gpsBtn');
+  btn.disabled=true;statusEl.textContent='📡 正在取得GPS位置...';
+  playBGM('gps');// GPS驗證中音效
+  if(!navigator.geolocation){
+    if((state.settings.gpsFail||'block')==='allow'){statusEl.textContent='⚠️ 不支援GPS，直接進入';setTimeout(arriveAtStage,800);}
+    else{statusEl.textContent='⚠️ 不支援GPS，請聯絡工作人員';btn.disabled=false;}
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      const dist=calcDist(pos.coords.latitude,pos.coords.longitude,stage.lat,stage.lng);
+      const passed=dist<=(stage.radius||100);
+      recordGPSLog(pos.coords.latitude,pos.coords.longitude,dist,passed,state.currentIdx);
+      if(passed){
+        statusEl.textContent='✅ 位置驗證成功！';
+        setTimeout(arriveAtStage,800);
+      } else {
+        statusEl.innerHTML=`⚠️ 距離目標還有約 <b>${Math.round(dist)} 公尺</b>，請再靠近！<br><span style="font-size:11px;color:var(--text-light)">如果無法靠近，可使用下方「🆘 求救」按鈕</span>`;
+        btn.disabled=false;
+      }
+    },
+    err=>{
+      const msgs={1:'⚠️ 請允許位置權限後重試',2:'⚠️ GPS訊號不佳，請到空曠處',3:'⚠️ 定位逾時，請重試'};
+      statusEl.textContent=msgs[err.code]||'⚠️ 定位失敗';
+      recordGPSLog(null,null,null,false,state.currentIdx);
+      if((state.settings.gpsFail||'block')==='allow'){setTimeout(()=>{statusEl.textContent+=' (已自動跳過)';setTimeout(arriveAtStage,1000);},1500);}
+      else btn.disabled=false;
+    },
+    {enableHighAccuracy:true,timeout:15000,maximumAge:0}
+  );
+}
+function calcDist(lat1,lng1,lat2,lng2){const R=6371000,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
+function arriveAtStage(){
+  playBGM('game');// 到達後回到闖關BGM（停止GPS音效）
+  const g=document.getElementById('gpsCard'),q=document.getElementById('questionCard');
+  if(g)g.style.display='none';
+  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/arrivedAt`),serverTimestamp());
+  const stage=state.stages[state.currentIdx];
+  const startCameraIfNeeded=()=>{
+    if(stage&&(stage.stageType||'quiz')==='overlay')startOverlayCamera();
+  };
+  // 有開場故事 → 先顯示再展開題目
+  if(stage&&stage.storyIntro){
+    showStoryIntro(stage,()=>{if(q)q.style.display='';startCameraIfNeeded();});
+  } else {
+    if(q)q.style.display='';
+    startCameraIfNeeded();
+  }
+}
+async function recordGPSLog(lat,lng,dist,passed,stageIdx){
+  state.gpsLogCount++;
+  if(state.gpsLogCount>10){const snap=await get(aRef(`sessions/${state.sessionKey}/gpsLogs`));const logs=snap.val()||{};const keys=Object.keys(logs).sort((a,b)=>logs[a].ts-logs[b].ts);if(keys.length>=10)set(aRef(`sessions/${state.sessionKey}/gpsLogs/${keys[0]}`),null);}
+  push(aRef(`sessions/${state.sessionKey}/gpsLogs`)).then(r=>set(r,{lat,lng,dist,passed,stageIdx,ts:Date.now()}));
+}
+
+function useHint(){
+  const stage=state.stages[state.currentIdx];
+  const maxHint=parseInt(state.settings.hintAfter)||2;// 從設定讀取
+  if(state.hintUsed>=maxHint){
+    // 已用完提示次數
+    const hintArea=document.getElementById('hintArea');
+    if(hintArea&&!hintArea.querySelector('.hint-used-up')){
+      const msg=document.createElement('div');msg.className='hint-box hint-used-up';
+      msg.textContent='💡 提示次數已用完';hintArea.appendChild(msg);
+    }
+    return;
+  }
+  const hints=[(stage.hints&&stage.hints.h1)||(''),(stage.hints&&stage.hints.h2)||('')].filter(Boolean);
+  const hint=hints[state.hintUsed];
+  if(!hint){
+    // 此關沒有設定提示，顯示在畫面上
+    const hintArea=document.getElementById('hintArea');
+    if(hintArea&&!hintArea.querySelector('.hint-none')){
+      const msg=document.createElement('div');msg.className='hint-box hint-none';
+      const label=document.createElement('div');label.className='hint-label';label.textContent='💡 系統提示';
+      const text=document.createElement('div');text.textContent='此關卡尚未設定提示，請繼續思考或使用求救功能！';
+      msg.appendChild(label);msg.appendChild(text);hintArea.appendChild(msg);
+    }
+    return;
+  }
+  state.hintUsed++;
+  const penalty=state.scoring.hintPenalty||5;
+  state.score=Math.max(0,state.score-penalty);
+  set(aRef(`sessions/${state.sessionKey}/score`),state.score);
+  document.getElementById('currentScore').textContent=`${state.score} 分`;
+  const hintArea=document.getElementById('hintArea');
+  const box=document.createElement('div');box.className='hint-box';
+  const label=document.createElement('div');label.className='hint-label';label.textContent=`💡 提示 ${state.hintUsed}（扣${penalty}分）`;
+  const text=document.createElement('div');text.textContent=hint;
+  box.appendChild(label);box.appendChild(text);hintArea.appendChild(box);
+  const btn=document.getElementById('hintBtn');
+  if(btn){const remain=maxHint-state.hintUsed;btn.textContent=`💡 提示（${remain}次）`;if(remain<=0)btn.disabled=true;}
+}
+
+// ── 關主確認：玩家通知關主 ──
+async function notifyConfirm(){
+  const stage=state.stages[state.currentIdx];
+  const btn=document.getElementById('confirmBtn');
+  if(btn)btn.disabled=true;
+  // 上傳照片（如有）
+  if(state.photoFile){
+    const path=`photos/${state.sessionKey}/${state.currentIdx}_${Date.now()}`;
+    try{const snap=await uploadBytes(aStorageRef(path),state.photoFile);const url=await getDownloadURL(snap.ref);await set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/photoUrl`),url);}catch(e){console.warn(e);}
+  }
+  // 寫入等待確認狀態
+  await set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/waitingConfirm`),true);
+  await set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/waitSince`),Date.now());
+  await set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/stageName`),stage.title||'');
+  // 顯示等待動畫
+  if(btn)btn.style.display='none';
+  const waiting=document.getElementById('confirmWaiting');
+  if(waiting)waiting.classList.remove('hidden');
+  const toast=document.createElement('div');toast.className='reply-toast';
+  toast.textContent='✅ 已通知關主！等待確認中...';
+  document.body.appendChild(toast);setTimeout(()=>toast.remove(),3000);
+}
+
+// ── QR Code 產生 ──
+function generateQRCode(token){
+  const container=document.getElementById('qrCodeContainer');
+  if(!container)return;
+  container.innerHTML='';
+  // QR Code 內容 = 確認頁網址（含 token 防護，只有持有 token 的關主才能確認）
+  const baseUrl=window.location.origin+window.location.pathname.replace('player.html','');
+  const t=token||state.qrToken||'';
+  const stageKey=(state.stages[state.currentIdx]&&state.stages[state.currentIdx].key||'');
+  const confirmUrl=`${baseUrl}confirm.html?a=${ACTIVITY_ID}&sess=${state.sessionKey}&stage=${state.currentIdx}&team=${encodeURIComponent(state.teamName)}&token=${t}&stageKey=${stageKey}`;
+  try{
+    new QRCode(container,{
+      text:confirmUrl,width:160,height:160,
+      colorDark:'#1a3a5c',colorLight:'#ffffff',
+      correctLevel:QRCode.CorrectLevel.M
+    });
+  }catch(e){
+    // 若 QRCode 套件未載入，顯示連結
+    container.style.cssText='padding:12px;font-size:11px;word-break:break-all;max-width:200px;color:var(--primary)';
+    container.textContent=confirmUrl;
+    console.warn('QRCode套件未載入:',e);
+  }
+}
+
+// ── 監聽關主確認狀態（confirm 和 qrcode 共用）──
+function listenForStageConfirm(stageIdx){
+  const logRef=aRef(`sessions/${state.sessionKey}/stageLogs/${stageIdx}`);
+  const unsubscribe=onValue(logRef,snap=>{
+    if(!snap.exists())return;
+    const log=snap.val();
+    // 確認通過
+    if(log.confirmed){
+      unsubscribe(); // 取消監聽
+      handleConfirmPass(stageIdx);
+    }
+    // 被退回
+    if(log.rejected){
+      unsubscribe();
+      handleConfirmReject(stageIdx);
+    }
+  });
+}
+
+async function handleConfirmPass(stageIdx){
+  const sc=state.scoring;
+  const base=sc.baseScore||100;
+  const timeBonus=Math.max(0,Math.round((sc.timeBonus||50)*(1-state.stageSeconds/300)));
+  const scoreChange=Math.max(0,base+timeBonus);
+  state.score+=scoreChange;
+  set(aRef(`sessions/${state.sessionKey}/score`),state.score);
+  document.getElementById('currentScore').textContent=`${state.score} 分`;
+  state.lastCorrect=true;
+  document.getElementById('feedbackIcon').textContent='✅';
+  document.getElementById('feedbackTitle').textContent='關主確認通過！';
+  document.getElementById('feedbackTitle').className='feedback-title correct';
+  document.getElementById('feedbackMsg').textContent='太棒了！關主已確認，準備前往下一關！';
+  document.getElementById('feedbackScore').textContent=`+${scoreChange}分`;
+  document.getElementById('feedbackBtn').textContent='前往下一關 →';
+  document.getElementById('feedbackBtn').className='btn-next';
+  document.getElementById('feedbackOverlay').classList.remove('hidden');
+  // 過關故事由 closeFeedback 統一處理
+}
+
+function handleConfirmReject(stageIdx){
+  // 被退回，重置等待狀態
+  const waiting=document.getElementById('confirmWaiting');
+  const qrWaiting=document.getElementById('qrWaiting');
+  if(waiting)waiting.classList.add('hidden');
+  if(qrWaiting)qrWaiting.classList.add('hidden');
+  const confirmBtn=document.getElementById('confirmBtn');
+  if(confirmBtn){confirmBtn.style.display='';confirmBtn.disabled=false;}
+  // 提示
+  const toast=document.createElement('div');toast.className='reply-toast';
+  toast.style.background='var(--coral)';
+  toast.textContent='❌ 關主退回：請重新完成任務後再通知';
+  document.body.appendChild(toast);setTimeout(()=>toast.remove(),5000);
+  // 重置Firebase狀態
+  set(aRef(`sessions/${state.sessionKey}/stageLogs/${stageIdx}/rejected`),false);
+  set(aRef(`sessions/${state.sessionKey}/stageLogs/${stageIdx}/waitingConfirm`),false);
+}
+
+// ── 音樂系統 ──
+const MUSIC_BASE='https://turtlekfc.github.io/Real-world-puzzle/music/';
+const musicFiles={
+  wait: MUSIC_BASE+'wait.mp3',
+  game: MUSIC_BASE+'game.mp3',
+  gps:  MUSIC_BASE+'gps.mp3',
+  correct: MUSIC_BASE+'correct.mp3',
+  wrong:   MUSIC_BASE+'wrong.mp3',
+  finish:  MUSIC_BASE+'finish.mp3',
+};
+
+let _bgm=null;       // 背景音樂（循環）
+let _sfxTimeout=null;// 音效計時器
+let _musicMuted=false;
+let _musicVolume=0.4;
+let _bgmPaused=false; // 彈窗期間暫停
+
+function initMusic(){
+  // 第一次用戶互動後才能播放（瀏覽器限制）
+  const ctrl=document.getElementById('musicControl');
+  if(ctrl)ctrl.style.display='flex';
+  // 同步滑桿值
+  const slider=document.getElementById('musicVolSlider');
+  if(slider){slider.value=Math.round(_musicVolume*100);}
+  const label=document.getElementById('musicVolLabel');
+  if(label)label.textContent=Math.round(_musicVolume*100)+'%';
+}
+
+function playBGM(track, fadeIn=true){
+  if(!musicFiles[track])return;
+  // 若已在播相同曲目，不重複
+  if(_bgm&&!_bgm.paused&&_bgm._track===track)return;
+  stopBGM(false);
+  _bgm=new Audio(musicFiles[track]);
+  _bgm._track=track;
+  _bgm.loop=true;
+  _bgm.volume=fadeIn?0:_musicMuted?0:_musicVolume;
+  _bgm.play().catch(()=>{});
+  if(fadeIn&&!_musicMuted){
+    let vol=0;
+    const fade=setInterval(()=>{
+      vol=Math.min(vol+0.05,_musicVolume);
+      if(_bgm)_bgm.volume=vol;
+      if(vol>=_musicVolume)clearInterval(fade);
+    },80);
+  }
+  const btn=document.getElementById('musicBtn');
+  if(btn)btn.textContent=_musicMuted?'🔇':'🎵';
+}
+
+function stopBGM(fade=true){
+  if(!_bgm)return;
+  if(fade){
+    const bg=_bgm;_bgm=null;
+    let vol=bg.volume;
+    const fadeOut=setInterval(()=>{
+      vol=Math.max(vol-0.08,0);
+      bg.volume=vol;
+      if(vol<=0){clearInterval(fadeOut);bg.pause();}
+    },60);
+  } else {
+    _bgm.pause();_bgm=null;
+  }
+}
+
+function pauseBGM(){
+  if(_bgm&&!_bgm.paused){_bgm.pause();_bgmPaused=true;}
+}
+
+function resumeBGM(){
+  if(_bgm&&_bgmPaused&&_bgm.paused){_bgm.play().catch(()=>{});_bgmPaused=false;}
+}
+
+function playSFX(type){
+  if(_musicMuted||!musicFiles[type])return;
+  const sfx=new Audio(musicFiles[type]);
+  sfx.volume=Math.min(_musicVolume*1.5,1);
+  sfx.play().catch(()=>{});
+}
+
+function setMusicVolume(val){
+  _musicVolume=val/100;
+  if(_bgm)_bgm.volume=_musicMuted?0:_musicVolume;
+  const label=document.getElementById('musicVolLabel');
+  if(label)label.textContent=_musicMuted?'靜音':val+'%';
+  if(_musicMuted){_musicMuted=false;const btn=document.getElementById('musicBtn');if(btn)btn.textContent='🎵';}
+}
+window.setMusicVolume=setMusicVolume;
+
+// toggleMusicMenu 已改為音量列直接顯示，此函數保留相容性
+function toggleMusicMenu(){ toggleMute(); }
+window.toggleMusicMenu=toggleMusicMenu;
+
+function toggleMute(){
+  _musicMuted=!_musicMuted;
+  if(_bgm)_bgm.volume=_musicMuted?0:_musicVolume;
+  const btn=document.getElementById('musicBtn');
+  if(btn)btn.textContent=_musicMuted?'🔇':'🎵';
+  // 靜音後顯示提示
+  const label=document.getElementById('musicVolLabel');
+  if(label)label.textContent=_musicMuted?'靜音':Math.round(_musicVolume*100)+'%';
+}
+window.toggleMute=toggleMute;
+
+// ── 套圖相機系統 ──
+let _overlayStream = null;
+
+async function startOverlayCamera(){
+  const video = document.getElementById('overlayVideo');
+  const shutterBtn = document.getElementById('overlayShutterBtn');
+  if(!video){showDebugError('startOverlayCamera: 找不到 overlayVideo 元素');return;}
+  // 檢查瀏覽器是否支援相機API（必須是 https 或 localhost）
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    showDebugError('此瀏覽器不支援相機功能，或網站非HTTPS連線');
+    const wrap=document.getElementById('overlayCameraWrap');
+    if(wrap)wrap.innerHTML='<div style="padding:20px;text-align:center;color:white;font-size:13px">⚠️ 此瀏覽器不支援相機功能<br>請確認網址是 https:// 開頭</div>';
+    return;
+  }
+  // 相機啟動中，先暫時停用拍照按鈕
+  if(shutterBtn){shutterBtn.disabled=true;shutterBtn.title='相機啟動中...';}
+  try{
+    _overlayStream = await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:'environment', width:{ideal:1280}, height:{ideal:720}},
+      audio:false
+    });
+    video.srcObject = _overlayStream;
+    // Android/iOS 需要明確呼叫 play()
+    video.play().catch(()=>{});
+    // 啟用按鈕的函式（去重複保護）
+    let _btnEnabled=false;
+    const enableShutter=()=>{
+      if(_btnEnabled)return;
+      _btnEnabled=true;
+      if(shutterBtn){shutterBtn.disabled=false;shutterBtn.title='拍照';}
+      clearInterval(_readyPoll);
+    };
+    // 監聽多個事件：canplay / loadeddata / playing（跨瀏覽器相容）
+    ['canplay','loadeddata','playing'].forEach(evt=>{
+      video.addEventListener(evt,enableShutter,{once:true});
+    });
+    // Polling：每200ms確認 readyState>=2（Android Chrome 有時事件不觸發）
+    const _readyPoll=setInterval(()=>{
+      if(video.readyState>=2)enableShutter();
+    },200);
+    // 硬性保底：8秒後強制啟用，避免永遠卡住
+    setTimeout(()=>{clearInterval(_readyPoll);enableShutter();},8000);
+  }catch(e){
+    console.warn('相機啟動失敗:',e);
+    showDebugError('相機啟動失敗: '+e.name+' - '+e.message);
+    if(shutterBtn)shutterBtn.disabled=false;
+    const wrap=document.getElementById('overlayCameraWrap');
+    let msg='⚠️ 無法啟動相機<br>請確認已允許相機權限';
+    if(e.name==='NotAllowedError')msg='⚠️ 相機權限被拒絕<br>請到瀏覽器設定允許相機權限後重新整理';
+    else if(e.name==='NotFoundError')msg='⚠️ 找不到相機裝置';
+    else if(e.name==='NotReadableError')msg='⚠️ 相機正被其他App使用中';
+    if(wrap)wrap.innerHTML='<div style="padding:20px;text-align:center;color:white;font-size:13px">'+msg+'</div>';
+  }
+}
+
+function stopOverlayCamera(){
+  if(_overlayStream){_overlayStream.getTracks().forEach(t=>t.stop());_overlayStream=null;}
+}
+
+function overlayShoot(){
+  const video=document.getElementById('overlayVideo');
+  const canvas=document.getElementById('overlayCanvas');
+  const png=document.getElementById('overlayPNG');
+  const result=document.getElementById('overlayResult');
+  const btn=document.getElementById('overlayShutterBtn');
+  if(!video||!canvas){showDebugError('overlayShoot: video或canvas元素不存在');return;}
+  // 相機尚未就緒：顯示友善提示，等畫面就緒後自動重試（不顯示紅色錯誤）
+  if(video.readyState<2||video.videoWidth===0){
+    // 顯示「啟動中」提示取代紅色錯誤條
+    const existingToast=document.getElementById('_camWaitToast');
+    if(!existingToast){
+      const t=document.createElement('div');
+      t.id='_camWaitToast';
+      t.className='reply-toast';
+      t.style.cssText='position:fixed;top:72px;left:50%;transform:translateX(-50%);background:#1a6fa3;color:white;padding:12px 20px;border-radius:14px;font-size:14px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.3);text-align:center;font-family:inherit';
+      t.textContent='📷 相機啟動中，請稍候...';
+      document.body.appendChild(t);
+    }
+    // 監聽多個事件，就緒後移除提示並自動拍照（防重複旗標，避免三個事件都觸發時重複拍照）
+    let _autoShootFired=false;
+    const autoShoot=()=>{
+      if(_autoShootFired)return;
+      _autoShootFired=true;
+      ['canplay','loadeddata','playing'].forEach(evt=>video.removeEventListener(evt,autoShoot));
+      const t=document.getElementById('_camWaitToast');
+      if(t)t.remove();
+      // 確保真的有畫面才拍
+      if(video.videoWidth>0)overlayShoot();
+      else setTimeout(overlayShoot,300);
+    };
+    ['canplay','loadeddata','playing'].forEach(evt=>video.addEventListener(evt,autoShoot,{once:true}));
+    // 保底：2秒後強制嘗試
+    setTimeout(()=>{
+      if(_autoShootFired)return;// 已自動拍過，跳過
+      _autoShootFired=true;
+      ['canplay','loadeddata','playing'].forEach(evt=>video.removeEventListener(evt,autoShoot));
+      const t=document.getElementById('_camWaitToast');if(t)t.remove();
+      if(video.readyState>=1&&video.videoWidth>0)overlayShoot();
+      else{
+        const wrap=document.getElementById('overlayCameraWrap');
+        if(wrap&&!document.getElementById('_camErrMsg')){
+          const err=document.createElement('div');
+          err.id='_camErrMsg';
+          err.style.cssText='padding:12px;text-align:center;color:#c03020;font-size:13px;line-height:1.6';
+          err.innerHTML='⚠️ 相機啟動較慢<br>請重新整理頁面，或換用系統相機App後上傳';
+          wrap.parentNode.insertBefore(err,wrap.nextSibling);
+        }
+      }
+    },2000);
+    return;
+  }
+  // 拍照：只拍相機畫面本身（套圖PNG只是輔助對準的視覺疊層，不燒進照片，避免Firebase Storage跨域問題）
+  // 縮圖：直接以壓縮後的尺寸繪製，減少Firebase Storage儲存/流量用量（跟其他拍照/上傳入口的compressImage()邏輯一致，長邊上限1280px）
+  {
+    const _maxDim=1280;
+    let _w=video.videoWidth,_h=video.videoHeight;
+    if(_w>_maxDim||_h>_maxDim){
+      if(_w>=_h){_h=Math.round(_h*_maxDim/_w);_w=_maxDim;}
+      else{_w=Math.round(_w*_maxDim/_h);_h=_maxDim;}
+    }
+    canvas.width=_w;canvas.height=_h;
+  }
+  const ctx=canvas.getContext('2d');
+  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+  function doToBlob(){
+    try{
+      canvas.toBlob(handleBlob,'image/jpeg',0.8);
+    }catch(e){
+      showDebugError('canvas.toBlob 失敗: '+e.message);
+      alert('拍照失敗，請重新整理頁面後再試');
+    }
+  }
+  function handleBlob(blob){
+      if(!blob){
+        showDebugError('canvas.toBlob 回傳null');
+        alert('拍照失敗，請重試');
+        return;
+      }
+    state.photoFile=new File([blob],'overlay_photo.jpg',{type:'image/jpeg'});
+    const url=URL.createObjectURL(blob);
+    if(result){result.src=url;result.style.display='block';}
+    // 隱藏相機，顯示結果
+    const wrap=document.getElementById('overlayCameraWrap');
+    if(wrap)wrap.style.display='none';
+    if(btn)btn.style.display='none';
+    const retryBtn=document.getElementById('overlayRetryBtn');
+    if(retryBtn)retryBtn.classList.remove('hidden');
+    stopOverlayCamera();
+    // 拍照完成後：顯示預覽，並根據驗證方式顯示確認按鈕
+    const stage=state.stages[state.currentIdx];
+    const verifyType=stage.overlayVerify||'ai';
+    const statusEl=document.getElementById('photoVerifyStatus');
+    if(statusEl){statusEl.style.display='none';statusEl.textContent='';}
+    // 顯示「送出辨識」或「通知關主」按鈕
+    let submitOverlayBtn=document.getElementById('submitOverlayBtn');
+    if(!submitOverlayBtn){
+      submitOverlayBtn=document.createElement('button');
+      submitOverlayBtn.id='submitOverlayBtn';
+      submitOverlayBtn.style.cssText='width:100%;padding:12px;background:linear-gradient(90deg,var(--primary),#3a8fd8);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:10px;display:block';
+      const resultEl=document.getElementById('overlayResult');
+      if(resultEl&&resultEl.parentNode)resultEl.parentNode.insertBefore(submitOverlayBtn,resultEl.nextSibling);
+    }
+    submitOverlayBtn.style.display='block';
+    if(verifyType==='ai'&&state.settings.geminiKey&&stage.overlayAIDesc){
+      submitOverlayBtn.textContent='📤 送出 AI 辨識';
+      submitOverlayBtn.onclick=async()=>{
+        submitOverlayBtn.disabled=true;
+        submitOverlayBtn.textContent='🔍 AI 辨識中...';
+        const reader=new FileReader();
+        reader.onload=async e=>{
+          try{
+            const passed=await verifyPhotoWithAI(e.target.result,stage.overlayAIDesc,stage.overlayStrictness||'standard');
+            if(passed){
+              submitOverlayBtn.style.display='none';
+              setTimeout(()=>passPhotoStage(),800);
+            } else {
+              submitOverlayBtn.disabled=false;
+              submitOverlayBtn.textContent='📤 重新送出辨識';
+            }
+          }catch(err){
+            console.warn('AI驗證錯誤:',err);
+            submitOverlayBtn.disabled=false;
+            submitOverlayBtn.textContent='📤 重新送出辨識';
+            if(statusEl){statusEl.style.display='';statusEl.className='photo-verify-status fail';statusEl.textContent='⚠️ AI辨識暫時無法使用';}
+          }
+        };
+        reader.readAsDataURL(state.photoFile||blob);
+      };
+    } else if(verifyType==='confirm'){
+      submitOverlayBtn.textContent='✋ 送出，通知關主確認';
+      submitOverlayBtn.onclick=()=>{
+        submitOverlayBtn.style.display='none';
+        overlayNotifyConfirm();
+      };
+    } else {
+      submitOverlayBtn.textContent='📤 確認送出';
+      submitOverlayBtn.onclick=()=>{
+        submitOverlayBtn.style.display='none';
+        passPhotoStage();
+      };
+    }
+  }
+  doToBlob();
+}
+window.overlayShoot=overlayShoot;
+
+function overlayRetake(){
+  // 重新拍照
+  state.photoFile=null;state.photoFailCount=0;
+  const result=document.getElementById('overlayResult');if(result)result.style.display='none';
+  const wrap=document.getElementById('overlayCameraWrap');if(wrap)wrap.style.display='';
+  const btn=document.getElementById('overlayShutterBtn');if(btn)btn.style.display='';
+  const retryBtn=document.getElementById('overlayRetryBtn');if(retryBtn)retryBtn.classList.add('hidden');
+  const statusEl=document.getElementById('photoVerifyStatus');if(statusEl)statusEl.style.display='none';
+  const skipArea=document.getElementById('skipPhotoArea');if(skipArea)skipArea.classList.add('hidden');
+  const submitBtn=document.getElementById('submitOverlayBtn');if(submitBtn)submitBtn.style.display='none';
+  startOverlayCamera();
+}
+window.overlayRetake=overlayRetake;
+
+async function overlayNotifyConfirm(){
+  // 套圖+關主確認模式：上傳照片後等關主確認
+  if(state.photoFile){
+    const path=`photos/${state.sessionKey}/${state.currentIdx}_${Date.now()}`;
+    try{const snap=await uploadBytes(aStorageRef(path),state.photoFile);const url=await getDownloadURL(snap.ref);await set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/photoUrl`),url);}catch(e){console.warn(e);}
+  }
+  await set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/waitingConfirm`),true);
+  await set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/waitSince`),Date.now());
+  listenForStageConfirm(state.currentIdx);
+  const statusEl=document.getElementById('photoVerifyStatus');
+  if(statusEl){statusEl.className='photo-verify-status checking';statusEl.style.display='';statusEl.textContent='⏳ 照片已送出，等待關主確認中...';}
+  const retryBtn=document.getElementById('overlayRetryBtn');if(retryBtn)retryBtn.classList.add('hidden');
+}
+
+// ── 故事系統 ──
+
+// 活動開始：顯示第一關位置提示（含關卡照片）
+function showFirstStageHint(hint, stageName, onClose, stageImageUrl){
+  if(!hint){onClose();return;}
+  const popup=document.getElementById('storyPopup');
+  const tag=document.getElementById('storyPopupTag');
+  const body=document.getElementById('storyPopupBody');
+  const nextHintBox=document.getElementById('storyNextHintBox');
+  const nextHintText=document.getElementById('storyNextHintText');
+  const btnNext=document.getElementById('btnStoryNext');
+  const btnClose=document.getElementById('btnStoryClose');
+  tag.className='story-popup-tag intro';
+  tag.textContent='🏁 活動開始！前往第一關';
+  // 顯示關卡照片
+  let imgEl=document.getElementById('storyPopupImg');
+  if(!imgEl){imgEl=document.createElement('img');imgEl.id='storyPopupImg';imgEl.style.cssText='width:100%;border-radius:12px;margin-bottom:12px;object-fit:cover;max-height:180px;display:none';popup.querySelector('.story-popup-box').insertBefore(imgEl,body);}
+  if(stageImageUrl){imgEl.src=stageImageUrl;imgEl.style.display='block';}
+  else{imgEl.style.display='none';}
+  body.textContent='';
+  nextHintBox.classList.remove('hidden');
+  nextHintText.textContent=hint;
+  const hintLabel=nextHintBox.querySelector('.hint-label');
+  if(hintLabel)hintLabel.textContent='🗺️ 第一關位置';
+  btnNext.classList.remove('hidden');
+  btnNext.textContent='🚀 出發！';
+  btnClose.classList.add('hidden');
+  popup.classList.remove('hidden');
+  popup._onClose=onClose;
+}
+window.showFirstStageHint=showFirstStageHint;
+
+// 顯示開場故事（到達後、答題前）
+function showStoryIntro(stage, onClose){
+  if(_bgm)_bgm.volume=_musicVolume*0.3;// 故事期間降低音量
+  if(!stage.storyIntro){onClose();return;}
+  const popup=document.getElementById('storyPopup');
+  const tag=document.getElementById('storyPopupTag');
+  const title=document.getElementById('storyPopupTitle');
+  const body=document.getElementById('storyPopupBody');
+  const nextHintBox=document.getElementById('storyNextHintBox');
+  const btnNext=document.getElementById('btnStoryNext');
+  const btnClose=document.getElementById('btnStoryClose');
+  tag.className='story-popup-tag intro';
+  tag.textContent='📖 故事片段';
+  title.textContent=stage.title||'';
+  body.textContent=stage.storyIntro;
+  nextHintBox.classList.add('hidden');
+  btnNext.classList.add('hidden');
+  btnClose.classList.remove('hidden');
+  btnClose.textContent='開始挑戰 →';
+  popup.classList.remove('hidden');
+  // 關閉後執行 onClose
+  popup._onClose=onClose;
+}
+
+// 顯示過關故事 + 下一關位置提示（答對後）
+// nextStageHint = 下一關的 nextHint，nextStageImg = 下一關的圖片
+function showStoryOutro(stage, isLast, nextStageHint, onClose, nextStageImg){
+  if(_bgm)_bgm.volume=_musicVolume*0.3;// 故事期間降低音量
+  const hasOutro=!!(stage.storyOutro);
+  const hasNextHint=!!nextStageHint&&!isLast;
+  if(!hasOutro&&!hasNextHint&&!isLast){onClose();return;}
+  const popup=document.getElementById('storyPopup');
+  const tag=document.getElementById('storyPopupTag');
+  const body=document.getElementById('storyPopupBody');
+  // 下一關照片
+  let imgEl=document.getElementById('storyPopupImg');
+  if(!imgEl){imgEl=document.createElement('img');imgEl.id='storyPopupImg';imgEl.style.cssText='width:100%;border-radius:12px;margin-bottom:12px;object-fit:cover;max-height:180px;display:none';popup.querySelector('.story-popup-box').insertBefore(imgEl,body);}
+  if(nextStageImg&&!isLast){imgEl.src=nextStageImg;imgEl.style.display='block';}
+  else{imgEl.style.display='none';}
+  const nextHintBox=document.getElementById('storyNextHintBox');
+  const nextHintText=document.getElementById('storyNextHintText');
+  const btnNext=document.getElementById('btnStoryNext');
+  const btnClose=document.getElementById('btnStoryClose');
+  tag.className='story-popup-tag outro';
+  tag.textContent='🎉 關卡完成';
+  body.textContent=stage.storyOutro||'';
+  if(isLast){
+    // 最後一關：無位置提示，只有完賽按鈕
+    nextHintBox.classList.add('hidden');
+    btnNext.classList.add('hidden');
+    btnClose.classList.remove('hidden');
+    btnClose.textContent='🏆 前往完賽頁面';
+  } else if(hasNextHint){
+    // 有下一關位置提示
+    nextHintBox.classList.remove('hidden');
+    nextHintText.textContent=nextStageHint;
+    btnNext.classList.remove('hidden');
+    btnNext.textContent='🚀 出發！';
+    btnClose.classList.add('hidden');
+  } else {
+    // 無位置提示，直接前往下一關
+    nextHintBox.classList.add('hidden');
+    btnNext.classList.remove('hidden');
+    btnNext.textContent='➡️ 前往下一關';
+    btnClose.classList.add('hidden');
+  }
+  popup.classList.remove('hidden');
+  popup._onClose=onClose;
+}
+
+function closeStoryPopup(){
+  const popup=document.getElementById('storyPopup');
+  popup.classList.add('hidden');
+  if(_bgm&&!_musicMuted)_bgm.volume=_musicVolume;// 恢復音量
+  if(popup._onClose){const fn=popup._onClose;popup._onClose=null;fn();}
+}
+window.closeStoryPopup=closeStoryPopup;
+
+function triggerPhoto(){
+  const input=document.getElementById('photoInput');
+  if(!input){console.error('找不到 photoInput');return;}
+  input.click();
+}
+
+// 標準選擇題：上傳照片後直接預覽（不自動辨識，送答案時才辨識）
+async function handlePhoto(){
+  const input=document.getElementById('photoInput');
+  if(!input){return;}
+  const file=input.files[0];
+  if(!file){return;}
+  if(!file.type.startsWith('image/')){
+    alert('請選擇圖片檔案（JPG、PNG、HEIC等）');
+    input.value='';return;
+  }
+  if(file.size>10*1024*1024){
+    alert('圖片太大，請選擇 10MB 以內的圖片');
+    input.value='';return;
+  }
+  state.photoFile=await compressImage(file);
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const p=document.getElementById('photoPreview');
+    if(p){p.src=e.target.result;p.style.display='block';}
+    const area=document.getElementById('photoArea');if(area)area.style.display='none';
+    // 方案C：警示提醒（非強制AI辨識）
+    const stage=state.stages[state.currentIdx];
+    if(stage&&stage.requirePhoto){
+      let warnEl=document.getElementById('photoWarnMsg');
+      if(!warnEl){
+        warnEl=document.createElement('div');
+        warnEl.id='photoWarnMsg';
+        warnEl.style.cssText='font-size:11px;color:#b06000;background:#fff8e0;border:1px solid #f5c842;border-radius:8px;padding:6px 10px;margin-bottom:8px;line-height:1.6';
+        warnEl.textContent='⚠️ 請確認照片清楚呈現任務主體，管理者審核後若拍攝不符可能扣分';
+        if(p&&p.parentNode)p.parentNode.insertBefore(warnEl,p);
+      }
+    }
+    // 顯示重拍按鈕
+    let retakeBtn=document.getElementById('photoRetakeBtn');
+    if(!retakeBtn){
+      retakeBtn=document.createElement('button');
+      retakeBtn.id='photoRetakeBtn';
+      retakeBtn.style.cssText='width:100%;padding:9px;background:var(--primary-pale);color:var(--primary);border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px;display:block';
+      retakeBtn.textContent='🔄 重新拍照';
+      retakeBtn.onclick=retakePhoto;
+      if(p&&p.parentNode)p.parentNode.insertBefore(retakeBtn,p.nextSibling);
+    } else {retakeBtn.style.display='block';}
+  };
+  reader.readAsDataURL(state.photoFile);
+}
+
+// 照片關卡：先預覽確認，再按「送出辨識」按鈕才進行AI辨識
+async function handlePhotoOnly(){
+  const file=document.getElementById('photoInput').files[0];
+  if(!file)return;
+  if(!file.type.startsWith('image/')){alert('請選擇圖片檔案（JPG、PNG等）');return;}
+  if(file.size>10*1024*1024){alert('圖片太大，請選擇10MB以內的圖片');return;}
+  state.photoFile=await compressImage(file);
+  const reader=new FileReader();
+  reader.onload=e=>{
+    // 顯示照片預覽
+    const p=document.getElementById('photoPreview');
+    if(p){p.src=e.target.result;p.style.display='block';}
+    const area=document.getElementById('photoArea');if(area)area.style.display='none';
+    // 隱藏AI辨識狀態（上次的結果）
+    const statusEl=document.getElementById('photoVerifyStatus');
+    if(statusEl)statusEl.style.display='none';
+    // 隱藏跳過按鈕
+    const skipArea=document.getElementById('skipPhotoArea');
+    if(skipArea)skipArea.classList.add('hidden');
+    // 顯示重拍按鈕
+    let retakeBtn=document.getElementById('photoRetakeBtn');
+    if(!retakeBtn){
+      retakeBtn=document.createElement('button');
+      retakeBtn.id='photoRetakeBtn';
+      retakeBtn.style.cssText='width:100%;padding:9px;background:var(--primary-pale);color:var(--primary);border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px;display:block';
+      retakeBtn.textContent='🔄 重新拍照';
+      retakeBtn.onclick=retakePhoto;
+      if(p&&p.parentNode)p.parentNode.insertBefore(retakeBtn,p.nextSibling);
+    } else {retakeBtn.style.display='block';}
+    // 顯示「送出辨識」按鈕
+    let submitPhotoBtn=document.getElementById('submitPhotoBtn');
+    if(!submitPhotoBtn){
+      submitPhotoBtn=document.createElement('button');
+      submitPhotoBtn.id='submitPhotoBtn';
+      submitPhotoBtn.style.cssText='width:100%;padding:12px;background:linear-gradient(90deg,var(--primary),#3a8fd8);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px';
+      submitPhotoBtn.textContent='📤 送出照片辨識';
+      submitPhotoBtn.onclick=submitPhotoForAI;
+      if(retakeBtn&&retakeBtn.parentNode)retakeBtn.parentNode.insertBefore(submitPhotoBtn,retakeBtn);
+    } else {submitPhotoBtn.style.display='block';}
+  };
+  reader.readAsDataURL(state.photoFile);
+}
+
+// 玩家確認後才送出AI辨識
+async function submitPhotoForAI(){
+  const submitBtn=document.getElementById('submitPhotoBtn');
+  const retakeBtn=document.getElementById('photoRetakeBtn');
+  if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='🔍 AI 辨識中...';}
+  if(retakeBtn)retakeBtn.style.display='none';
+  const stage=state.stages[state.currentIdx];
+  const p=document.getElementById('photoPreview');
+  if(!p||!state.photoFile){if(submitBtn){submitBtn.disabled=false;submitBtn.textContent='📤 送出照片辨識';}return;}
+  // 轉成 base64
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    try{
+      if(state.settings.geminiKey&&stage.photoDescription){
+        const passed=await verifyPhotoWithAI(e.target.result,stage.photoDescription,stage.photoStrictness||'standard');
+        if(passed){
+          if(submitBtn)submitBtn.style.display='none';
+          setTimeout(()=>passPhotoStage(),800);
+        } else {
+          // 辨識失敗：顯示重拍按鈕，解鎖送出按鈕
+          if(submitBtn){submitBtn.disabled=false;submitBtn.textContent='📤 重新送出辨識';}
+          if(retakeBtn)retakeBtn.style.display='block';
+        }
+      } else {
+        // 無AI Key：直接過關
+        if(submitBtn)submitBtn.style.display='none';
+        setTimeout(()=>passPhotoStage(),500);
+      }
+    }catch(err){
+      console.warn('AI驗證錯誤:',err);
+      if(submitBtn){submitBtn.disabled=false;submitBtn.textContent='📤 重新送出辨識';}
+      const statusEl=document.getElementById('photoVerifyStatus');
+      if(statusEl){statusEl.className='photo-verify-status fail';statusEl.textContent='⚠️ AI辨識暫時無法使用，請重試';}
+    }
+  };
+  reader.readAsDataURL(state.photoFile);
+}
+window.submitPhotoForAI=submitPhotoForAI;
+
+// 照片關卡：辨識通過後過關
+async function passPhotoStage(){
+  stopOverlayCamera();// 照片關卡過關後停止相機
+  const stage=state.stages[state.currentIdx];
+  state.stageAttempts=Math.max(1,state.stageAttempts);
+  // 上傳照片
+  if(state.photoFile){
+    const path=`photos/${state.sessionKey}/${state.currentIdx}_${Date.now()}`;
+    try{const snap=await uploadBytes(aStorageRef(path),state.photoFile);const url=await getDownloadURL(snap.ref);set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/photoUrl`),url);}catch(e){console.warn(e);}
+  }
+  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/correct`),true);
+  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/answeredAt`),serverTimestamp());
+  // 計分
+  const sc=state.scoring;
+  const base=sc.baseScore||100;
+  const timeBonus=Math.max(0,Math.round((sc.timeBonus||50)*(1-state.stageSeconds/300)));
+  const scoreChange=Math.max(0,base+timeBonus);
+  state.score+=scoreChange;
+  set(aRef(`sessions/${state.sessionKey}/score`),state.score);
+  document.getElementById('currentScore').textContent=`${state.score} 分`;
+  // 顯示過關
+  state.lastCorrect=true;
+  playSFX('correct');// 答對音效
+  document.getElementById('feedbackIcon').textContent='🎉';
+  document.getElementById('feedbackTitle').textContent='照片驗證通過！';
+  document.getElementById('feedbackTitle').className='feedback-title correct';
+  document.getElementById('feedbackMsg').textContent='太棒了！照片符合要求，準備前往下一關！';
+  document.getElementById('feedbackScore').textContent=`+${scoreChange}分（基礎${base}+時間${timeBonus}）`;
+  document.getElementById('feedbackBtn').textContent='前往下一關 →';
+  document.getElementById('feedbackBtn').className='btn-next';
+  document.getElementById('feedbackOverlay').classList.remove('hidden');
+}
+
+// 問答題：文字填空作答
+async function submitQA(){
+  const input=document.getElementById('qaAnswerInput');
+  const errorEl=document.getElementById('qaAnswerError');
+  if(!input)return;
+  const entered=input.value.trim();
+  if(!entered){errorEl.textContent='請輸入答案！';return;}
+  const stage=state.stages[state.currentIdx];
+  if(stage.requirePhoto&&!state.photoFile){errorEl.textContent='此關必須先拍照才能作答！';return;}
+  const guessHash=await sha256(`${stage.key}_qa_${qaNormalize(entered)}`);
+  const correct=(stage.qaAnswerHashes||[]).includes(guessHash);
+  state.stageAttempts++;state.totalAttempts++;
+  errorEl.textContent='';
+  if(!correct){
+    state.score=Math.max(0,state.score-(state.scoring.wrongPenalty||10));
+    set(aRef(`sessions/${state.sessionKey}/score`),state.score);
+    document.getElementById('currentScore').textContent=`${state.score} 分`;
+    errorEl.textContent=`❌ 答案不對！已扣 ${state.scoring.wrongPenalty||10} 分，請再想想看`;
+    input.value='';input.focus();
+    return;
+  }
+  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/correct`),true);
+  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/attempts`),state.stageAttempts);
+  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/answeredAt`),serverTimestamp());
+  if(stage.requirePhoto&&state.photoFile){
+    const path=`photos/${state.sessionKey}/${state.currentIdx}_${Date.now()}`;
+    try{const snap=await uploadBytes(aStorageRef(path),state.photoFile);const url=await getDownloadURL(snap.ref);set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/photoUrl`),url);}catch(e){console.warn(e);}
+  }
+  const sc=state.scoring;
+  const base=sc.baseScore||100;
+  const timeBonus=Math.max(0,Math.round((sc.timeBonus||50)*(1-state.stageSeconds/300)));
+  const wrongPenalty=(state.stageAttempts-1)*(sc.wrongPenalty||10);
+  const scoreChange=Math.max(0,base+timeBonus-wrongPenalty);
+  state.score+=scoreChange;
+  set(aRef(`sessions/${state.sessionKey}/score`),state.score);
+  document.getElementById('currentScore').textContent=`${state.score} 分`;
+  state.lastCorrect=true;
+  playSFX('correct');
+  document.getElementById('feedbackIcon').textContent='🎉';
+  document.getElementById('feedbackTitle').textContent='答對了！';
+  document.getElementById('feedbackTitle').className='feedback-title correct';
+  document.getElementById('feedbackMsg').textContent='太棒了！答案正確，準備前往下一關！';
+  document.getElementById('feedbackScore').textContent=`+${scoreChange}分`;
+  document.getElementById('feedbackBtn').textContent='前往下一關 →';
+  document.getElementById('feedbackBtn').className='btn-next';
+  document.getElementById('feedbackOverlay').classList.remove('hidden');
+}
+window.submitQA=submitQA;
+
+// 密碼確認關卡
+async function submitPasscode(){
+  const input=document.getElementById('passcodeInput');
+  const errorEl=document.getElementById('passcodeError');
+  if(!input)return;
+  const entered=input.value.trim().toLowerCase();
+  if(!entered){errorEl.textContent='請輸入密碼！';return;}
+  const stage=state.stages[state.currentIdx];
+  const guessHash=await sha256(`${stage.key}_pass_${entered}`);
+  const correct=(guessHash===stage.passcodeHash);
+  state.stageAttempts++;state.totalAttempts++;
+  errorEl.textContent='';
+  if(!correct){
+    state.score=Math.max(0,state.score-(state.scoring.wrongPenalty||10));
+    set(aRef(`sessions/${state.sessionKey}/score`),state.score);
+    document.getElementById('currentScore').textContent=`${state.score} 分`;
+    errorEl.textContent=`❌ 密碼錯誤！已扣 ${state.scoring.wrongPenalty||10} 分，請再試一次`;
+    input.value='';input.focus();
+    return;
+  }
+  // 密碼正確
+  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/correct`),true);
+  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/attempts`),state.stageAttempts);
+  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/answeredAt`),serverTimestamp());
+  if(stage.requirePhoto&&state.photoFile){
+    const path=`photos/${state.sessionKey}/${state.currentIdx}_${Date.now()}`;
+    try{const snap=await uploadBytes(aStorageRef(path),state.photoFile);const url=await getDownloadURL(snap.ref);set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/photoUrl`),url);}catch(e){console.warn(e);}
+  }
+  const sc=state.scoring;
+  const base=sc.baseScore||100;
+  const timeBonus=Math.max(0,Math.round((sc.timeBonus||50)*(1-state.stageSeconds/300)));
+  const wrongPenalty=(state.stageAttempts-1)*(sc.wrongPenalty||10);
+  const scoreChange=Math.max(0,base+timeBonus-wrongPenalty);
+  state.score+=scoreChange;
+  set(aRef(`sessions/${state.sessionKey}/score`),state.score);
+  document.getElementById('currentScore').textContent=`${state.score} 分`;
+  state.lastCorrect=true;
+  document.getElementById('feedbackIcon').textContent='🔓';
+  document.getElementById('feedbackTitle').textContent='密碼正確！';
+  document.getElementById('feedbackTitle').className='feedback-title correct';
+  document.getElementById('feedbackMsg').textContent='關主確認通過！準備前往下一關！';
+  document.getElementById('feedbackScore').textContent=`+${scoreChange}分`;
+  document.getElementById('feedbackBtn').textContent='前往下一關 →';
+  document.getElementById('feedbackBtn').className='btn-next';
+  document.getElementById('feedbackOverlay').classList.remove('hidden');
+}
+
+// ── AI 照片辨識（含嚴謹度 + 雙KEY自動切換）──
+async function verifyPhotoWithAI(base64Data,description,strictness){
+  const statusEl=document.getElementById('photoVerifyStatus');
+  if(statusEl){statusEl.className='photo-verify-status checking';statusEl.style.display='';statusEl.textContent='🔍 AI 正在分析照片...';}
+
+  const strictnessMap={
+    loose:'只要大致上有出現相關元素即可，標準寬鬆',
+    standard:'主要元素要清楚可見，標準適中',
+    strict:'角度、細節、完整性都要符合要求，標準嚴格'
+  };
+  const stdText=strictnessMap[strictness]||strictnessMap.standard;
+  // 浮水印偵測：若管理者有設定浮水印，告知AI若看到浮水印文字則判定截圖
+  const watermark=(state.settings.watermark||'').trim();
+  const watermarkRule=watermark
+    ?`\n重要：若照片中出現「${watermark}」的浮水印文字，代表這是截圖而非現場拍攝，必須判定「不符合」，原因填「疑似截圖，請現場拍照」。`
+    :'';
+  const prompt=`請分析這張照片，判斷是否符合以下要求：「${description}」。
+判斷標準：${stdText}。${watermarkRule}
+請用繁體中文回答，格式如下：
+結果：符合 或 不符合
+原因：（一句話說明為什麼）
+建議：（如果不符合，給一個具體改善建議；如果符合，寫「很好！」）`;
+
+  // 嘗試雙KEY
+  const keys=[state.settings.geminiKey,state.settings.geminiKey2].filter(Boolean);
+  let lastError=null;
+  for(const key of keys){
+    try{
+      const imageData=base64Data.split(',')[1];
+      const mimeType=base64Data.split(';')[0].split(':')[1]||'image/jpeg';
+      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({contents:[{parts:[{inlineData:{mimeType,data:imageData}},{text:prompt}]}]})
+      });
+      if(res.status===429||res.status===403){lastError=res.status;continue;}// 超限，換KEY
+      if(!res.ok){lastError=res.status;continue;}// 其他錯誤狀態，換KEY或略過
+      const rawText=await res.text();
+      if(!rawText||!rawText.trim()){continue;}// 空回應，略過
+      let data;try{data=JSON.parse(rawText);}catch(jsonErr){continue;}// 非JSON回應，略過
+      const text=(data&&data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts&&data.candidates[0].content.parts[0]&&data.candidates[0].content.parts[0].text||'');
+      const pass=text.includes('結果：符合');
+      if(pass){
+        statusEl.className='photo-verify-status pass';
+        const reasonMatch=text.match(/原因：(.+)/);
+        // XSS安全：AI回傳文字不確定，用textContent
+        statusEl.textContent='✅ 照片驗證通過！';
+        if(reasonMatch&&reasonMatch[1]){
+          const small=document.createElement('div');
+          small.style.cssText='font-size:11px;opacity:0.8;margin-top:3px';
+          small.textContent=reasonMatch[1].trim().substring(0,100);
+          statusEl.appendChild(small);
+        }
+        state.photoFailCount=0;
+        document.getElementById('skipPhotoArea').classList.add('hidden');
+      } else {
+        state.photoFailCount++;
+        statusEl.className='photo-verify-status fail';
+        const reasonMatch=text.match(/原因：(.+)/);
+        const suggestMatch=text.match(/建議：(.+)/);
+        let msg='❌ 照片驗證未通過\n';
+        if(reasonMatch)msg+=`• ${reasonMatch[1].trim()}\n`;
+        if(suggestMatch)msg+=`💡 建議：${suggestMatch[1].trim()}`;
+        statusEl.textContent=msg;
+        if(state.photoFailCount>=3)document.getElementById('skipPhotoArea').classList.remove('hidden');
+      }
+      return pass;// 回傳結果
+    }catch(e){continue;}
+  }
+  // 所有KEY都失敗
+  if(statusEl){statusEl.className='photo-verify-status fail';statusEl.textContent='⚠️ AI辨識暫時無法使用，請繼續作答';setTimeout(()=>{statusEl.style.display='none';},3000);}
+  return false;
+}
+
+function skipPhotoVerify(){
+  stopOverlayCamera();// 跳過照片後停止相機
+  const penalty=state.scoring.skipPhotoPenalty||20;
+  state.score=Math.max(0,state.score-penalty);
+  document.getElementById('currentScore').textContent=`${state.score} 分`;
+  document.getElementById('skipPhotoArea').classList.add('hidden');
+  const statusEl=document.getElementById('photoVerifyStatus');
+  statusEl.className='photo-verify-status pass';
+  statusEl.textContent=`⚡ 已跳過照片驗證（扣${penalty}分）`;
+  set(aRef(`sessions/${state.sessionKey}/score`),state.score);
+}
+function retakePhoto(){
+  const skipArea=document.getElementById('skipPhotoArea');if(skipArea)skipArea.classList.add('hidden');
+  const statusEl=document.getElementById('photoVerifyStatus');if(statusEl)statusEl.style.display='none';
+  const warnEl=document.getElementById('photoWarnMsg');if(warnEl)warnEl.style.display='none';
+  const preview=document.getElementById('photoPreview');if(preview)preview.style.display='none';
+  const area=document.getElementById('photoArea');if(area)area.style.display='';
+  const retakeBtn=document.getElementById('photoRetakeBtn');if(retakeBtn)retakeBtn.style.display='none';
+  const submitBtn=document.getElementById('submitPhotoBtn');if(submitBtn)submitBtn.style.display='none';
+  state.photoFile=null;state.photoFailCount=0;
+  const input=document.getElementById('photoInput');if(input)input.value='';
+}
+
+// ── 是非題 ──
+function selectTF(answer){
+  state.tfAnswer=answer;
+  const trueBtn=document.getElementById('tfBtnTrue');
+  const falseBtn=document.getElementById('tfBtnFalse');
+  if(trueBtn)trueBtn.classList.toggle('selected',answer===true);
+  if(falseBtn)falseBtn.classList.toggle('selected',answer===false);
+  const submitBtn=document.getElementById('submitBtn');
+  if(submitBtn)submitBtn.disabled=false;
+}
+window.selectTF=selectTF;
+
+async function submitTF(){
+  if(state.tfAnswer===undefined||state.tfAnswer===null)return;
+  const stage=state.stages[state.currentIdx];
+  if(stage.requirePhoto&&!state.photoFile){alert('此關必須拍照後才能作答！');return;}
+  document.getElementById('submitBtn').disabled=true;
+  state.stageAttempts++;state.totalAttempts++;
+  // 比對答案：tfAnswer 是 boolean，stage.tfAnswer 也是 boolean
+  const correct=(state.tfAnswer===true && stage.tfAnswer!==false) ||
+                (state.tfAnswer===false && stage.tfAnswer===false);
+  state.lastCorrect=correct;
+  if(correct)playSFX('correct'); else playSFX('wrong');
+  // 顯示對錯
+  const trueBtn=document.getElementById('tfBtnTrue');
+  const falseBtn=document.getElementById('tfBtnFalse');
+  if(correct){
+    if(state.tfAnswer===true&&trueBtn)trueBtn.classList.add('correct');
+    if(state.tfAnswer===false&&falseBtn)falseBtn.classList.add('correct');
+  } else {
+    if(state.tfAnswer===true&&trueBtn)trueBtn.classList.add('wrong');
+    if(state.tfAnswer===false&&falseBtn)falseBtn.classList.add('wrong');
+  }
+  // 上傳照片
+  if(state.photoFile){
+    const path=`photos/${state.sessionKey}/${state.currentIdx}_${Date.now()}`;
+    try{const snap=await uploadBytes(aStorageRef(path),state.photoFile);const url=await getDownloadURL(snap.ref);set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/photoUrl`),url);}catch(e){console.warn(e);}
+  }
+  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/answeredAt`),serverTimestamp());
+  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/correct`),correct);
+  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/attempts`),state.stageAttempts);
+  // 計分
+  const sc=state.scoring;
+  let scoreMsg='';
+  if(correct){
+    const base=sc.baseScore||100;
+    const timeBonus=Math.max(0,Math.round((sc.timeBonus||50)*(1-state.stageSeconds/300)));
+    const wrongPenalty=(state.stageAttempts-1)*(sc.wrongPenalty||10);
+    const scoreChange=Math.max(0,base+timeBonus-wrongPenalty);
+    state.score+=scoreChange;
+    scoreMsg=`+${scoreChange}分`;
+  } else {
+    state.score=Math.max(0,state.score-(sc.wrongPenalty||10));
+    scoreMsg=`答錯扣${sc.wrongPenalty||10}分`;
+  }
+  set(aRef(`sessions/${state.sessionKey}/score`),state.score);
+  document.getElementById('currentScore').textContent=`${state.score} 分`;
+  // 顯示結果
+  document.getElementById('feedbackIcon').textContent=correct?'🎉':'😅';
+  document.getElementById('feedbackTitle').textContent=correct?'答對了！':'再想想看！';
+  document.getElementById('feedbackTitle').className='feedback-title '+(correct?'correct':'wrong');
+  document.getElementById('feedbackMsg').textContent=correct?`正確答案是「${stage.tfAnswer!==false?'⭕ 對':'✕ 錯'}」，答對了！`:`正確答案是「${stage.tfAnswer!==false?'⭕ 對':'✕ 錯'}」，不對唷！`;
+  document.getElementById('feedbackScore').textContent=scoreMsg;
+  const btn=document.getElementById('feedbackBtn');
+  btn.textContent=correct?'前往下一關 →':'再試一次 →';
+  btn.className=correct?'btn-next':'btn-retry';
+  document.getElementById('feedbackOverlay').classList.remove('hidden');
+}
+window.submitTF=submitTF;
+
+function selectOpt(idx){
+  state.selectedOption=idx;
+  document.querySelectorAll('.option-btn').forEach((b,i)=>b.classList.toggle('selected',i===idx));
+  document.getElementById('submitBtn').disabled=false;
+}
+
+async function submitAns(){
+  if(state.selectedOption===null)return;
+  const stage=state.stages[state.currentIdx];
+  if(stage.requirePhoto&&!state.photoFile){alert('此關必須拍照後才能作答！');return;}
+  document.getElementById('submitBtn').disabled=true;
+  state.stageAttempts++;state.totalAttempts++;
+  const guessHash=await sha256(`${stage.key}_${state.selectedOption}`);
+  const correct=(guessHash===stage.answerHash);
+  state.lastCorrect=correct;
+  if(correct)playSFX('correct'); else playSFX('wrong');
+
+  if(state.photoFile){
+    const path=`photos/${state.sessionKey}/${state.currentIdx}_${Date.now()}`;
+    try{const snap=await uploadBytes(aStorageRef(path),state.photoFile);const url=await getDownloadURL(snap.ref);set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/photoUrl`),url);}catch(e){console.warn(e);}
+  }
+  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/answeredAt`),serverTimestamp());
+  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/correct`),correct);
+  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/attempts`),state.stageAttempts);
+
+  document.querySelectorAll('.option-btn').forEach((b,i)=>{b.classList.remove('selected','correct','wrong');if(i===state.selectedOption)b.classList.add(correct?'correct':'wrong');});
+
+  const sc=state.scoring;
+  let scoreChange=0,scoreMsg='';
+  if(correct){
+    const base=sc.baseScore||100;
+    const timeBonus=Math.max(0,Math.round((sc.timeBonus||50)*(1-state.stageSeconds/300)));
+    const wrongPenalty=(state.stageAttempts-1)*(sc.wrongPenalty||10);
+    scoreChange=Math.max(0,base+timeBonus-wrongPenalty);
+    state.score+=scoreChange;
+    scoreMsg=`+${scoreChange}分（基礎${base}+時間${timeBonus}-答錯${(state.stageAttempts-1)*(sc.wrongPenalty||10)}）`;
+  } else {
+    scoreMsg=`答錯扣${sc.wrongPenalty||10}分（已答錯${state.stageAttempts}次）`;
+  }
+  set(aRef(`sessions/${state.sessionKey}/score`),state.score);
+  document.getElementById('currentScore').textContent=`${state.score} 分`;
+
+  document.getElementById('feedbackIcon').textContent=correct?'🎉':'😅';
+  document.getElementById('feedbackTitle').textContent=correct?'答對了！':'再想想看！';
+  document.getElementById('feedbackTitle').className='feedback-title '+(correct?'correct':'wrong');
+  document.getElementById('feedbackMsg').textContent=correct?'太棒了！準備前往下一關！':'不對唷，再仔細看看題目！';
+  document.getElementById('feedbackScore').textContent=scoreMsg;
+  const btn=document.getElementById('feedbackBtn');btn.textContent=correct?'前往下一關 →':'再試一次 →';btn.className=correct?'btn-next':'btn-retry';
+  document.getElementById('feedbackOverlay').classList.remove('hidden');
+}
+
+function closeFeedback(){
+  document.getElementById('feedbackOverlay').classList.add('hidden');
+  if(state.lastCorrect){
+    stopOverlayCamera();
+    clearInterval(state.timerInterval);
+    set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/stageSec`),state.stageSeconds);
+    const currentStage=state.stages[state.currentIdx];
+    const isLast=(state.currentIdx+1>=state.stages.length);
+    // 取得下一關的位置提示（nextHint 代表「本關位置提示」，在進此關前顯示）
+    const nextStage=!isLast?state.stages[state.currentIdx+1]:null;
+    const nextStageHint=(nextStage&&nextStage.nextHint)||'';
+    const nextStageImg=(nextStage&&nextStage.imageUrl)||'';// 下一關照片
+    state.currentIdx++;state.hintUsed=0;
+    if(currentStage&&(currentStage.storyOutro||nextStageHint||isLast)){
+      showStoryOutro(currentStage,isLast,nextStageHint,()=>{
+        if(isLast){showFinish();}
+        else{renderStage();}
+      },nextStageImg);
+    } else {
+      if(isLast){showFinish();}
+      else{renderStage();}
+    }
+  } else {
+    state.selectedOption=null;
+    state.tfAnswer=null;
+    document.querySelectorAll('.option-btn').forEach(b=>b.classList.remove('selected','correct','wrong'));
+    document.querySelectorAll('.tf-btn').forEach(b=>b.classList.remove('selected','correct','wrong'));
+    const submitBtn=document.getElementById('submitBtn');
+    if(submitBtn)submitBtn.disabled=true;
+  }
+}
+
+// ── 排行榜（可關閉顯示）──
+// 開放式個人闖關：遊戲進行中不再有即時排行榜（每個人開始/結束時間不同，比較沒有意義），
+// 名次只會在完賽畫面顯示，見 buildFinishLeaderboard()。
+
+function showHelp(){
+  pauseBGM();// 求救彈窗暫停音樂
+  const sc=state.scoring;const maxHelp=state.settings.helpMaxTimes||2;
+  const remain=Math.max(0,maxHelp-state.helpUsed);
+  if(remain<=0){alert('求救次數已用完！');return;}
+  // 冷卻時間檢查
+  const cooldownMin=parseInt(state.settings.helpCooldown)||5;
+  if(state._lastHelpTime&&cooldownMin>0){
+    const elapsedMin=(Date.now()-state._lastHelpTime)/60000;
+    if(elapsedMin<cooldownMin){
+      const waitSec=Math.ceil((cooldownMin-elapsedMin)*60);
+      alert(`求救冷卻中，請等待 ${waitSec} 秒後再試`);return;
+    }
+  }
+  const helperName=state.settings.helperName||'活動小幫手';
+  document.getElementById('helpTitle').textContent=`🆘 向${helperName}求救`;
+  document.getElementById('helpRemain').textContent=remain;
+  document.getElementById('helpCost').textContent=`⚠️ 每次求救扣 ${sc.helpPenalty||30} 分`;
+  document.getElementById('helpMsg').value='';
+  document.getElementById('helpOverlay').classList.remove('hidden');
+}
+function closeHelp(){
+  resumeBGM();// 關閉求救恢復音樂
+  document.getElementById('helpOverlay').classList.add('hidden');
+}
+async function sendHelp(){
+  const msg=document.getElementById('helpMsg').value.trim();
+  if(!msg){alert('請說明你遇到的問題！');return;}
+  const penalty=state.scoring.helpPenalty||30;
+  state.helpUsed++;state.score=Math.max(0,state.score-penalty);
+  document.getElementById('currentScore').textContent=`${state.score} 分`;
+  set(aRef(`sessions/${state.sessionKey}/score`),state.score);
+  const helpRef=push(aRef(`sessions/${state.sessionKey}/helpLogs`));
+  await set(helpRef,{msg,stageIdx:state.currentIdx,stageName:(state.stages[state.currentIdx]&&state.stages[state.currentIdx].title||''),ts:Date.now(),answered:false,reply:'',teamName:state.teamName,teamKey:state.teamKey});
+  state._lastHelpTime=Date.now();// 記錄求救時間（冷卻用）
+  closeHelp();
+  const remain=Math.max(0,(state.settings.helpMaxTimes||2)-state.helpUsed);
+  const btn=document.getElementById('helpBtn');if(btn){btn.textContent=`🆘 求救（${remain}次）`;if(remain<=0)btn.disabled=true;}
+  const toast=document.createElement('div');toast.className='reply-toast';toast.textContent='✅ 求救已送出！等待小幫手回覆...';document.body.appendChild(toast);setTimeout(()=>toast.remove(),3000);
+}
+
+function listenForHelpReplies(){
+  onValue(aRef(`sessions/${state.sessionKey}/helpLogs`),snap=>{
+    if(!snap.exists())return;
+    Object.entries(snap.val()).forEach(([key,log])=>{
+      if(log.answered&&log.reply&&!log.notified){
+        // 問題九：求救回覆改為彈窗，需要玩家按確定
+        const helperName=state.settings.helperName||'活動小幫手';
+        const overlay=document.createElement('div');
+        overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9998;display:flex;align-items:center;justify-content:center;padding:24px';
+        const box=document.createElement('div');
+        box.style.cssText='background:white;border-radius:20px;padding:24px;max-width:320px;width:100%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.3)';
+        const icon=document.createElement('div');icon.style.cssText='font-size:40px;margin-bottom:10px';icon.textContent='📩';
+        const title=document.createElement('div');title.style.cssText='font-size:15px;font-weight:700;color:#c03020;margin-bottom:8px';
+        title.textContent=`${helperName} 回覆求救`;
+        const msg=document.createElement('div');msg.style.cssText='font-size:14px;color:#1a3a5c;margin-bottom:18px;line-height:1.7;background:#fff5f5;border-radius:10px;padding:10px 14px;text-align:left';
+        msg.textContent=log.reply;
+        const btn=document.createElement('button');
+        btn.style.cssText='width:100%;padding:12px;background:linear-gradient(90deg,#c03020,#f07050);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer';
+        btn.textContent='✅ 我知道了';
+        btn.onclick=()=>overlay.remove();
+        box.appendChild(icon);box.appendChild(title);box.appendChild(msg);box.appendChild(btn);
+        overlay.appendChild(box);document.body.appendChild(overlay);
+        set(aRef(`sessions/${state.sessionKey}/helpLogs/${key}/notified`),true);
+      }
+    });
+  });
+}
+
+function closeBroadcast(){
+  resumeBGM();// 廣播關閉恢復音樂
+  document.getElementById('broadcastOverlay').classList.add('hidden');
+}
+
+async function showFinish(){
+  clearInterval(state.timerInterval);clearInterval(state.countdownInterval);
+  playBGM('finish');// 完賽音樂
+  // 完賽後清除 sessionStorage（含隨機順序），下次開啟回到登入頁
+  try{
+    localStorage.removeItem(playerLoginKey());
+    // 清除本局隨機順序（下次活動重新隨機）
+    Object.keys(sessionStorage).filter(k=>k.startsWith('stageOrder_')).forEach(k=>sessionStorage.removeItem(k));
+  }catch(e){}
+  const elapsed=Math.floor((Date.now()-state.gameStartTime)/1000);
+  const t=`${String(Math.floor(elapsed/60)).padStart(2,'0')}:${String(elapsed%60).padStart(2,'0')}`;
+  const sc=state.scoring;
+  state.score+=sc.completionBonus||200;
+  set(aRef(`sessions/${state.sessionKey}/status`),'finished');
+  set(aRef(`sessions/${state.sessionKey}/totalSec`),elapsed);
+  set(aRef(`sessions/${state.sessionKey}/finishedAt`),serverTimestamp());
+  set(aRef(`sessions/${state.sessionKey}/score`),state.score);
+  document.getElementById('finishTeamName').textContent=state.teamName;
+  document.getElementById('finishScore').textContent=state.score;
+  document.getElementById('finishStages').textContent=state.stages.length;
+  document.getElementById('finishTime').textContent=t;
+  document.getElementById('finishAttempts').textContent=state.totalAttempts;
+  document.getElementById('finishHelps').textContent=state.helpUsed;
+  document.getElementById('finishMsg').textContent=state.settings.finishMsg||'🐚 恭喜完成所有挑戰！感謝參與！';
+  // 排行榜顯示控制（開放式個人闖關：只在自己的完賽畫面顯示高分榜，不做即時排行）
+  if(state.settings.showFinishRank===false){document.getElementById('finishRankSection').style.display='none';}
+  else setTimeout(loadFinishRank,1500);
+  showScreen('finishScreen');
+}
+
+// 完賽高分榜：依 rankingScope（當日／總成績）與 rankingTopN（前3／前10）設定，
+// 只顯示前 N 名 + 自己的名次（若不在前 N 名內），不會把整份名單/其他人資料攤給玩家看。
+async function loadFinishRank(){
+  const container=document.getElementById('finishRankList');
+  if(!container)return;
+  container.innerHTML='<div style="text-align:center;color:#999;font-size:13px">載入中...</div>';
+  const cfg=state.settings;
+  const scope=cfg.rankingScope==='daily'?'daily':'cumulative';
+  const topN=(cfg.rankingTopN===3)?3:10;
+  const snap=await get(aRef('sessions'));
+  const sess=snap.val()||{};
+  // 每個身分只取「已完成」中分數最高的一筆（同一人若可重複闖關，計入其最佳成績）
+  const bestByIdentity={};
+  const now=new Date();
+  const todayStr=`${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
+  Object.values(sess).forEach(s=>{
+    if(s.status!=='finished')return;
+    if(scope==='daily'){
+      const ft=s.finishedAt;
+      if(!ft)return;
+      const d=new Date(typeof ft==='number'?ft:Date.now());
+      const dStr=`${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+      if(dStr!==todayStr)return;
+    }
+    const key=s.teamKey;if(!key)return;
+    if(!bestByIdentity[key]||(s.score||0)>(bestByIdentity[key].score||0))bestByIdentity[key]=s;
+  });
+  const rows=Object.values(bestByIdentity).sort((a,b)=>(b.score||0)-(a.score||0));
+  const myIdx=rows.findIndex(s=>s.teamKey===state.teamKey);
+  const topRows=rows.slice(0,topN);
+  const medals=['🥇','🥈','🥉'];
+  container.innerHTML='';
+  if(!topRows.length){
+    container.innerHTML='<div style="text-align:center;color:#999;font-size:13px">尚無資料</div>';
+    return;
+  }
+  topRows.forEach((s,i)=>{
+    const isMe=s.teamKey===state.teamKey;
+    const div=document.createElement('div');
+    div.style.cssText=`display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #eee;font-size:13px${isMe?';background:#fff8e0;border-radius:6px;padding-left:6px;padding-right:6px':''}`;
+    const medal=document.createElement('span');medal.textContent=medals[i]||`${i+1}.`;
+    const name=document.createElement('span');name.style.flex='1';name.style.fontWeight=isMe?'700':'400';
+    name.textContent=(s.teamName||'玩家')+(isMe?' (我)':'');
+    const score=document.createElement('span');score.style.fontWeight='700';score.style.color='var(--primary)';score.textContent=`${s.score||0}分`;
+    div.appendChild(medal);div.appendChild(name);div.appendChild(score);
+    container.appendChild(div);
+  });
+  // 若自己不在前 N 名內，額外顯示自己的名次（只提自己，不揭露他人資料）
+  if(myIdx>=topN){
+    const mine=document.createElement('div');
+    mine.style.cssText='text-align:center;margin-top:8px;padding-top:8px;border-top:1px dashed #ccc;font-size:13px;color:var(--text-light)';
+    mine.textContent=`你的名次：第 ${myIdx+1} 名（共 ${rows.length} 人）`;
+    container.appendChild(mine);
+  }
+  const titleEl=document.getElementById('finishRankTitle');
+  if(titleEl)titleEl.textContent=scope==='daily'?`🏆 今日高分榜（前${topN}名）`:`🏆 總排行榜（前${topN}名）`;
+}
+
+// ── 玩家主動登出 ──
+let _loggingOut=false;// 防止快速重複點擊登出按鈕，造成寫入/狀態重置的競爭問題
+async function playerLogout(){
+  if(_loggingOut)return;
+  // 如果在遊戲中才問確認
+  if(state.sessionKey&&state.currentIdx>0){
+    if(!confirm('確定要離開？目前進度將不會保留，下次重新登入會從頭開始。'))return;
+  }
+  _loggingOut=true;
+  // 先清除計時器
+  clearInterval(state.timerInterval);
+  clearInterval(state.countdownInterval);
+  // 等待 Firebase 寫入完成（這樣重新登入時才不會被擋）
+  if(state.sessionKey){
+    try{
+      await set(aRef(`sessions/${state.sessionKey}/status`),'left');
+    }catch(e){
+      console.warn('登出時寫入失敗:',e);
+    }
+  }
+  // 等待登入前，先在等待頁面就登出的情況（沒有 session，只有 teamKey）
+  // → 不需要做什麼，直接重置狀態即可
+  // 清除記住的登入資訊
+  try{localStorage.removeItem(playerLoginKey());}catch(e){}
+  // 重置所有狀態
+  const prevTeamKey=state.teamKey;
+  state.teamKey=null;
+  state.teamName=null;
+  state.sessionKey=null;
+  state.waitingToStart=false;
+  state.currentIdx=0;
+  state.score=0;
+  state.helpUsed=0;
+  state.hintUsed=0;
+  state.stages=[];
+  state.photoFile=null;
+  state.selectedOption=null;
+  // 回到登入頁並重新初始化
+  showScreen('loginScreen');
+  document.getElementById('alreadyDoneArea').classList.add('hidden');
+  document.getElementById('guestFormArea').classList.add('hidden');
+  document.getElementById('loginChoiceArea').classList.remove('hidden');
+  await initLogin();
+  await setupLoginChoices();
+  _loggingOut=false;
+}
+
+function tickTimer(){
+  state.stageSeconds++;state.totalSeconds=Math.floor((Date.now()-state.gameStartTime)/1000);
+  const ss=state.stageSeconds,ts=state.totalSeconds;
+  document.getElementById('stageTimer').textContent=`${String(Math.floor(ss/60)).padStart(2,'0')}:${String(ss%60).padStart(2,'0')}`;
+  document.getElementById('totalTimer').textContent=`${String(Math.floor(ts/60)).padStart(2,'0')}:${String(ts%60).padStart(2,'0')}`;
+  if(ts%10===0)set(aRef(`sessions/${state.sessionKey}/totalSec`),ts);
+}
+</script>
+</body>
+</html>
