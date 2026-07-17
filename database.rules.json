@@ -1,0 +1,42 @@
+{
+  "rules": {
+    "activitiesIndex": {
+      ".read": "auth != null",
+      "$activityId": {
+        ".write": "auth != null && root.child('globalUsers').child(auth.uid).child('role').val() === 'super'"
+      }
+    },
+    "globalUsers": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('globalUsers').child(auth.uid).child('role').val() === 'super')",
+        ".write": "auth != null && root.child('globalUsers').child(auth.uid).child('role').val() === 'super'"
+      }
+    },
+    "globalEmailWhitelist": {
+      ".read": "auth != null",
+      "$emailHash": {
+        ".write": "auth != null && root.child('globalUsers').child(auth.uid).child('role').val() === 'super'"
+      }
+    },
+    "activities": {
+      "$activityId": {
+        ".write": "auth != null",
+        "config": { ".read": "auth != null" },
+        "stages": { ".read": "auth != null" },
+        "sessions": {
+          ".read": "auth != null",
+          "$sessKey": {
+            "stageLogs": {
+              "$idx": {
+                "confirmed": {
+                  ".validate": "newData.val() === true && (root.child('activities').child($activityId).child('config').child('users').child(auth.uid).exists() || (!root.child('activities').child($activityId).child('stages').child(root.child('activities').child($activityId).child('sessions').child($sessKey).child('stageOrder').child($idx).val()).child('stageMasterPassHash').exists() && !root.child('activities').child($activityId).child('stages').child(root.child('activities').child($activityId).child('sessions').child($sessKey).child('stageOrder').child($idx).val()).child('qrMasterPassHash').exists()) || newData.parent().child('confirmPassHash').val() === root.child('activities').child($activityId).child('stages').child(root.child('activities').child($activityId).child('sessions').child($sessKey).child('stageOrder').child($idx).val()).child('stageMasterPassHash').val() || newData.parent().child('confirmPassHash').val() === root.child('activities').child($activityId).child('stages').child(root.child('activities').child($activityId).child('sessions').child($sessKey).child('stageOrder').child($idx).val()).child('qrMasterPassHash').val())"
+                }
+              }
+            }
+          }
+        },
+        "sessionPhones": { ".read": false }
+      }
+    }
+  }
+}
