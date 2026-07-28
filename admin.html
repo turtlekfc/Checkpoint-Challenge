@@ -739,6 +739,31 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
         </div>
       </div>
       <div class="card">
+        <div class="settings-section-title">🏪 市集版路線設定 <span style="font-size:11px;color:var(--text-light);font-weight:400">（前N關/後N關固定，中段可打亂或隨機抽選部分關卡；都留0表示比照上面的「路線模式」）</span></div>
+        <div class="form-row-3">
+          <div class="form-group"><label>前幾關固定順序</label><input type="number" id="settingFixedStartCount" value="0" min="0"/></div>
+          <div class="form-group"><label>後幾關固定順序</label><input type="number" id="settingFixedEndCount" value="0" min="0"/></div>
+          <div class="form-group"><label>中段關卡怎麼跑</label>
+            <select id="settingMiddleMode" onchange="toggleMiddleSubsetInput()">
+              <option value="shuffle-all">全部打亂（都要跑）</option>
+              <option value="random-subset">從中段隨機抽選部分關卡</option>
+              <option value="fixed-order">維持原本順序</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row-3">
+          <div class="form-group" id="middleSubsetGroup" style="display:none">
+            <label>中段隨機抽幾關</label>
+            <input type="number" id="settingMiddleSubsetCount" value="" min="1" placeholder="例如中段共10關，填5＝隨機抽5關來跑"/>
+          </div>
+          <div class="form-group">
+            <label>至少完成幾關才能結算 <span style="font-size:11px;color:var(--text-light);font-weight:400">（選填）</span></label>
+            <input type="number" id="settingMinStagesRequired" value="" min="0" placeholder="留空＝需完成全部已分配關卡"/>
+            <div style="font-size:11px;color:var(--text-light);margin-top:3px">達到門檻後玩家畫面會出現「立即結算」按鈕，可以選擇結算或繼續挑戰剩下關卡衝高分</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
         <div class="settings-section-title">🙋 個人開放式闖關設定</div>
         <div class="form-row-3">
           <div class="form-group">
@@ -1425,7 +1450,7 @@ import { getStorage, ref as sRef, uploadBytes, getDownloadURL, deleteObject, lis
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, signInAnonymously }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-const firebaseConfig={apiKey:"AIzaSyA51pVs3QZJ3p6eIeVpMVOGqFlNXExEjKo",authDomain:"real-world-puzzle-d5efc.firebaseapp.com",databaseURL:"https://real-world-puzzle-d5efc-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"real-world-puzzle-d5efc",storageBucket:"real-world-puzzle-d5efc.firebasestorage.app",messagingSenderId:"25902212869",appId:"1:25902212869:web:8955631b9c9395233a796c"};
+const firebaseConfig={apiKey:"AIzaSyBfKfvnFwdhLiVyjLccTDDihY_FP5ouJM0",authDomain:"station-games-898f3.firebaseapp.com",databaseURL:"https://station-games-898f3-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"station-games-898f3",storageBucket:"station-games-898f3.firebasestorage.app",messagingSenderId:"683044549838",appId:"1:683044549838:web:182cd64839bc0aaa10cc9f"};
 const fbApp=initializeApp(firebaseConfig);
 const db=getDatabase(fbApp);
 const storage=getStorage(fbApp);
@@ -1472,7 +1497,7 @@ const THEMES=[
   {name:'深灰',c1:'#2c3e50',c2:'#1a252f',c3:'#34495e'},
 ];
 
-const DEFAULT_SETTINGS={activityName:'實境解謎',subtitle:'ADVENTURE',welcome:'',finishMsg:'恭喜完成所有挑戰！感謝參與！',stuckMinutes:10,helperName:'活動小幫手',helpMaxTimes:2,helpCooldown:5,hintAfter:2,routeMode:'random',gpsFail:'block',liffId:'',enableGoogleLogin:false,enableFacebookLogin:false,allowRetry:true,retryMode:'unlimited',retryCooldownDays:1,rankingScope:'cumulative',rankingTopN:10,checkinStartTime:null,checkinEndTime:null};
+const DEFAULT_SETTINGS={activityName:'實境解謎',subtitle:'ADVENTURE',welcome:'',finishMsg:'恭喜完成所有挑戰！感謝參與！',stuckMinutes:10,helperName:'活動小幫手',helpMaxTimes:2,helpCooldown:5,hintAfter:2,routeMode:'random',gpsFail:'block',liffId:'',enableGoogleLogin:false,enableFacebookLogin:false,allowRetry:true,retryMode:'unlimited',retryCooldownDays:1,rankingScope:'cumulative',rankingTopN:10,checkinStartTime:null,checkinEndTime:null,fixedStartCount:0,fixedEndCount:0,middleMode:'shuffle-all',middleSubsetCount:null,minStagesRequired:null};
 const DEFAULT_SCORING={baseScore:100,timeBonus:50,completionBonus:200,wrongPenalty:10,hintPenalty:5,helpPenalty:30,skipPhotoPenalty:20,skipGPSPenalty:20};
 
 // 全域函數
@@ -1498,7 +1523,7 @@ window.confirmResetAll=confirmResetAll;window.closeConfirm=closeConfirm;window.e
 window.testGeminiKeys=testGeminiKeys;
 
 // ══ 關主密碼登入系統 ══
-let smState = {stageKey:null, stageIdx:null, stageName:null, stagePass:null};
+let smState = {stageKey:null, stageIdx:null, stageName:null, stagePass:null, passSalt:null};
 
 async function signInWithStageMasterPass(){
   const pass = document.getElementById('stageMasterPassInput').value.trim();
@@ -1546,21 +1571,21 @@ async function signInWithStageMasterPass(){
     const snap = await get(aRef('stages'));
     if(!snap.exists()){errEl.textContent='⚠️ 尚未建立關卡';return;}
     const stages = snap.val();
-    let found = null, foundKey = null, foundIdx = 0;
+    let found = null, foundKey = null, foundIdx = 0, foundSalt = null;
     const sorted = Object.entries(stages).sort(([,a],[,b])=>(a.order||0)-(b.order||0));
     // 密碼現在只存雜湊值，逐一算雜湊比對（跟confirm.html、資料庫規則用同一套雜湊格式：key_sm_密碼 / key_qr_密碼）
     for(let i=0;i<sorted.length;i++){
       const[k,s]=sorted[i];
-      let matched=false;
+      let matched=false, salt=null;
       if((s.stageType==='confirm'||s.stageType==='password')&&s.stageMasterPassHash){
-        if(await sha256(`${k}_sm_${pass.toLowerCase()}`)===s.stageMasterPassHash)matched=true;
+        if(await sha256(`${k}_sm_${pass.toLowerCase()}`)===s.stageMasterPassHash){matched=true;salt='sm';}
       } else if(s.stageType==='qrcode'&&s.qrMasterPassHash){
-        if(await sha256(`${k}_qr_${pass.toLowerCase()}`)===s.qrMasterPassHash)matched=true;
+        if(await sha256(`${k}_qr_${pass.toLowerCase()}`)===s.qrMasterPassHash){matched=true;salt='qr';}
       }
-      if(matched){found=s;foundKey=k;foundIdx=i;break;}
+      if(matched){found=s;foundKey=k;foundIdx=i;foundSalt=salt;break;}
     }
     if(!found){errEl.textContent='❌ 密碼錯誤，請再試一次';return;}
-    smState = {stageKey:foundKey, stageIdx:foundIdx, stageName:found.title||`第${foundIdx+1}關`, stagePass:pass};
+    smState = {stageKey:foundKey, stageIdx:foundIdx, stageName:found.title||`第${foundIdx+1}關`, stagePass:pass, passSalt:foundSalt};
     document.getElementById('stageMasterPage').style.display='block';
     document.getElementById('loginPage').style.display='none';
     document.getElementById('smTitle').textContent='🔑 總關主頁面';
@@ -1715,6 +1740,13 @@ async function smApprove(sessKey, stageIdx){
   const btn = event.target;
   btn.disabled=true;btn.textContent='確認中...';
   try{
+    // 資料庫規則要求confirmed:true時要嘛有config/users授權，要嘛附上正確的confirmPassHash才會過。
+    // 關主是密碼登入（匿名auth，沒有config/users紀錄），登入當下已驗證過密碼，這裡用登入時存的
+    // smState.stagePass+passSalt重算一次雜湊寫入，讓規則驗證能通過。
+    if(smState.stagePass&&smState.passSalt){
+      const passHash=await sha256(`${smState.stageKey}_${smState.passSalt}_${smState.stagePass.toLowerCase()}`);
+      await set(aRef(`sessions/${sessKey}/stageLogs/${stageIdx}/confirmPassHash`),passHash);
+    }
     await set(aRef(`sessions/${sessKey}/stageLogs/${stageIdx}/confirmed`),true);
     await set(aRef(`sessions/${sessKey}/stageLogs/${stageIdx}/confirmedAt`),serverTimestamp());
     await set(aRef(`sessions/${sessKey}/stageLogs/${stageIdx}/confirmedBy`),`關主(${smState.stageName})`);
@@ -2522,6 +2554,12 @@ async function doSkipStageChoice(sessKey, teamName, sessData, curIdx, isLast, mo
     await set(aRef(`sessions/${sessKey}/stageLogs/${curIdx}/skippedMode`),mode);
     await set(aRef(`sessions/${sessKey}/stageLogs/${curIdx}/answeredAt`),serverTimestamp());
     await set(aRef(`sessions/${sessKey}/score`),newScore);
+    // 明確事件訊號：不要讓玩家端用「currentStage數字有沒有變大」去猜測是否被協助過關，
+    // 那種猜測法在某些時序下會判斷失準、通知偶爾不會跳出來。改成每次都寫一筆完整、
+    // 帶時間戳記的事件，玩家端只要偵測到比自己記錄的時間戳更新的事件就一定觸發提示。
+    await set(aRef(`sessions/${sessKey}/staffAssistEvent`),{
+      ts:Date.now(),mode,nextIdx:curIdx+1,finished:isLast,newScore
+    });
     if(isLast){
       // 最後一關：標記完賽
       await set(aRef(`sessions/${sessKey}/status`),'finished');
@@ -2529,7 +2567,7 @@ async function doSkipStageChoice(sessKey, teamName, sessData, curIdx, isLast, mo
       await set(aRef(`sessions/${sessKey}/currentStage`),curIdx+1);// 觸發玩家端監聽
       toast(`✅「${teamName}」已協助完賽！`);
     } else {
-      // 前往下一關（更新 currentStage 觸發 listenStaffSkip）
+      // 前往下一關（更新 currentStage，供其他監控頁面顯示進度用）
       await set(aRef(`sessions/${sessKey}/currentStage`),curIdx+1);
       toast(`✅「${teamName}」已${mode==='pass'?'強制過關':'跳過此關'}，進入第${curIdx+2}關！`);
     }
@@ -3527,6 +3565,12 @@ async function loadSettings(){
   if(s.hintAfter!=null)document.getElementById('settingHintAfter').value=s.hintAfter;
   if(s.routeMode)document.getElementById('settingRouteMode').value=s.routeMode;
   if(s.gpsFail)document.getElementById('settingGpsFail').value=s.gpsFail;
+  const sFixStart=document.getElementById('settingFixedStartCount');if(sFixStart)sFixStart.value=s.fixedStartCount||0;
+  const sFixEnd=document.getElementById('settingFixedEndCount');if(sFixEnd)sFixEnd.value=s.fixedEndCount||0;
+  const sMidMode=document.getElementById('settingMiddleMode');if(sMidMode)sMidMode.value=s.middleMode||'shuffle-all';
+  const sMidSub=document.getElementById('settingMiddleSubsetCount');if(sMidSub)sMidSub.value=s.middleSubsetCount||'';
+  const sMinReq=document.getElementById('settingMinStagesRequired');if(sMinReq)sMinReq.value=s.minStagesRequired||'';
+  toggleMiddleSubsetInput();
   const sLiff=document.getElementById('settingLiffId');if(sLiff)sLiff.value=s.liffId||'';
   const sGoogle=document.getElementById('settingEnableGoogle');if(sGoogle)sGoogle.checked=!!s.enableGoogleLogin;
   const sFb=document.getElementById('settingEnableFacebook');if(sFb)sFb.checked=!!s.enableFacebookLogin;
@@ -3583,6 +3627,13 @@ function toggleRetryCooldownInput(){
 }
 window.toggleRetryCooldownInput=toggleRetryCooldownInput;
 
+function toggleMiddleSubsetInput(){
+  const mode=document.getElementById('settingMiddleMode');
+  const group=document.getElementById('middleSubsetGroup');
+  if(mode&&group)group.style.display=(mode.value==='random-subset')?'':'none';
+}
+window.toggleMiddleSubsetInput=toggleMiddleSubsetInput;
+
 async function saveSettings(){
   if(currentRole==='viewer'||currentRole==='staff'){toast('⛔ 協助管理者無法儲存');return;}
   const count=parseInt(document.getElementById('settingTeamCount').value)||4;
@@ -3611,6 +3662,11 @@ async function saveSettings(){
     logoUrl:finalLogoUrl,bannerUrl:finalBannerUrl,teamCount:count,teams,
     hintAfter:parseInt((document.getElementById('settingHintAfter')?document.getElementById('settingHintAfter').value:''))||2,
     routeMode:safeRead('settingRouteMode')||'random',
+    fixedStartCount:parseInt((document.getElementById('settingFixedStartCount')?document.getElementById('settingFixedStartCount').value:''))||0,
+    fixedEndCount:parseInt((document.getElementById('settingFixedEndCount')?document.getElementById('settingFixedEndCount').value:''))||0,
+    middleMode:safeRead('settingMiddleMode')||'shuffle-all',
+    middleSubsetCount:(()=>{const v=parseInt((document.getElementById('settingMiddleSubsetCount')?document.getElementById('settingMiddleSubsetCount').value:''));return isNaN(v)?null:v;})(),
+    minStagesRequired:(()=>{const v=parseInt((document.getElementById('settingMinStagesRequired')?document.getElementById('settingMinStagesRequired').value:''));return isNaN(v)?null:v;})(),
     gpsFail:safeRead('settingGpsFail')||'block',
     liffId:safeRead('settingLiffId')||'',
     enableGoogleLogin:(document.getElementById('settingEnableGoogle')&&document.getElementById('settingEnableGoogle').checked)||false,

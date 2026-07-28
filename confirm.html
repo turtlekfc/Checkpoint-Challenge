@@ -45,6 +45,10 @@ body{font-family:'Noto Sans TC',sans-serif;background:linear-gradient(160deg,#0d
   <div id="confirmView" class="hidden">
     <div class="icon">📱</div>
     <div class="title">關主確認頁</div>
+    <div style="background:#ffe9e5;border:2px solid #f0705a;border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:#a83010;font-weight:700;line-height:1.6">
+      🙋 這是「關主確認頁」，不是玩家自行過關的畫面！<br>
+      <span style="font-weight:400">請將手機交給本攤位工作人員，由工作人員確認完成後按下方按鈕，玩家掃描後不會自動過關。</span>
+    </div>
     <div class="team-name" id="teamNameEl">--</div>
     <div class="stage-name" id="stageNameEl">第 ? 關</div>
 
@@ -109,13 +113,13 @@ import { getAuth, signInAnonymously }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyA51pVs3QZJ3p6eIeVpMVOGqFlNXExEjKo",
-  authDomain: "real-world-puzzle-d5efc.firebaseapp.com",
-  databaseURL: "https://real-world-puzzle-d5efc-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "real-world-puzzle-d5efc",
-  storageBucket: "real-world-puzzle-d5efc.firebasestorage.app",
-  messagingSenderId: "25902212839",
-  appId: "1:25902212869:web:8955631b9c9395233a796c"
+  apiKey: "AIzaSyBfKfvnFwdhLiVyjLccTDDihY_FP5ouJM0",
+  authDomain: "station-games-898f3.firebaseapp.com",
+  databaseURL: "https://station-games-898f3-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "station-games-898f3",
+  storageBucket: "station-games-898f3.firebasestorage.app",
+  messagingSenderId: "683044549838",
+  appId: "1:683044549838:web:182cd64839bc0aaa10cc9f"
 };
 
 const fbApp = initializeApp(firebaseConfig);
