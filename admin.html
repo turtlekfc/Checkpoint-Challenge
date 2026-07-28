@@ -157,8 +157,6 @@ tr:hover td{background:#f8fcff}
 .photo-delete-btn{width:100%;padding:4px;background:var(--coral);color:white;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',sans-serif}
 /* SETTINGS */
 .settings-section-title{font-size:14px;font-weight:700;color:var(--primary);margin-bottom:10px;padding-bottom:5px;border-bottom:2px solid var(--primary-pale);display:flex;align-items:center;justify-content:space-between}
-.team-settings-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
-.team-setting-card{background:white;border-radius:12px;padding:12px;box-shadow:var(--shadow);border-left:4px solid var(--primary-light)}
 /* MEDIA */
 .media-upload-area{border:2px dashed var(--border);border-radius:12px;padding:14px;text-align:center;cursor:pointer;transition:background 0.2s;background:#fafcff}
 .media-upload-area:hover{background:var(--primary-pale)}
@@ -297,7 +295,6 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
     padding:14px 14px 90px;
   }
   .form-row,.form-row-3,.form-row-4{grid-template-columns:1fr}
-  .team-settings-grid{grid-template-columns:1fr}
   .stats-grid{grid-template-columns:repeat(2,1fr)}
   .team-grid{grid-template-columns:1fr 1fr}
   .page-header{flex-direction:column;align-items:flex-start}
@@ -705,16 +702,6 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
         </div>
         <div class="media-hint">顯示在遊戲頁頂部，建議寬:高 = 4:1，最高顯示 120px</div>
         <button class="btn btn-danger btn-sm mt-8" id="removeBannerBtn" onclick="removeMedia('banner')" style="display:none">🗑️ 移除Banner</button>
-      </div>
-      <div class="card">
-        <div class="settings-section-title">👥 隊伍設定 <span style="font-size:11px;color:var(--text-light);font-weight:400">（已停用，新版採個人開放式登入，不再需要預先設定隊伍密碼）</span></div>
-        <div class="form-group flex gap-8 items-center" style="margin-bottom:8px">
-          <label style="margin:0;white-space:nowrap">隊伍數量</label>
-          <select id="settingTeamCount" onchange="renderTeamSettings()" style="width:auto">
-            <option value="2">2隊</option><option value="3">3隊</option><option value="4" selected>4隊</option><option value="5">5隊</option><option value="6">6隊</option>
-          </select>
-        </div>
-        <div class="team-settings-grid" id="teamSettingsGrid"></div>
       </div>
       <div class="card">
         <div class="settings-section-title">🆘 求救設定</div>
@@ -1207,16 +1194,6 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
         <input type="checkbox" id="fRequirePhoto" style="width:auto;padding:0"/>
         <label for="fRequirePhoto" style="margin:0;cursor:pointer">📌 此關需同時拍照上傳</label>
       </div>
-      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:6px">
-        <div style="display:flex;align-items:center;gap:6px">
-          <input type="checkbox" id="fFixedFirst" style="width:auto;padding:0"/>
-          <label for="fFixedFirst" style="margin:0;cursor:pointer;font-size:12px">🏁 固定為第一關（隨機模式也優先）</label>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <input type="checkbox" id="fFixedLast" style="width:auto;padding:0"/>
-          <label for="fFixedLast" style="margin:0;cursor:pointer;font-size:12px">🏆 固定為最後一關（隨機模式也最後）</label>
-        </div>
-      </div>
     </div>
 
     <!-- 是非題 -->
@@ -1513,7 +1490,7 @@ window.exportCSV=exportCSV;window.exportJSON=exportJSON;window.exportGPSLog=expo
 window.saveSettings=saveSettings;window.saveScoring=saveScoring;window.updateScorePreview=updateScorePreview;
 window.saveTheme=saveTheme;window.applyCustomTheme=applyCustomTheme;window.previewCustomTheme=previewCustomTheme;window.selectTheme=selectTheme;
 window.setActivityStatus=setActivityStatus;
-window.forceLogoutAll=forceLogoutAll;window.loadGPSLog=loadGPSLog;window.renderTeamSettings=renderTeamSettings;
+window.forceLogoutAll=forceLogoutAll;window.loadGPSLog=loadGPSLog;
 window.handleMediaUpload=handleMediaUpload;window.removeMedia=removeMedia;
 window.sendBroadcast=sendBroadcast;window.loadHelpRequests=loadHelpRequests;window.replyHelp=replyHelp;
 window.loadStats=loadStats;window.saveStory=saveStory;window.handleStoryImg=handleStoryImg;window.removeStoryImg=removeStoryImg;
@@ -1880,7 +1857,7 @@ function confirmResetAll(){
     async()=>{
       try{
         // 保留某些設定（teams, geminiKey等）
-        const kept={teams:settingsData.teams||{},teamCount:settingsData.teamCount||4,logoUrl:settingsData.logoUrl||'',bannerUrl:settingsData.bannerUrl||'',geminiKey:settingsData.geminiKey||'',geminiKey2:settingsData.geminiKey2||''};
+        const kept={logoUrl:settingsData.logoUrl||'',bannerUrl:settingsData.bannerUrl||'',geminiKey:settingsData.geminiKey||'',geminiKey2:settingsData.geminiKey2||''};
         await set(aRef('config/settings'),{...DEFAULT_SETTINGS,...kept});
         await set(aRef('config/settings/scoring'),DEFAULT_SCORING);
         settingsData={...DEFAULT_SETTINGS,...kept,scoring:DEFAULT_SCORING};
@@ -1893,8 +1870,8 @@ function confirmResetAll(){
 }
 
 function resetSettingsToDefault(){
-  showConfirm('↺ 恢復設定預設值','確定要將活動設定恢復為預設值嗎？（隊伍、LOGO、API Key 不受影響）',false,'',async()=>{
-    const kept={teams:settingsData.teams||{},teamCount:settingsData.teamCount||4,logoUrl:settingsData.logoUrl||'',bannerUrl:settingsData.bannerUrl||'',geminiKey:settingsData.geminiKey||'',geminiKey2:settingsData.geminiKey2||''};
+  showConfirm('↺ 恢復設定預設值','確定要將活動設定恢復為預設值嗎？（LOGO、API Key 不受影響）',false,'',async()=>{
+    const kept={logoUrl:settingsData.logoUrl||'',bannerUrl:settingsData.bannerUrl||'',geminiKey:settingsData.geminiKey||'',geminiKey2:settingsData.geminiKey2||''};
     await set(aRef('config/settings'),{...DEFAULT_SETTINGS,...kept});
     settingsData={...DEFAULT_SETTINGS,...kept};
     loadSettings();toast('✅ 設定已恢復預設值');
@@ -3128,8 +3105,6 @@ function openStageModal(){
   // 重置是非題
   const tfTrue=document.getElementById('tfAnswerTrue');if(tfTrue)tfTrue.checked=true;
   const tfReq=document.getElementById('fTFRequirePhoto');if(tfReq)tfReq.checked=false;
-  const ff=document.getElementById('fFixedFirst');if(ff)ff.checked=false;
-  const fl=document.getElementById('fFixedLast');if(fl)fl.checked=false;
   ['fTitle','fDesc','fLocationHint','fHint1','fHint2','fPhotoDesc','fQaAnswer','fQaAltAnswers','fPasscode','fPassStageMasterPass','fConfirmTask','fQRTask','fStageMasterPass','fQRMasterPass','fOverlayTask','fOverlayAIDesc','fOverlayMasterPass','fStoryIntro','fStoryOutro','fNextHint'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   const oImgPrev=document.getElementById('overlayImgPreview');if(oImgPrev)oImgPrev.classList.add('hidden');
   const oImgPh=document.getElementById('overlayImgPlaceholder');if(oImgPh)oImgPh.classList.remove('hidden');
@@ -3159,8 +3134,6 @@ function editStage(key){
   const fi=document.getElementById('fStoryIntro');if(fi)fi.value=s.storyIntro||'';
   const fo=document.getElementById('fStoryOutro');if(fo)fo.value=s.storyOutro||'';
   const fn=document.getElementById('fNextHint');if(fn)fn.value=s.nextHint||'';
-  const ffEl=document.getElementById('fFixedFirst');if(ffEl)ffEl.checked=s.fixedFirst||false;
-  const flEl=document.getElementById('fFixedLast');if(flEl)flEl.checked=s.fixedLast||false;
   // 類型相關
   const type=s.stageType||'quiz';
   selectStageType(type);
@@ -3357,8 +3330,6 @@ async function saveStage(){
       storyIntro:((document.getElementById('fStoryIntro')?document.getElementById('fStoryIntro').value:'')||'').trim(),
       storyOutro:((document.getElementById('fStoryOutro')?document.getElementById('fStoryOutro').value:'')||'').trim(),
       nextHint:((document.getElementById('fNextHint')?document.getElementById('fNextHint').value:'')||'').trim(),
-      fixedFirst:(document.getElementById('fFixedFirst')&&document.getElementById('fFixedFirst').checked),
-      fixedLast:(document.getElementById('fFixedLast')&&document.getElementById('fFixedLast').checked),
       updatedAt:serverTimestamp(),
     };
     // 類型專屬資料
@@ -3561,7 +3532,6 @@ async function loadSettings(){
   if(s.subtitle)document.getElementById('settingSubtitle').value=s.subtitle;
   if(s.welcome)document.getElementById('settingWelcome').value=s.welcome;
   if(s.finishMsg)document.getElementById('settingFinishMsg').value=s.finishMsg;
-  if(s.teamCount)document.getElementById('settingTeamCount').value=s.teamCount;
   if(s.hintAfter!=null)document.getElementById('settingHintAfter').value=s.hintAfter;
   if(s.routeMode)document.getElementById('settingRouteMode').value=s.routeMode;
   if(s.gpsFail)document.getElementById('settingGpsFail').value=s.gpsFail;
@@ -3596,28 +3566,6 @@ async function loadSettings(){
   // Key 狀態
   if(s.geminiKey){document.getElementById('keyStatus1').textContent='✅ 已設定';document.getElementById('keyStatus1').className='key-status ok';}
   if(s.geminiKey2){document.getElementById('keyStatus2').textContent='⏳ 備用中（已設定）';document.getElementById('keyStatus2').className='key-status standby';}
-  renderTeamSettings();
-}
-
-function renderTeamSettings(){
-  const count=parseInt(document.getElementById('settingTeamCount').value)||4;
-  const teams=settingsData.teams||{};
-  const defaultEmojis=['🌊','🐠','⭐','🐢','🦈','🐙'];const defaultNames=['海浪隊','熱帶魚隊','海星隊','海龜隊','鯊魚隊','章魚隊'];const defaultColors=['#2a9fd6','#f07050','#f5c842','#3db87a','#7c5cbf','#e67e22'];
-  const grid=document.getElementById('teamSettingsGrid');grid.innerHTML='';
-  for(let i=0;i<count;i++){
-    const key=`team${i+1}`;const t=teams[key]||{};
-    const card=document.createElement('div');card.className='team-setting-card';card.style.borderLeftColor=t.color||defaultColors[i];card.setAttribute('data-team',key);
-    card.innerHTML=`<label>隊伍 ${i+1} 名稱</label><input type="text" id="tName${key}" placeholder="${defaultEmojis[i]} ${defaultNames[i]}"/>
-      <div class="form-row" style="margin-top:7px"><div><label>密碼</label><input type="text" id="tPass${key}" placeholder="隊伍密碼"/></div>
-      <div><label>顏色</label><input type="color" id="tColor${key}" value="${t.color||defaultColors[i]}" onchange="document.querySelector('[data-team=${key}]').style.borderLeftColor=this.value"/></div></div>
-      <div style="margin-top:7px"><label style="display:flex;align-items:center;gap:4px">🗺️ 自訂跑關順序 <span style="font-size:10px;color:var(--text-light);font-weight:400">（填關卡順序號碼，逗號分隔，例：3,1,2）</span></label>
-      <input type="text" id="tOrder${key}" placeholder="留空則依路線模式（隨機/固定）" style="font-size:12px"/></div>`;
-    grid.appendChild(card);
-    document.getElementById(`tName${key}`).value=t.name||`${defaultEmojis[i]} ${defaultNames[i]}`;
-    document.getElementById(`tPass${key}`).value=t.password||'';
-    document.getElementById(`tColor${key}`).value=t.color||defaultColors[i];
-    document.getElementById(`tOrder${key}`).value=t.customOrder||'';
-  }
 }
 
 function toggleRetryCooldownInput(){
@@ -3636,9 +3584,6 @@ window.toggleMiddleSubsetInput=toggleMiddleSubsetInput;
 
 async function saveSettings(){
   if(currentRole==='viewer'||currentRole==='staff'){toast('⛔ 協助管理者無法儲存');return;}
-  const count=parseInt(document.getElementById('settingTeamCount').value)||4;
-  const teams={};
-  for(let i=0;i<count;i++){const key=`team${i+1}`;teams[key]={name:document.getElementById(`tName${key}`).value.trim()||`隊伍${i+1}`,password:document.getElementById(`tPass${key}`).value.trim()||'1234',color:document.getElementById(`tColor${key}`).value,customOrder:(document.getElementById(`tOrder${key}`)&&document.getElementById(`tOrder${key}`).value.trim()||'')};}
   let finalLogoUrl=logoUrl||settingsData.logoUrl||'';
   if(logoFile){try{const path=`logos/logo_${Date.now()}.${logoFile.name.split('.').pop()}`;const snap=await uploadBytes(aStorageRef(path),logoFile);finalLogoUrl=await getDownloadURL(snap.ref);logoFile=null;logoUrl=finalLogoUrl;}catch(e){toast('⚠️ LOGO上傳失敗');}}
   let finalBannerUrl=bannerUrl||settingsData.bannerUrl||'';
@@ -3659,7 +3604,7 @@ async function saveSettings(){
     subtitle:safeRead('settingSubtitle'),
     welcome:safeRead('settingWelcome'),
     finishMsg:safeRead('settingFinishMsg'),
-    logoUrl:finalLogoUrl,bannerUrl:finalBannerUrl,teamCount:count,teams,
+    logoUrl:finalLogoUrl,bannerUrl:finalBannerUrl,
     hintAfter:parseInt((document.getElementById('settingHintAfter')?document.getElementById('settingHintAfter').value:''))||2,
     routeMode:safeRead('settingRouteMode')||'random',
     fixedStartCount:parseInt((document.getElementById('settingFixedStartCount')?document.getElementById('settingFixedStartCount').value:''))||0,
@@ -4179,11 +4124,6 @@ async function loadPreview(){
       if(s.storyIntro)html+='<div style="font-size:12px;color:var(--purple);background:#f0e8ff;border-radius:8px;padding:6px 10px;margin-bottom:6px">📖 開場故事：</div>';
       if(s.storyOutro)html+='<div style="font-size:12px;color:var(--purple);background:#f0e8ff;border-radius:8px;padding:6px 10px;margin-bottom:6px">🎉 過關故事：</div>';
       if(s.nextHint)html+='<div style="font-size:12px;color:var(--primary);background:var(--primary-pale);border-radius:8px;padding:6px 10px;margin-bottom:6px">🗺️ 位置提示：</div>';
-      // 固定首尾
-      const tags=[];
-      if(s.fixedFirst)tags.push('🏁 固定第一關');
-      if(s.fixedLast)tags.push('🏆 固定最後一關');
-      if(tags.length)html+='<div style="font-size:11px;color:var(--coral)">'+tags.join(' ・ ')+'</div>';
       html+='</div>';
       card.innerHTML=html;
       // 安全填入文字
@@ -4268,8 +4208,6 @@ body{font-family:'Noto Sans TC',Microsoft JhengHei,sans-serif;background:#f0f6fa
     html+=`
 <div class="card">`;
     html+=`<div><span class="stage-num">${escHtml(String(s.order||i+1))}</span><span class="stage-title">${escHtml(s.title||'（未命名）')}</span><span class="type-tag">${typeLabel}</span>`;
-    if(s.fixedFirst)html+=`<span class="type-tag" style="background:#fff0ee;color:#c03020">🏁 固定第一關</span>`;
-    if(s.fixedLast)html+=`<span class="type-tag" style="background:#fff0ee;color:#c03020">🏆 固定最後一關</span>`;
     html+=`</div>`;
     if(s.description)html+=`<div class="section"><div class="section-label">題目說明</div><div>${escHtml(s.description)}</div></div>`;
     // 選項（不含答案）

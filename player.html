@@ -1676,11 +1676,7 @@ function shuffleForTeam(arr,teamKey){
     if(saved&&saved.trim())savedOrder=JSON.parse(saved);
   }catch(e){}
 
-  const a=[...arr];
-  // 支援固定第一關/最後一關
-  const firstFixed=a.find(s=>s.fixedFirst);
-  const lastFixed=a.find(s=>s.fixedLast);
-  let middle=a.filter(s=>!s.fixedFirst&&!s.fixedLast);
+  let middle=[...arr];
 
   if(savedOrder&&savedOrder.length>0){
     // 用上次儲存的順序重排（重整後維持相同順序）
@@ -1700,11 +1696,7 @@ function shuffleForTeam(arr,teamKey){
     try{sessionStorage.setItem(storageKey,JSON.stringify(middle.map(s=>s.key)));}catch(e){}
   }
 
-  const result=[];
-  if(firstFixed)result.push(firstFixed);
-  result.push(...middle);
-  if(lastFixed)result.push(lastFixed);
-  return result;
+  return middle;
 }
 
 function startCountdown(endTimeMs){
@@ -2063,11 +2055,7 @@ function renderStage(){
   const hasHints=!!(stage.hints&&(stage.hints.h1||stage.hints.h2));
   const hintBtns=document.querySelectorAll('#hintBtn,#gpsHintBtn');
   hintBtns.forEach(btn=>{
-    if(!hasHints){
-      btn.disabled=true;
-      btn.title='此關卡無提示';
-      btn.style.opacity='0.4';
-    }
+    btn.style.display=hasHints?'':'none';
   });
 
   // 無 GPS 關卡：直接顯示開場故事
