@@ -2652,7 +2652,16 @@ async function loadGPSLog(){
 }
 
 // ── 關卡 ──
-async function loadStages(){const snap=await get(ref(db,'stages'));stagesData=snap.val()||{};renderStageList();}
+async function loadStages(){
+  const snap=await get(ref(db,'stages'));
+  stagesData=snap.val()||{};
+  renderStageList();
+  // 修正競態問題：initAdmin() 同時呼叫 loadSessions()/loadStages()，
+  // 但 sessions 的即時監聽常常比 loadStages() 的一次性讀取更早回來，
+  // 導致監控頁第一次畫的時候 stagesData 還是空的，關卡名稱就顯示不出來，
+  // 而且要等下一次 sessions 有變化才會重畫。這裡資料到齊後主動補畫一次監控頁。
+  if(document.getElementById('teamGrid'))renderMonitor();
+}
 function renderStageList(){
   const list=document.getElementById('stageList');
   const entries=Object.entries(stagesData).sort(([,a],[,b])=>(a.order||0)-(b.order||0));

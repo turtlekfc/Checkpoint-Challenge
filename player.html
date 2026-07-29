@@ -125,7 +125,7 @@ select:focus,input:focus{border-color:var(--primary-light)}
 .photo-upload-area .icon{font-size:28px;margin-bottom:5px}
 .photo-upload-area .text{font-size:12px;color:var(--text-light)}
 .photo-preview{width:100%;border-radius:10px;margin-bottom:10px;max-height:180px;object-fit:cover;display:none}
-.photo-verify-status{border-radius:10px;padding:10px 13px;margin-bottom:10px;font-size:13px;line-height:1.5;display:none}
+.photo-verify-status{border-radius:10px;padding:10px 13px;margin-bottom:10px;font-size:13px;line-height:1.5;display:none;white-space:pre-line}
 .photo-verify-status.checking{background:#f0f8fd;border:1.5px solid #90c8e8;color:var(--primary)}
 .photo-verify-status.pass{background:var(--green-pale);border:1.5px solid var(--green);color:#1a7a40}
 .photo-verify-status.fail{background:#fff0ee;border:1.5px solid var(--coral);color:#c03020}
@@ -2555,7 +2555,7 @@ function overlayShoot(){
             const passed=await verifyPhotoWithAI(e.target.result,stage.overlayAIDesc,stage.overlayStrictness||'standard');
             if(passed){
               submitOverlayBtn.style.display='none';
-              setTimeout(()=>passPhotoStage(),800);
+              setTimeout(()=>passPhotoStage(),1200);
             } else {
               submitOverlayBtn.disabled=false;
               submitOverlayBtn.textContent='📤 重新送出辨識';
@@ -2847,7 +2847,7 @@ async function submitPhotoForAI(){
         const passed=await verifyPhotoWithAI(e.target.result,stage.photoDescription,stage.photoStrictness||'standard');
         if(passed){
           if(submitBtn)submitBtn.style.display='none';
-          setTimeout(()=>passPhotoStage(),800);
+          setTimeout(()=>passPhotoStage(),1200);
         } else {
           // 辨識失敗：顯示重拍按鈕，解鎖送出按鈕
           if(submitBtn){submitBtn.disabled=false;submitBtn.textContent='📤 重新送出辨識';}
