@@ -89,7 +89,7 @@ select:focus,input:focus{border-color:var(--primary-light)}
 .timer-card .label{color:rgba(255,255,255,0.65);font-size:9px}
 .timer-card .value{color:white;font-size:16px;font-weight:700;font-family:monospace}
 .timer-card .value.warn{color:#ffd04a}
-.score-bar{display:flex;align-items:center;justify-content:center;padding:4px 14px 8px}
+.score-bar{display:flex;align-items:center;justify-content:space-between;padding:4px 14px 8px}
 .score-val{color:var(--sand);font-size:15px;font-weight:700}
 .score-label{color:rgba(255,255,255,0.6);font-size:10px}
 .progress-bar{display:flex;align-items:center;gap:5px;padding:6px 12px 10px}
@@ -523,38 +523,12 @@ body {
     </div>
     <div class="login-welcome hidden" id="loginWelcome"></div>
     <div class="loading-hint" id="loadingHint">⏳ 載入活動資訊中...</div>
-
-    <!-- 個人登入選擇區：LINE 登入為主，免登入為備援 -->
-    <div id="loginChoiceArea">
-      <button class="btn-login" id="loginBtn" onclick="startLineLogin()" disabled style="background:#06C755">⏳ 載入中...</button>
-      <button class="btn-login hidden" id="googleLoginBtn" onclick="startGoogleLogin()" style="background:white;color:#444;border:1.5px solid #ddd;margin-top:8px">🔵 用 Google 登入</button>
-      <button class="btn-login hidden" id="fbLoginBtn" onclick="startFacebookLogin()" style="background:#1877F2;margin-top:8px">📘 用 Facebook 登入</button>
-      <div style="display:flex;align-items:center;gap:10px;margin:14px 0">
-        <div style="flex:1;height:1px;background:#e0e0e0"></div>
-        <span style="font-size:12px;color:#aaa">或</span>
-        <div style="flex:1;height:1px;background:#e0e0e0"></div>
-      </div>
-      <button class="btn-login" id="guestEntryBtn" onclick="showGuestForm()" style="background:var(--primary-pale,#e8f4f8);color:var(--primary,#1a6fa3)" disabled>🙋 免登入，直接開始</button>
-    </div>
-
-    <!-- 免登入表單（暱稱必填、手機選填）-->
-    <div id="guestFormArea" class="hidden">
-      <div class="field-label">你的暱稱</div>
-      <input type="text" id="guestNickname" placeholder="請輸入暱稱" maxlength="20"/>
-      <div class="field-label">手機號碼 <span style="font-weight:400;color:var(--text-light)">（選填，供活動聯絡/兌獎用）</span></div>
-      <input type="tel" id="guestPhone" placeholder="選填" maxlength="15"/>
-      <div class="error-msg" id="loginError"></div>
-      <button class="btn-login" onclick="doGuestLogin()">🐚 開始闖關！</button>
-      <button class="btn-login" style="background:transparent;color:var(--text-light);box-shadow:none;margin-top:2px" onclick="hideGuestForm()">‹ 返回</button>
-    </div>
-
-    <!-- 已完成過活動，且主辦方不開放重複闖關時顯示 -->
-    <div id="alreadyDoneArea" class="hidden" style="text-align:center">
-      <div style="font-size:40px;margin-bottom:8px">🎉</div>
-      <div style="font-weight:700;margin-bottom:6px">你已經完成過這個活動囉！</div>
-      <div style="font-size:13px;color:var(--text-light);margin-bottom:4px" id="alreadyDoneScore"></div>
-      <div style="font-size:12px;color:var(--text-light)" id="alreadyDoneNote">本活動限一人一次，感謝你的參與</div>
-    </div>
+    <div class="field-label">選擇你的隊伍</div>
+    <select id="teamSelect" disabled><option value="">-- 載入中 --</option></select>
+    <div class="field-label">隊伍密碼</div>
+    <input type="password" id="teamPassword" placeholder="請輸入密碼"/>
+    <div class="error-msg" id="loginError"></div>
+    <button class="btn-login" id="loginBtn" onclick="doLogin()" disabled>⏳ 載入中...</button>
   </div>
 </div>
 
@@ -634,11 +608,8 @@ body {
       <div class="timer-card"><div class="label">⏰ 剩餘</div><div class="value" id="countdownTimer">--:--</div></div>
     </div>
     <div class="score-bar">
-      <div style="text-align:center"><div class="score-label">目前分數</div><div class="score-val" id="currentScore">0 分</div></div>
-    </div>
-    <div id="settleBanner" class="hidden" style="background:linear-gradient(90deg,#ffd76e,#ffb74d);color:#5a3a00;border-radius:12px;padding:10px 14px;margin:0 16px 10px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12.5px;font-weight:700">
-      <span>🎉 已達最低關卡數，可以結算完成！</span>
-      <button onclick="offerSettle()" style="background:#5a3a00;color:white;border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',sans-serif;white-space:nowrap">立即結算</button>
+      <div><div class="score-label">目前分數</div><div class="score-val" id="currentScore">0 分</div></div>
+      <div style="text-align:right"><div class="score-label">排名</div><div class="score-val" id="currentRank">--</div></div>
     </div>
     <div class="progress-bar" id="progressBar"></div>
   </div>
@@ -660,7 +631,7 @@ body {
       <div class="stat-box"><div class="stat-label">求救次數</div><div class="stat-value" id="finishHelps">-</div></div>
     </div>
     <div class="finish-rank-section" id="finishRankSection">
-      <div class="finish-rank-title" id="finishRankTitle">🏆 高分榜</div>
+      <div class="finish-rank-title">🏆 目前排行榜</div>
       <div id="finishRankList"></div>
     </div>
     <div class="finish-msg" id="finishMsg">🐚 恭喜完成所有挑戰！</div>
@@ -707,6 +678,14 @@ body {
   </div>
 </div>
 
+<div class="rank-overlay hidden" id="rankOverlay">
+  <div class="rank-box">
+    <h3>🏆 即時排行榜</h3>
+    <div id="rankList"></div>
+    <button class="btn-close-rank" onclick="closeRank()">關閉</button>
+  </div>
+</div>
+
 <div class="help-overlay hidden" id="helpOverlay">
   <div class="help-box">
     <h3 id="helpTitle">🆘 向小幫手求救</h3>
@@ -731,8 +710,6 @@ body {
 
 <!-- QR Code 產生套件 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<!-- LINE Login（LIFF SDK）：需要専案管理者在 LINE Developers Console 申請 LIFF 頻道，並在下方 module script 的 LIFF_ID 填入 -->
-<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script type="module">
 // ── 手機除錯用：把錯誤顯示在畫面上 ──
 window.addEventListener('error', function(e){
@@ -760,48 +737,22 @@ import { getDatabase, ref, get, set, push, onValue, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 import { getStorage, ref as sRef, uploadBytes, getDownloadURL }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
-import { getAuth, signInAnonymously, GoogleAuthProvider, FacebookAuthProvider, signInWithPopup }
+import { getAuth, signInAnonymously }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBfKfvnFwdhLiVyjLccTDDihY_FP5ouJM0",
-  authDomain: "station-games-898f3.firebaseapp.com",
-  databaseURL: "https://station-games-898f3-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "station-games-898f3",
-  storageBucket: "station-games-898f3.firebasestorage.app",
-  messagingSenderId: "683044549838",
-  appId: "1:683044549838:web:182cd64839bc0aaa10cc9f"
+  apiKey: "AIzaSyA51pVs3QZJ3p6eIeVpMVOGqFlNXExEjKo",
+  authDomain: "real-world-puzzle-d5efc.firebaseapp.com",
+  databaseURL: "https://real-world-puzzle-d5efc-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "real-world-puzzle-d5efc",
+  storageBucket: "real-world-puzzle-d5efc.firebasestorage.app",
+  messagingSenderId: "25902212869",
+  appId: "1:25902212869:web:8955631b9c9395233a796c"
 };
 const fbApp = initializeApp(firebaseConfig);
 const db = getDatabase(fbApp);
 const storage = getStorage(fbApp);
 const auth = getAuth(fbApp);
-
-// ══ 多活動架構：此連結對應哪個活動，由網址參數 ?a=活動代碼 決定 ══
-let ACTIVITY_ID=null;
-function aRef(path){
-  if(!ACTIVITY_ID)throw new Error('尚未解析活動代碼(ACTIVITY_ID)，無法存取活動資料：'+path);
-  return ref(db,`activities/${ACTIVITY_ID}/${path}`);
-}
-function aStorageRef(path){
-  if(!ACTIVITY_ID)throw new Error('尚未解析活動代碼(ACTIVITY_ID)，無法存取活動檔案：'+path);
-  return sRef(storage,`activities/${ACTIVITY_ID}/${path}`);
-}
-function gRef(path){return ref(db,path);}
-function getURLActivityParam(){try{return new URLSearchParams(location.search).get('a')||'';}catch(e){return '';}}
-// 本機記住「上次用哪個身分登入這個活動」的 key，依活動代碼區隔，換活動不會互相干擾
-function playerLoginKey(){return 'playerLogin_'+ACTIVITY_ID;}
-// 驗證並設定 ACTIVITY_ID；失敗時回傳 false，呼叫端要中止後續初始化並顯示錯誤
-async function resolveActivityId(){
-  const code=getURLActivityParam();
-  if(!code)return false;
-  try{
-    const snap=await get(gRef(`activitiesIndex/${code}`));
-    if(!snap.exists())return false;
-    ACTIVITY_ID=code;
-    return true;
-  }catch(e){return false;}
-}
 
 // ── 偵測常見「App內建瀏覽器」(LINE / FB / IG / 微信) ──
 // 這類內建瀏覽器常會限制 IndexedDB／第三方資源，導致 Firebase 匿名登入卡住不動、永遠停在「載入中」
@@ -842,33 +793,43 @@ function withTimeout(promise,ms,timeoutErr){
 // 15 秒逾時保護：不管是卡住還是真的失敗，都會走到下面的 .catch()，不會無限期停在「載入中」
 withTimeout(signInAnonymously(auth),15000,Object.assign(new Error('登入逾時'),{code:'auth/timeout'})).then(async ()=>{
   console.log('匿名登入成功，開始載入設定');
-  // ── 多活動：先確認網址帶的活動代碼有效，否則無法得知要連到哪個活動 ──
-  const activityOk=await resolveActivityId();
-  if(!activityOk){
-    const hintEl=document.getElementById('loadingHint');
-    const loginBtn=document.getElementById('loginBtn');
-    if(hintEl){hintEl.style.color='var(--coral)';hintEl.textContent='⚠️ 找不到活動，請確認掃描的QR Code或連結是否正確（缺少或錯誤的活動代碼）';}
-    if(loginBtn)loginBtn.style.display='none';
-    return;
-  }
-  // 先載入活動設定（LOGO、故事、計分規則…），不管等等是要恢復進度還是全新登入都需要
-  await initLogin();
-
-  // ── 個人闖關：嘗試用本機記住的身分（LINE或訪客）直接恢復，不需要重新登入 ──
-  const saved=localStorage.getItem(playerLoginKey());
+  // ── 嘗試從 sessionStorage 自動恢復登入 ──
+  const saved=sessionStorage.getItem('playerLogin');
   if(saved&&saved.trim()){
     try{
-      const {identityKey,displayName}=JSON.parse(saved);
-      if(identityKey){
-        await resumeOrStartWithIdentity(identityKey,displayName||'玩家',null);
-        return;
+      const {teamKey}=JSON.parse(saved);
+      if(teamKey){
+        // 先載入設定
+        await initLogin();
+        // 若有進行中 session，直接恢復（不需要密碼）
+        try{
+          const sessSnap=await get(ref(db,'sessions'));
+          if(sessSnap.exists()){
+            const allSess=Object.entries(sessSnap.val());
+            const activeSession=allSess.find(([k,s])=>s.teamKey===teamKey&&s.status==='playing');
+            if(activeSession){
+              state.waitingToStart=false;
+              const sel=document.getElementById('teamSelect');
+              if(sel)sel.value=teamKey;
+              await doLoginResume(teamKey,activeSession[0],activeSession[1]);
+              return;
+            }
+          }
+        }catch(sessErr){
+          console.warn('sessions 讀取失敗（可能是 Rules 限制）:',sessErr);
+          // 忽略，繼續到登入頁
+        }
+        // 沒有進行中 session → 預填隊伍，讓玩家輸入密碼
+        const sel=document.getElementById('teamSelect');
+        if(sel)sel.value=teamKey;
+        return;// ← 關鍵：不要再呼叫 initLogin()
       }
     }catch(e){
-      localStorage.removeItem(playerLoginKey());
+      sessionStorage.removeItem('playerLogin');
     }
   }
-  // 沒有記住的身分 → 顯示登入選擇畫面（LINE / 免登入）
-  setupLoginChoices();
+  // 全新登入
+  initLogin();
 }).catch(e=>{
   console.warn('匿名登入失敗:',e);
   const hintEl=document.getElementById('loadingHint');
@@ -894,60 +855,37 @@ async function sha256(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
-// 問答題答案正規化：必須跟 admin.html 的 qaNormalize() 完全一致，兩邊算出的雜湊才會對得起來
-function qaNormalize(str){return String(str||'').trim().toLowerCase().replace(/\s+/g,' ');}
-
-// 照片壓縮：上傳前先縮小尺寸＋降低JPEG品質，減少Firebase Storage儲存/流量用量
-// maxDim：長邊上限(px)，quality：JPEG壓縮品質(0~1)。若瀏覽器無法解碼(例如少數HEIC情況)則自動退回原檔，不影響闖關。
-function compressImage(file,maxDim=1280,quality=0.8){
-  return new Promise(resolve=>{
-    if(!file||!file.type||!file.type.startsWith('image/')){resolve(file);return;}
-    const reader=new FileReader();
-    reader.onload=e=>{
-      const img=new Image();
-      img.onload=()=>{
-        let w=img.width,h=img.height;
-        if(w<=0||h<=0){resolve(file);return;}
-        if(w>maxDim||h>maxDim){
-          if(w>=h){h=Math.round(h*maxDim/w);w=maxDim;}
-          else{w=Math.round(w*maxDim/h);h=maxDim;}
-        }
-        const canvas=document.createElement('canvas');
-        canvas.width=w;canvas.height=h;
-        const ctx=canvas.getContext('2d');
-        ctx.drawImage(img,0,0,w,h);
-        canvas.toBlob(blob=>{
-          if(!blob){resolve(file);return;}
-          const newName=(file.name||'photo').replace(/\.[^.]+$/,'')+'.jpg';
-          resolve(new File([blob],newName,{type:'image/jpeg'}));
-        },'image/jpeg',quality);
-      };
-      img.onerror=()=>resolve(file);// 解碼失敗就用原始檔案，不擋闖關
-      img.src=e.target.result;
-    };
-    reader.onerror=()=>resolve(file);
-    reader.readAsDataURL(file);
-  });
-}
 
 let state = {
   teamKey:null, teamName:null, teamColor:null, stages:[],
-  currentIdx:0, stageSeconds:0, totalSeconds:0, completedCount:0,
+  currentIdx:0, stageSeconds:0, totalSeconds:0,
   gameStartTime:null, loginTime:null, timerInterval:null, countdownInterval:null,
   selectedOption:null, tfAnswer:null, totalAttempts:0, stageAttempts:0,
-  photoFile:null, sessionKey:null, lastCorrect:false, _lastHelpTime:null, _lastStaffEventTs:null, _staffSkipping:false, _lastSkipGPSTs:null,
-  _gpsWatchId:null, _gpsWatchPos:null,
+  photoFile:null, sessionKey:null, lastCorrect:false, _lastHelpTime:null, _staffLastAssistTs:null, _staffSkipping:false, _lastSkipGPSTs:null,
   settings:{}, scoring:{}, gpsLogCount:0,
   score:0, helpUsed:0, hintUsed:0,
   photoFailCount:0, lastBroadcastId:null,
   waitingToStart:false
 };
 
-window.startGame=startGame; window.notifyConfirm=notifyConfirm; window.listenSessionForceLogout=listenSessionForceLogout; window.playerLogout=playerLogout; window.overlayShoot=overlayShoot; window.overlayRetake=overlayRetake; window.doLoginResume=doLoginResume;
+// 記錄每一次分數變動（含原因），讓後台能還原「積分明細」
+// delta可正可負；reason為中文說明；stageIdx預設為目前關卡索引
+function logScoreChange(delta,reason,stageIdx){
+  if(!state.sessionKey||!delta)return;// delta=0不記錄，避免灌爆資料庫
+  try{
+    push(ref(db,`sessions/${state.sessionKey}/scoreLog`),{
+      delta,reason,stageIdx:(stageIdx!=null?stageIdx:state.currentIdx),
+      scoreAfter:state.score,ts:serverTimestamp()
+    }).catch(()=>{});
+  }catch(e){console.warn('[logScoreChange] 記錄失敗',e);}
+}
+
+window.doLogin=doLogin; window.startGame=startGame; window.notifyConfirm=notifyConfirm; window.listenSessionForceLogout=listenSessionForceLogout; window.playerLogout=playerLogout; window.overlayShoot=overlayShoot; window.overlayRetake=overlayRetake; window.doLoginResume=doLoginResume;
 window.checkGPS=checkGPS; window.selectOpt=selectOpt;
 window.submitAns=submitAns; window.closeFeedback=closeFeedback;
 window.triggerPhoto=triggerPhoto; window.handlePhoto=handlePhoto;
 window.handlePhotoOnly=handlePhotoOnly; window.submitPasscode=submitPasscode;
+window.showRank=showRank; window.closeRank=closeRank;
 window.showHelp=showHelp; window.closeHelp=closeHelp; window.sendHelp=sendHelp;
 window.closeBroadcast=closeBroadcast; window.useHint=useHint;
 window.skipPhotoVerify=skipPhotoVerify; window.retakePhoto=retakePhoto;
@@ -957,28 +895,42 @@ function hideLoading(){document.getElementById('loadingOverlay').classList.add('
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
 
 function getDefaultScoring(){
-  return{baseScore:100,timeBonus:50,wrongPenalty:10,hintPenalty:5,helpPenalty:30,skipPhotoPenalty:20,skipGPSPenalty:20,completionBonus:200};
+  return{baseScore:100,timeBonus:50,wrongPenalty:10,hintPenalty:5,helpPenalty:30,skipPhotoPenalty:20,skipGPSPenalty:20,completionBonus:200,rankBonus:[100,70,50,30]};
 }
 
 // ── 初始化登入頁 ──
 async function initLogin() {
   const hintEl=document.getElementById('loadingHint');
   const loginBtn=document.getElementById('loginBtn');
+  const teamSel=document.getElementById('teamSelect');
   try {
     const [cfgSnap,themeSnap]=await withTimeout(Promise.all([
-      get(aRef('config/settings')),
-      get(aRef('config/settings/theme'))
+      get(ref(db,'config/settings')),
+      get(ref(db,'config/settings/theme'))
     ]),15000,Object.assign(new Error('讀取逾時'),{code:'rtdb/timeout'}));
     const cfg=cfgSnap.exists()?cfgSnap.val():{};
     state.settings=cfg;
     state.scoring=cfg.scoring||getDefaultScoring();
-    LIFF_ID=cfg.liffId||'';
+    // 自動排程備援：admin後台不一定隨時有人開著，player.html這邊也順便檢查一次
+    // 「活動開始/結束時間」，只要有玩家裝置開著（活動期間通常會有）就能生效
+    if(!state._autoScheduleStarted){
+      state._autoScheduleStarted=true;
+      checkAutoSchedule();
+      setInterval(checkAutoSchedule,15000);
+    }
     if(themeSnap.exists()){const t=themeSnap.val();document.documentElement.style.setProperty('--primary',t.primary);document.documentElement.style.setProperty('--primary-dark',t.dark);document.documentElement.style.setProperty('--primary-light',t.light);}
     if(cfg.activityName){document.getElementById('loginTitle').textContent=cfg.activityName;document.title=cfg.activityName;}
     if(cfg.subtitle)document.getElementById('loginSubtitle').textContent=cfg.subtitle;
     if(cfg.welcome){const w=document.getElementById('loginWelcome');w.textContent=cfg.welcome;w.classList.remove('hidden');}
     if(cfg.logoUrl){const img=document.getElementById('activityLogo');img.src=cfg.logoUrl;img.onload=()=>{img.classList.remove('hidden');document.getElementById('defaultLogo').classList.add('hidden');};}
-    hintEl.textContent='';
+    const teams=cfg.teams||{};
+    const count=parseInt(cfg.teamCount)||4;
+    teamSel.innerHTML='<option value="">-- 請選擇隊伍 --</option>';
+    for(let i=0;i<count;i++){
+      const key=`team${i+1}`;const t=teams[key];
+      const opt=document.createElement('option');opt.value=key;opt.textContent=(t&&t.name)?t.name:`隊伍 ${i+1}`;teamSel.appendChild(opt);
+    }
+    teamSel.disabled=false;loginBtn.disabled=false;loginBtn.textContent='🐚 開始登入！';hintEl.textContent='';
     state._initLoginRetryCount=0;
   } catch(e) {
     console.error('initLogin 失敗:', e);
@@ -1020,47 +972,34 @@ async function initLogin() {
 }
 // initLogin() 已移到 signInAnonymously.then() 裡面執行
 
-// ── 報到狀態：手動開關 + 選填的排程時間 ──
-// 排程一定會讓報到「提前關閉/尚未開放」（優先於一切）；
-// 若専案管理者從未手動按過開放/暫停/停止（manualStatus 為 null），排程時間一到會自動開放，
-// 不需要有人在現場按按鈕。但只要管理者手動按過任何按鈕，之後就以手動狀態為準。
-let _lastManualStatus=null;
-function computeEffectiveCheckinStatus(manualStatus){
-  const cfg=state.settings||{};
-  const now=Date.now();
-  const hasSchedule=!!(cfg.checkinStartTime||cfg.checkinEndTime);
-  if(cfg.checkinStartTime&&now<cfg.checkinStartTime)return 'closed';
-  if(cfg.checkinEndTime&&now>cfg.checkinEndTime)return 'closed';
-  if(manualStatus==null)return hasSchedule?'open':'closed';
-  return manualStatus;
-}
-function renderCheckinStatus(){
-  if(!(state.waitingToStart&&!state.sessionKey))return;// 只有在等待頁面且尚未開始才更新按鈕
-  const status=computeEffectiveCheckinStatus(_lastManualStatus);
+// ── 監聽活動狀態 ──
+// 更新等待畫面的按鈕/文字狀態（抽成獨立函式，讓「進入等待畫面當下」也能主動呼叫一次，
+// 不用只靠 onValue 被動監聽——因為 onValue 在登入前就已經收到過一次初始值，
+// 如果之後活動狀態沒有再變化，等待畫面永遠不會被動更新到正確狀態）
+function updateWaitScreenStatusUI(status){
   const btn=document.getElementById('btnStartGame');
   const statusText=document.getElementById('waitStatusText');
   const statusSub=document.getElementById('waitStatusSub');
   const infoStatus=document.getElementById('infoStatus');
-  if(!btn||!statusText)return;
+  if(!btn||!statusText||!statusSub)return;
   if(status==='open'){
     btn.disabled=false;
     btn.style.background='';
-    statusText.textContent='✅ 開放報到中，可以出發了！';
+    statusText.textContent='✅ 活動已開始！可以出發了！';
     statusSub.textContent='點下方按鈕開始闖關';
-    if(infoStatus)infoStatus.textContent='✅ 開放報到中';
+    if(infoStatus)infoStatus.textContent='✅ 進行中';
   } else if(status==='paused'){
     btn.disabled=true;
-    statusText.textContent='⏸ 暫停報到中...';
-    statusSub.textContent='請等待工作人員通知後再報到（已經在闖關的人不受影響）';
-    if(infoStatus)infoStatus.textContent='⏸ 暫停報到';
+    statusText.textContent='⏸ 活動暫停中...';
+    statusSub.textContent='請等待工作人員通知後繼續';
+    if(infoStatus)infoStatus.textContent='⏸ 暫停中';
   } else if(status==='closed'){
     btn.disabled=true;
     btn.style.background='rgba(200,200,200,0.5)';
-    btn.textContent='目前未開放報到';
-    statusText.textContent='⏹ 尚未開放報到';
-    const cfg=state.settings||{};
-    statusSub.textContent=(cfg.checkinStartTime&&Date.now()<cfg.checkinStartTime)?'活動尚未開始，請稍後再來':'請稍後再來，或洽工作人員';
-    if(infoStatus)infoStatus.textContent='⏹ 未開放';
+    btn.textContent='活動已結束';
+    statusText.textContent='⏹ 活動已結束';
+    statusSub.textContent='感謝你的參與！';
+    if(infoStatus)infoStatus.textContent='⏹ 已結束';
     const waitBar=document.getElementById('waitStatusBar');
     if(waitBar)waitBar.style.background='rgba(240,112,80,0.2)';
   } else {
@@ -1070,18 +1009,39 @@ function renderCheckinStatus(){
     if(infoStatus)infoStatus.textContent='⏳ 等待開始';
   }
 }
-// ── 監聽活動狀態（手動開關）──
-onValue(aRef('config/activityStatus'),snap=>{
-  _lastManualStatus=snap.exists()?snap.val():null;
-  renderCheckinStatus();
-  // 開放式/持續闖關模式：報到狀態只控制「能不能新報到」，已經在玩的人不受影響，
-  // 就算専案管理者把報到關閉或暫停，正在闖關的人也能繼續玩到結束（除非被強制登出）。
+let _lastKnownActivityStatusP='closed';// player端已知的活動狀態（給自動排程比對用）
+onValue(ref(db,'config/activityStatus'),snap=>{
+  const status=snap.val()||'closed';
+  _lastKnownActivityStatusP=status;
+  // 只有在等待頁面且尚未開始才更新按鈕
+  if(state.waitingToStart && !state.sessionKey){
+    updateWaitScreenStatusUI(status);
+  }
+  // 遊戲中：暫停/繼續
+  if(state.sessionKey&&!state.waitingToStart){
+    if(status==='paused'){clearInterval(state.timerInterval);showScreen('pausedScreen');}
+    else if(status==='open'&&!document.getElementById('gameScreen').classList.contains('active')){showScreen('gameScreen');state.timerInterval=setInterval(tickTimer,1000);}
+  }
 });
-// 每30秒重新檢查一次排定的開放/停止報到時間，時間到了不用等使用者重新整理就會自動反映
-setInterval(renderCheckinStatus,30000);
+
+// 依「活動開始/結束時間」自動切換活動狀態（admin.html 也有一份同樣的檢查，雙重保險）
+function checkAutoSchedule(){
+  const s=state.settings||{};
+  const now=Date.now();
+  if(s.activityStartTime&&_lastKnownActivityStatusP==='closed'&&now>=s.activityStartTime&&(!s.activityEndTime||now<s.activityEndTime)){
+    console.log('[checkAutoSchedule] 到達開始時間，自動開始活動');
+    _lastKnownActivityStatusP='open';
+    set(ref(db,'config/activityStatus'),'open').catch(()=>{});
+  }
+  if(s.activityEndTime&&now>=s.activityEndTime&&_lastKnownActivityStatusP!=='closed'){
+    console.log('[checkAutoSchedule] 到達結束時間，自動結束活動');
+    _lastKnownActivityStatusP='closed';
+    set(ref(db,'config/activityStatus'),'closed').catch(()=>{});
+  }
+}
 
 // ── 監聽強制登出旗標 ──
-onValue(aRef('config/forceLogout'),snap=>{
+onValue(ref(db,'config/forceLogout'),snap=>{
   if(!snap.exists()||!state.teamKey)return;// 尚未登入不處理
   const fl=snap.val();
   if(!fl||!fl.ts)return;
@@ -1100,39 +1060,36 @@ onValue(aRef('config/forceLogout'),snap=>{
     toast.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:12px;color:white;font-family:inherit';
     toast.innerHTML='<div style="font-size:48px">⏏️</div><div style="font-size:18px;font-weight:700">管理者已重置活動</div><div style="font-size:14px;opacity:0.7">即將返回登入頁面...</div>';
     document.body.appendChild(toast);
-    try{localStorage.removeItem(playerLoginKey());}catch(e){}
     setTimeout(()=>{
       document.body.removeChild(toast);
       showScreen('loginScreen');
-      document.getElementById('alreadyDoneArea').classList.add('hidden');
-      document.getElementById('guestFormArea').classList.add('hidden');
-      document.getElementById('loginChoiceArea').classList.remove('hidden');
-      signInAnonymously(auth).then(()=>initLogin()).then(()=>setupLoginChoices()).catch(()=>initLogin().then(()=>setupLoginChoices()));
+      // 重新載入隊伍選單
+      signInAnonymously(auth).then(()=>initLogin()).catch(()=>initLogin());
     },2500);
   }
 });
 
 // 監聽個別 session 的強制登出
-// 監聽工作人員協助過關 —— 改用明確事件訊號（staffAssistEvent），
-// 不再用「currentStage數字有沒有變大」去猜測，避免時序邊界情況猜錯、通知偶爾不跳出來。
+// 監聽工作人員協助過關
+// 監聽工作人員協助過關 —— 改用明確訊號（staffAssistEvent），
+// 不再用「比較 currentStage 數字有沒有變大」去猜測，避免玩家自己同時操作造成的競速、
+// 導致偶爾不觸發通知的問題。管理者按下按鈕時會直接寫入一筆完整事件，
+// 內含 mode / 下一關索引 / 是否完賽 / 最新分數，玩家端只要偵測到「新的一筆」就一定顯示提示。
 function listenStaffSkip(){
   if(!state.sessionKey)return;
+  state._staffLastAssistTs=null;// null代表尚未取得基準值
   state._staffSkipping=false;
-  state._lastStaffEventTs=null;// null代表尚未初始化，第一次收到值時只記錄不觸發
-  onValue(aRef(`sessions/${state.sessionKey}/staffAssistEvent`),snap=>{
+  onValue(ref(db,`sessions/${state.sessionKey}/staffAssistEvent`),snap=>{
     if(!snap.exists())return;
-    const ev=snap.val();
-    if(!ev||!ev.ts)return;
-    if(state._lastStaffEventTs===null){
-      // 第一次訂閱收到的是「目前已存在的最新一筆」，代表是舊事件，只記錄、不觸發提示
-      state._lastStaffEventTs=ev.ts;
-      return;
-    }
-    if(ev.ts<=state._lastStaffEventTs)return;// 不是新事件
-    state._lastStaffEventTs=ev.ts;
-    if(state._staffSkipping)return;// 防止畫面重複疊加
+    const evt=snap.val();
+    if(!evt||evt.ts==null)return;
+    // 第一次收到（頁面載入/恢復進度時）只記錄基準值，不觸發提示，避免舊事件被誤判為新事件
+    if(state._staffLastAssistTs===null){state._staffLastAssistTs=evt.ts;return;}
+    if(evt.ts===state._staffLastAssistTs)return;// 沒有新事件
+    if(state._staffSkipping)return;// 提示還顯示中，避免重複觸發
+    state._staffLastAssistTs=evt.ts;
     state._staffSkipping=true;
-    showStaffSkipOverlay(!!ev.finished,ev.nextIdx,ev.newScore!=null?ev.newScore:state.score);
+    showStaffSkipOverlay(!!evt.isLast,evt.toIdx,evt.score!=null?evt.score:state.score);
   });
 }
 
@@ -1152,7 +1109,6 @@ function showStaffSkipOverlay(isFinished,newIdx,newScore){
   btn.onclick=()=>{
     overlay.remove();
     state._staffSkipping=false;
-    state.completedCount=(state.completedCount||0)+1;// 工作人員協助過關也算完成一關
     if(isFinished){state.score=newScore;showFinish();}
     else{
       state.currentIdx=newIdx;
@@ -1170,7 +1126,7 @@ window.listenStaffSkip=listenStaffSkip;
 // 監聽管理者遠端跳過GPS
 function listenSkipGPS(){
   if(!state.sessionKey)return;
-  onValue(aRef(`sessions/${state.sessionKey}/skipGPS`),snap=>{
+  onValue(ref(db,`sessions/${state.sessionKey}/skipGPS`),snap=>{
     if(!snap.exists()||!snap.val())return;
     const ts=snap.val();
     if(state._lastSkipGPSTs===ts)return;// 防重複
@@ -1184,8 +1140,8 @@ function listenSkipGPS(){
       document.body.appendChild(t);
       setTimeout(()=>{t.remove();},2500);
       // 記錄 arrivedAt（重整後不再要求GPS）
-      set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/arrivedAt`),serverTimestamp());
-      set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/gpsSkippedByAdmin`),true);
+      set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/arrivedAt`),serverTimestamp());
+      set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/gpsSkippedByAdmin`),true);
       // 進入題目
       gpsCard.style.display='none';
       const qCard=document.getElementById('questionCard');
@@ -1202,7 +1158,7 @@ window.listenSkipGPS=listenSkipGPS;
 
 function listenSessionForceLogout(){
   if(!state.sessionKey)return;
-  onValue(aRef(`sessions/${state.sessionKey}/forceLogout`),snap=>{
+  onValue(ref(db,`sessions/${state.sessionKey}/forceLogout`),snap=>{
     if(snap.val()===true){
       clearInterval(state.timerInterval);
       clearInterval(state.countdownInterval);
@@ -1211,21 +1167,17 @@ function listenSessionForceLogout(){
       toast.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:12px;color:white;font-family:inherit';
       toast.innerHTML='<div style="font-size:48px">⏏️</div><div style="font-size:18px;font-weight:700">管理者已重置此隊伍</div><div style="font-size:14px;opacity:0.7">即將返回登入頁面...</div>';
       document.body.appendChild(toast);
-      try{localStorage.removeItem(playerLoginKey());}catch(e){}
       setTimeout(()=>{
         document.body.removeChild(toast);
         showScreen('loginScreen');
-        document.getElementById('alreadyDoneArea').classList.add('hidden');
-        document.getElementById('guestFormArea').classList.add('hidden');
-        document.getElementById('loginChoiceArea').classList.remove('hidden');
-        signInAnonymously(auth).then(()=>initLogin()).then(()=>setupLoginChoices()).catch(()=>initLogin().then(()=>setupLoginChoices()));
+        signInAnonymously(auth).then(()=>initLogin()).catch(()=>initLogin());
       },2500);
     }
   });
 }
 
 // 廣播
-onValue(aRef('config/broadcast'),snap=>{
+onValue(ref(db,'config/broadcast'),snap=>{
   if(!snap.exists()||!state.sessionKey)return;
   const bc=snap.val();
   if(!bc||!bc.msg)return;
@@ -1239,20 +1191,37 @@ onValue(aRef('config/broadcast'),snap=>{
 
 // ── 登入 ──
 // 直接用已有的 session 恢復進度（不需要密碼驗證）
+// 依照 stageOrder 建立關卡陣列。若某一關的 key 已經對不到現有關卡資料
+// （例如活動進行中，工作人員刪除/重建了某一關），不會把它從清單中拿掉
+// （拿掉會導致後面所有關卡的索引往前移，跟玩家實際的過關進度、分數對不齊，
+// 進而可能誤判「已全部完成」或搞混玩家目前卡在第幾關）。
+// 改用佔位資料補在原本的位置，保持索引完全不變：
+// - 已經破過的關卡不受影響（不會再進去）
+// - 分數、目前第幾關、闖關紀錄全部維持原樣，不會重新開始
+// - 只有玩家「剛好卡在那一關」時，才會顯示提示請洽工作人員（見 renderStage 的 _missing 判斷）
+function buildStagesFromOrder(stageOrder,stagesMap){
+  return stageOrder.map(k=>{
+    const s=stagesMap[k];
+    if(s)return s;
+    console.warn(`[buildStagesFromOrder] 關卡 key=${k} 已對不到現有資料，使用佔位資料保留原索引`);
+    return {key:k,_missing:true,title:'關卡資料異動',description:'',stageType:'quiz',options:[]};
+  });
+}
+
 async function doLoginResume(teamKey, sessKey, sessData){
   showLoading('恢復進度中...');
   try{
     const cfg=state.settings;
-    const snap=await get(aRef('stages'));
+    const teamCfg=(cfg.teams||{})[teamKey]||{};
+    const snap=await get(ref(db,'stages'));
     if(!snap.exists()){hideLoading();return;}
     const stagesMap=Object.fromEntries(
       Object.entries(snap.val()).map(([k,v])=>{const{answerIndex,...safe}=v;return[k,{key:k,answerHash:v.answerHash||'',...safe}];})
     );
     state.teamKey=teamKey;
     state.loginTime=Date.now();// 同步記錄登入時間（強制登出比較用）
-    // 個人闖關：優先用 session 內儲存的暱稱/顏色，不再依賴固定隊伍設定
-    state.teamName=sessData.teamName||'玩家';
-    state.teamColor=sessData.teamColor||'#6ee89a';
+    state.teamName=teamCfg.name||`隊伍${teamKey.replace('team','')}`;
+    state.teamColor=teamCfg.color||'#6ee89a';
     state.scoring=cfg.scoring||getDefaultScoring();
     state.sessionKey=sessKey;
     state.currentIdx=sessData.currentStage||0;
@@ -1261,27 +1230,20 @@ async function doLoginResume(teamKey, sessKey, sessData){
     state.totalSeconds=sessData.totalSec||0;
     state.waitingToStart=false;
     if(sessData.stageOrder&&sessData.stageOrder.length){
-      // 對不到資料的關卡（例如活動進行中被編輯/刪除過）不能直接filter掉——
-      // 那樣會讓後面所有關卡的索引往前移一格，跟玩家實際的進度/分數/已過關紀錄對不上，
-      // 嚴重時會讓沒破完的人被誤判成「已完賽」。改用佔位資料補住原本的位置，
-      // renderStage() 遇到佔位資料時會自動跳過，不影響其他已完成關卡。
-      state.stages=sessData.stageOrder.map(k=>stagesMap[k]||{key:k,_missing:true,title:'（此關卡資料已異動）'});
+      state.stages=buildStagesFromOrder(sessData.stageOrder,stagesMap);
     } else {
       const arr=Object.values(snap.val()).map((v,i)=>({key:Object.keys(snap.val())[i],...v}));
       arr.sort((a,b)=>(a.order||0)-(b.order||0));
       state.stages=arr;
     }
-    // 依 stageLogs 重建「已完成關卡數」（N關至少跑M關的門檻要用），
-    // 涵蓋一般答對(correct)、關主確認(confirmed)、工作人員協助過關(skippedByStaff時correct也會是true)
-    state.completedCount=Object.values(sessData.stageLogs||{}).filter(l=>l&&(l.correct===true||l.confirmed===true)).length;
-    // 只有在「全部關卡都對不到資料」這種真的很異常的狀況才放棄恢復，正常情況下最多只會有
-    // 極少數關卡被異動掉，其餘用佔位資料補住即可，不需要整批放棄重來。
-    if(state.stages.length===0||state.stages.every(s=>s._missing)){
-      console.warn('[doLoginResume] 關卡資料全部異動/遺失，放棄恢復進度');
-      set(aRef(`sessions/${sessKey}/status`),'abandoned').catch(()=>{});
+    // 極端防呆：真的完全沒有任何關卡資料時才放棄（例如整個關卡表被清空），
+    // 一般情況下即使個別關卡對不到，也會用佔位資料補齊、保留原本進度，不會重來
+    if(state.stages.length===0){
+      console.warn('[doLoginResume] 完全沒有關卡資料，放棄恢復進度');
+      set(ref(db,`sessions/${sessKey}/status`),'abandoned').catch(()=>{});
       hideLoading();
       showScreen('loginScreen');
-      try{localStorage.removeItem(playerLoginKey());}catch(e){}
+      try{sessionStorage.removeItem('playerLogin');}catch(e){}
       return;
     }
     hideLoading();
@@ -1314,234 +1276,159 @@ async function doLoginResume(teamKey, sessKey, sessData){
     const t=document.createElement('div');t.className='reply-toast';
     t.textContent=`✅ 已自動恢復進度！目前第 ${state.currentIdx+1} 關`;
     document.body.appendChild(t);setTimeout(()=>t.remove(),3000);
+    // 更新 sessionStorage（只存 teamKey）
+    try{sessionStorage.setItem('playerLogin',JSON.stringify({teamKey}));}catch(e){}
   }catch(e){hideLoading();console.error(e);}
 }
 
-// ══ 個人化登入（LINE Login 為主，免登入為備援）══
-// LIFF_ID 由専案管理者在後台「活動設定」填入（到 LINE Developers Console 建立 LIFF 頻道取得），
-// 未填則自動隱藏LINE登入、只留免登入，不需要改程式碼
-let LIFF_ID='';
-let liffReady=false;
-async function initLiff(){
-  if(!LIFF_ID)return false;
-  try{ await liff.init({liffId:LIFF_ID}); liffReady=true; return true; }
-  catch(e){ console.warn('LIFF 初始化失敗:',e); return false; }
-}
-
-async function setupLoginChoices(){
-  const loginBtn=document.getElementById('loginBtn');
-  const guestBtn=document.getElementById('guestEntryBtn');
-  const googleBtn=document.getElementById('googleLoginBtn');
-  const fbBtn=document.getElementById('fbLoginBtn');
-  const cfg=state.settings||{};
-  // Google／Facebook 登入是否顯示，由専案管理者在活動設定裡各自開關決定（Firebase 專案本身要先啟用該登入方式一次，詳見設定頁說明）
-  if(googleBtn){googleBtn.classList.toggle('hidden',!cfg.enableGoogleLogin);googleBtn.disabled=false;}
-  if(fbBtn){fbBtn.classList.toggle('hidden',!cfg.enableFacebookLogin);fbBtn.disabled=false;}
-  const ok=await initLiff();
-  if(ok){
-    loginBtn.disabled=false;loginBtn.textContent='💬 用 LINE 登入';
-    guestBtn.disabled=false;
-    if(liff.isLoggedIn()){
-      try{
-        const profile=await liff.getProfile();
-        await resumeOrStartWithIdentity('line_'+profile.userId,profile.displayName||'玩家',null,'line');
-        return;
-      }catch(e){ console.warn('取得LINE個人資料失敗:',e); }
-    }
-  } else {
-    loginBtn.style.display='none';// 尚未設定 LIFF_ID：隱藏LINE登入，只留免登入(或Google/Facebook)
-    guestBtn.disabled=false;
-  }
-}
-
-function startLineLogin(){
-  if(!liffReady)return;
-  if(!liff.isLoggedIn()){ liff.login(); return; }// 導到LINE登入頁，完成後導回本頁
-  liff.getProfile().then(profile=>resumeOrStartWithIdentity('line_'+profile.userId,profile.displayName||'玩家',null,'line'));
-}
-window.startLineLogin=startLineLogin;
-
-// ── Google／Facebook 登入（Firebase Auth 原生支援，需先在 Firebase Console 的
-// Authentication → Sign-in method 裡啟用對應登入方式一次，這是專案層級設定，詳見交接文件）──
-async function startGoogleLogin(){
-  const errEl=document.getElementById('loginError');
-  try{
-    const result=await signInWithPopup(auth,new GoogleAuthProvider());
-    const u=result.user;
-    await resumeOrStartWithIdentity('google_'+u.uid,u.displayName||'玩家',null,'google');
-  }catch(e){
-    console.warn('Google登入失敗:',e);
-    if(e&&e.code==='auth/popup-closed-by-user')return;// 使用者自己關掉視窗，不用顯示錯誤
-    if(errEl)errEl.textContent='Google登入失敗：'+(e.message||e.code||'請改用其他方式登入');
-  }
-}
-window.startGoogleLogin=startGoogleLogin;
-
-async function startFacebookLogin(){
-  const errEl=document.getElementById('loginError');
-  try{
-    const result=await signInWithPopup(auth,new FacebookAuthProvider());
-    const u=result.user;
-    await resumeOrStartWithIdentity('fb_'+u.uid,u.displayName||'玩家',null,'facebook');
-  }catch(e){
-    console.warn('Facebook登入失敗:',e);
-    if(e&&e.code==='auth/popup-closed-by-user')return;
-    if(errEl)errEl.textContent='Facebook登入失敗：'+(e.message||e.code||'請改用其他方式登入');
-  }
-}
-window.startFacebookLogin=startFacebookLogin;
-
-function showGuestForm(){
-  document.getElementById('loginChoiceArea').classList.add('hidden');
-  document.getElementById('guestFormArea').classList.remove('hidden');
-  try{
-    const saved=localStorage.getItem('guestProfile_'+ACTIVITY_ID);
-    if(saved){const p=JSON.parse(saved);document.getElementById('guestNickname').value=p.name||'';document.getElementById('guestPhone').value=p.phone||'';}
-  }catch(e){}
-}
-window.showGuestForm=showGuestForm;
-function hideGuestForm(){
-  document.getElementById('guestFormArea').classList.add('hidden');
-  document.getElementById('loginChoiceArea').classList.remove('hidden');
-}
-window.hideGuestForm=hideGuestForm;
-
-// 裝置指紋：存在瀏覽器 localStorage 裡的一組隨機ID，同一支手機/瀏覽器每次都會拿到同一個值。
-// 不管用哪一種方式登入（LINE／Google／Facebook／免登入）都會一起記錄這組ID，
-// 目的是防止同一人换登入方式反覆闖關繞過「限一次／間隔N天」的限制（見下方 resumeOrStartWithIdentity）。
-function getOrCreateDeviceId(){
-  const key='deviceId_'+ACTIVITY_ID;
-  let id=localStorage.getItem(key);
-  if(!id){ id='d'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); localStorage.setItem(key,id); }
-  return id;
-}
-
-async function doGuestLogin(){
-  const name=document.getElementById('guestNickname').value.trim();
-  const phone=document.getElementById('guestPhone').value.trim();
+async function doLogin() {
+  const teamKey=document.getElementById('teamSelect').value;
+  const pass=document.getElementById('teamPassword').value.trim();
   const errEl=document.getElementById('loginError');
   errEl.textContent='';
-  if(!name){errEl.textContent='請輸入暱稱';return;}
-  try{ localStorage.setItem('guestProfile_'+ACTIVITY_ID,JSON.stringify({name,phone})); }catch(e){}
-  await resumeOrStartWithIdentity('guest_'+getOrCreateDeviceId(),name,phone,'guest');
-}
-window.doGuestLogin=doGuestLogin;
+  if(!teamKey){errEl.textContent='請選擇隊伍！';return;}
+  if(!pass){errEl.textContent='請輸入密碼！';return;}
+  showLoading('驗證中...');
+  try {
+    const cfg=state.settings;
+    const teamCfg=(cfg.teams||{})[teamKey]||{};
+    // 安全修復：若隊伍未設定密碼，禁止登入
+    if(!teamCfg.password){hideLoading();errEl.textContent='⚠️ 此隊伍尚未設定密碼，請聯絡工作人員';return;}
+    if(pass!==teamCfg.password){hideLoading();errEl.textContent='密碼錯誤！';return;}
 
-// 個人闖關核心：不管是LINE或免登入，統一走這裡判斷「恢復進行中/已完成過(視設定擋下)/全新開始」
-async function resumeOrStartWithIdentity(identityKey,displayName,phone,source){
-  const errEl=document.getElementById('loginError');
-  showLoading('驗證身分中...');
-  try{
-    state.teamKey=identityKey;
-    state.teamName=displayName||'玩家';
-    state.teamColor='#6ee89a';
-    state.phone=phone||'';
-    state.loginSource=source||'';
-    state.loginTime=Date.now();
-    state.scoring=(state.settings&&state.settings.scoring)||getDefaultScoring();
-    try{ localStorage.setItem(playerLoginKey(),JSON.stringify({identityKey,displayName:state.teamName})); }catch(e){}
-
-    // 裝置指紋：不管這次用哪種方式登入，都記錄同一個裝置ID，
-    // 讓「已完賽/限一次/間隔N天」的判斷可以額外參考「這台裝置玩過了沒」，
-    // 防止同一人换一種登入方式（例如LINE→Google）就能繞過重玩限制。
-    const deviceId=getOrCreateDeviceId();
-    state.deviceId=deviceId;
-
-    const sessSnap=await get(aRef('sessions'));
-    let playingSession=null,playingKey=null,finishedSession=null,latestFinishedAt=0;
-    if(sessSnap.exists()){
-      Object.entries(sessSnap.val()).forEach(([k,s])=>{
-        const sameIdentity=s.teamKey===identityKey;
-        const sameDevice=!!(deviceId&&s.deviceId&&s.deviceId===deviceId);
-        if(s.status==='playing'){
-          // 恢復「進行中」的關卡只認同一身分，不看裝置——避免同一台裝置換人登入時，
-          // 誤把畫面接到別人還在玩的進度（例如朋友輪流用同一支手機，各自用自己的帳號登入）
-          if(!sameIdentity)return;
-          if(!playingSession||(s.startTimeMs||0)>(playingSession.startTimeMs||0)){playingSession=s;playingKey=k;}
-        } else if(s.status==='finished'){
-          // 完賽紀錄的比對放寬成「同一身分」或「同一裝置」任一符合即算數，
-          // 才能防住「同一人换登入方式重玩」這個漏洞
-          if(!sameIdentity&&!sameDevice)return;
-          if(!finishedSession||(s.score||0)>(finishedSession.score||0))finishedSession=s;
-          // 冷卻期要看「最近一次完賽時間」，跟取最佳成績（上面那行）是分開的兩件事
-          const fAt=(typeof s.finishedAt==='number'&&s.finishedAt)||((s.startTimeMs||0)+(s.totalSec||0)*1000);
-          if(fAt>latestFinishedAt)latestFinishedAt=fAt;
-        }
-      });
-    }
-
-    if(playingSession){
-      hideLoading();
-      await doLoginResume(identityKey,playingKey,playingSession);
-      return;
-    }
-
-    // 同一身分能不能重複闖關，由専案管理者在「活動設定」決定：不限制／限一次／間隔N天才能再玩
-    // 舊資料相容：只有布林值 allowRetry 時，false 視同 once，其餘視同 unlimited
-    const retryMode=state.settings.retryMode||(state.settings.allowRetry===false?'once':'unlimited');
-    if(finishedSession&&retryMode==='once'){
-      hideLoading();
-      showScreen('loginScreen');
-      document.getElementById('loginChoiceArea').classList.add('hidden');
-      document.getElementById('guestFormArea').classList.add('hidden');
-      document.getElementById('alreadyDoneArea').classList.remove('hidden');
-      document.getElementById('alreadyDoneScore').textContent=`你的成績：${finishedSession.score||0} 分`;
-      document.getElementById('alreadyDoneNote').textContent='本活動限一人一次，感謝你的參與';
-      return;
-    }
-    if(finishedSession&&retryMode==='cooldown'&&latestFinishedAt){
-      const cooldownDays=state.settings.retryCooldownDays||1;
-      // 用「日曆天」而不是滿24小時計算，符合「當天不能玩、隔天可以」這種直覺說法
-      const stripTime=ms=>{const d=new Date(ms);return new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();};
-      const dayDiff=Math.round((stripTime(Date.now())-stripTime(latestFinishedAt))/86400000);
-      if(dayDiff<cooldownDays){
-        hideLoading();
-        showScreen('loginScreen');
-        document.getElementById('loginChoiceArea').classList.add('hidden');
-        document.getElementById('guestFormArea').classList.add('hidden');
-        document.getElementById('alreadyDoneArea').classList.remove('hidden');
-        document.getElementById('alreadyDoneScore').textContent=`你的成績：${finishedSession.score||0} 分`;
-        const nextEligibleMs=stripTime(latestFinishedAt)+cooldownDays*86400000;
-        const nd=new Date(nextEligibleMs);
-        const nextDateStr=`${nd.getFullYear()}/${nd.getMonth()+1}/${nd.getDate()}`;
-        document.getElementById('alreadyDoneNote').textContent=`需間隔 ${cooldownDays} 天才能再次挑戰，最快可於 ${nextDateStr} 再來闖關！`;
-        return;
-      }
-      // 冷卻期已過，允許開始全新一輪挑戰（走下面的全新登入流程）
-    }
-
-    // ── 全新登入：讀取關卡、決定路線、進入等待頁面 ──
-    const snap=await get(aRef('stages'));
-    if(!snap.exists()){hideLoading();if(errEl)errEl.textContent='尚未建立關卡！';return;}
+    // ── 讀取關卡資料 ──
+    const snap=await get(ref(db,'stages'));
+    if(!snap.exists()){hideLoading();errEl.textContent='尚未建立關卡！';return;}
     let arr=Object.entries(snap.val()).map(([k,v])=>{const{answerIndex,...safe}=v;return{key:k,answerHash:v.answerHash||'',...safe};});
     arr.sort((a,b)=>(a.order||0)-(b.order||0));
-    const cfg=state.settings;
-    state.stages=buildTeamRoute(arr,cfg,identityKey);
+
+    state.teamKey=teamKey;
+    state.loginTime=Date.now();// 記錄登入時間，供強制登出時間比較使用（等待室階段 gameStartTime 尚未設定）
+    state.teamName=teamCfg.name||`隊伍${teamKey.replace('team','')}`;
+    state.teamColor=teamCfg.color||'#6ee89a';
+    state.scoring=cfg.scoring||getDefaultScoring();
+    // 記住登入資訊（只存 teamKey，不存密碼，安全性較高）
+    try{sessionStorage.setItem('playerLogin',JSON.stringify({teamKey}));}catch(e){}
+
+    // ── 檢查是否有進行中的 session（重新整理/返回的情況）──
+    const sessSnap=await get(ref(db,'sessions'));
+    let resumeSession=null;
+    let resumeKey=null;
+    if(sessSnap.exists()){
+      const allSessEntries=Object.entries(sessSnap.val());
+      // 找這一隊最新的進行中 session
+      for(const [k,s] of allSessEntries){
+        if(s.teamKey===teamKey && s.status==='playing'){
+          if(!resumeSession || (s.startTimeMs||0)>(resumeSession.startTimeMs||0)){
+            resumeSession=s; resumeKey=k;
+          }
+        }
+      }
+    }
+
+    if(resumeSession){
+      state.waitingToStart=false;// 防止 activityStatus 監聽器干擾
+      // ── 恢復進度：直接回到遊戲畫面 ──
+      showLoading('恢復進度中...');
+      // 依照 stageOrder 恢復關卡順序
+      if(resumeSession.stageOrder&&resumeSession.stageOrder.length){
+        const stagesMap=Object.fromEntries(
+          Object.entries(snap.val()).map(([k,v])=>{const{answerIndex,...safe}=v;return[k,{key:k,answerHash:v.answerHash||'',...safe}];})
+        );
+        state.stages=buildStagesFromOrder(resumeSession.stageOrder,stagesMap);
+      } else {
+        state.stages=arr;
+      }
+      // 極端防呆：真的完全沒有任何關卡資料時才放棄恢復（例如整個關卡表被清空）。
+      // 一般情況下即使個別關卡對不到，也會用佔位資料補齊、保留原本進度與分數，不會重新開始。
+      if(state.stages.length===0){
+        console.warn('[resume] 完全沒有關卡資料，放棄恢復進度，改走全新登入流程');
+        // 把殘留的 playing session 標記為廢棄，避免下次再次誤 resume
+        set(ref(db,`sessions/${resumeKey}/status`),'abandoned').catch(()=>{});
+        state.waitingToStart=true;
+        state.sessionKey=null;
+        state.stages=arr;
+        // 重新洗牌（隨機模式）或依設定排序
+        const cfg2=state.settings;
+        if((cfg2.routeMode||'fixed')==='random'){
+          state.stages=shuffleForTeam(arr,teamKey);
+        }
+        hideLoading();
+        showWaitScreen(cfg2,teamCfg);
+        return;
+      }
+      state.sessionKey=resumeKey;
+      state.currentIdx=resumeSession.currentStage||0;
+      state.score=resumeSession.score||0;
+      state.gameStartTime=Date.now()-(resumeSession.totalSec||0)*1000;
+      state.totalSeconds=resumeSession.totalSec||0;
+      state.waitingToStart=false;
+      hideLoading();
+      // 直接進入遊戲畫面
+      showScreen('gameScreen');
+      const cfg2=state.settings;
+      document.getElementById('teamDot').style.background=state.teamColor;
+      document.getElementById('displayTeamName').textContent=state.teamName;
+      if(cfg2.bannerUrl){const b=document.getElementById('gameBanner');b.src=cfg2.bannerUrl;b.classList.remove('hidden');}
+      startCountdown(cfg2.activityEndTime);
+      listenForHelpReplies();
+      listenSessionForceLogout();
+      listenStaffSkip();
+      listenSkipGPS();
+      initMusic();// 確保音樂按鈕顯示
+      renderStage();
+      // 若此關已通過GPS（有 arrivedAt），直接顯示題目
+      const curStageLog=(resumeSession.stageLogs||{})[resumeSession.currentStage||0];
+      if(curStageLog&&curStageLog.arrivedAt){
+        setTimeout(()=>{
+          const gpsCard=document.getElementById('gpsCard');
+          const qCard=document.getElementById('questionCard');
+          if(gpsCard)gpsCard.style.display='none';
+          if(qCard)qCard.style.display='';
+        },100);
+      }
+      // 恢復進度後，若當前關卡是 confirm 或 qrcode 類型，重新監聽確認狀態
+      const resumedStage=state.stages[state.currentIdx];
+      if(resumedStage&&(resumedStage.stageType==='confirm'||resumedStage.stageType==='qrcode')){
+        listenForStageConfirm(state.currentIdx);
+      }
+      // 恢復提示
+      const toast=document.createElement('div');toast.className='reply-toast';
+      toast.textContent=`✅ 已恢復進度！目前第 ${state.currentIdx+1} 關`;
+      document.body.appendChild(toast);setTimeout(()=>toast.remove(),3000);
+      return;
+    }
+
+    // ── 全新登入：進入等待頁面 ──
+    // 決定跑關順序：1.自訂順序 2.隨機 3.固定
+    const customOrder=teamCfg.customOrder||'';
+    if(customOrder){
+      // 管理者自訂各隊跑關順序（填的是關卡order號碼，逗號分隔）
+      const orderNums=customOrder.split(',').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n));
+      if(orderNums.length>0){
+        const byOrder={};arr.forEach(s=>byOrder[s.order||0]=s);
+        const ordered=orderNums.map(n=>byOrder[n]).filter(Boolean);
+        // 若有漏填的關卡，加在最後
+        const included=new Set(ordered.map(s=>s.key));
+        arr.filter(s=>!included.has(s.key)).forEach(s=>ordered.push(s));
+        state.stages=ordered;
+      } else {
+        state.stages=arr;
+      }
+    } else if((cfg.routeMode||'fixed')==='random'){
+      state.stages=shuffleForTeam(arr,teamKey);
+    } else {
+      state.stages=arr;
+    }
     state.waitingToStart=true;
-    state.sessionKey=null;
     hideLoading();
-    showWaitScreen(cfg,{});
-  }catch(e){
-    hideLoading();
-    console.error('resumeOrStartWithIdentity error:',e);
-    const msg='載入失敗：'+(e.message||e.code||'未知錯誤');
-    if(errEl)errEl.textContent=msg;
-    const hintEl=document.getElementById('loadingHint');
-    if(hintEl){hintEl.style.color='var(--coral)';hintEl.textContent='⚠️ '+msg;}
-  }
+    showWaitScreen(cfg,teamCfg);
+  } catch(e) {hideLoading();document.getElementById('loginError').textContent='載入失敗！';console.error(e);}
 }
 
 function showWaitScreen(cfg,teamCfg){
   initMusic();
   playBGM('wait');
-  // 一進等待畫面就主動核對一次目前的報到狀態並立刻更新按鈕，不只靠被動監聽。
-  // （舊版問題：監聽器在玩家登入前就已經收到過一次初始值，之後如果狀態沒有再變化，
-  //  畫面最久要等30秒的輪詢才會更新，重新登入的小隊會看到過期的「等待開始」畫面）
-  renderCheckinStatus();
-  get(aRef('config/activityStatus')).then(snap=>{
-    _lastManualStatus=snap.exists()?snap.val():null;
-    renderCheckinStatus();
-  }).catch(()=>{});
   // 填入等待頁面資料
   const actName=cfg.activityName||'實境解謎';
   document.getElementById('waitActivityName').textContent=actName;
@@ -1568,15 +1455,17 @@ function showWaitScreen(cfg,teamCfg){
     div.appendChild(span);rulesList.appendChild(div);
   });
   showScreen('waitScreen');
+  // 主動查一次目前活動狀態並更新按鈕，避免小隊重新登入時卡在「等待管理者開始」
+  // （被動監聽 onValue 在登入前就已收到過一次初始值，之後若狀態沒有再變化就不會再通知）
+  get(ref(db,'config/activityStatus')).then(snap=>{
+    if(state.waitingToStart && !state.sessionKey){
+      updateWaitScreenStatusUI(snap.val()||'closed');
+    }
+  }).catch(e=>console.warn('[showWaitScreen] 查詢活動狀態失敗',e));
 }
 
 // ── 開始闖關 ──
 async function startGame(){
-  // 防呆：即使按鈕畫面沒即時更新，實際建立紀錄前還是要再驗證一次目前是否真的開放報到
-  if(computeEffectiveCheckinStatus(_lastManualStatus)!=='open'){
-    renderCheckinStatus();
-    return;
-  }
   // 清除舊的錯誤訊息
   document.querySelectorAll('.start-err-msg').forEach(el=>el.remove());
   // 重置按鈕文字
@@ -1584,25 +1473,19 @@ async function startGame(){
   if(sgBtn)sgBtn.textContent='🚀 開始闖關！';
   showLoading('建立隊伍紀錄...');
   try{
-    state.currentIdx=0;state.totalAttempts=0;state.stageAttempts=0;state.completedCount=0;
+    state.currentIdx=0;state.totalAttempts=0;state.stageAttempts=0;
     state.score=0;state.helpUsed=0;state.hintUsed=0;
     state.gameStartTime=Date.now();state.gpsLogCount=0;state.photoFailCount=0;
     state.waitingToStart=false;
     // 產生唯一 session key（不用 push 避開根節點寫入限制）
     const newSessKey=state.teamKey+'_'+Date.now();
     state.sessionKey=newSessKey;
-    await set(aRef('sessions/'+newSessKey),{
-      teamKey:state.teamKey,teamName:state.teamName,teamColor:state.teamColor||'',
-      loginSource:state.loginSource||'',deviceId:state.deviceId||'',
+    await set(ref(db,'sessions/'+newSessKey),{
+      teamKey:state.teamKey,teamName:state.teamName,
       startTime:serverTimestamp(),startTimeMs:Date.now(),currentStage:0,
       totalStages:state.stages.length,stageOrder:state.stages.map(s=>s.key),
       status:'playing',stageLogs:{},gpsLogs:{},score:0,helpLogs:{}
     });
-    // 電話號碼是個人資料，另外寫到獨立節點（不放進 sessions），
-    // 因為 sessions 會被完賽排行榜/監控功能整包讀取，放在裡面等於讓其他玩家的瀏覽器也能讀到別人的電話。
-    if(state.phone){
-      set(aRef('sessionPhones/'+newSessKey),state.phone).catch(()=>{});
-    }
     hideLoading();
     showScreen('gameScreen');
     document.getElementById('teamDot').style.background=state.teamColor;
@@ -1642,30 +1525,6 @@ async function startGame(){
   }
 }
 
-// ── 市集版路線組裝：前N關/後N關固定順序，中段可選「全部打亂」或「X關中隨機抽Y關」──
-// arr 已經依 order 欄位排序過。cfg.fixedStartCount/fixedEndCount 是關卡數（不是百分比），
-// cfg.middleMode 沒設定時比照舊的 routeMode 邏輯，確保沒設定新選項的活動行為完全不變。
-function buildTeamRoute(arr,cfg,teamKey){
-  const total=arr.length;
-  const startN=Math.max(0,Math.min(total,parseInt(cfg.fixedStartCount)||0));
-  const endN=Math.max(0,Math.min(total-startN,parseInt(cfg.fixedEndCount)||0));
-  const startPart=arr.slice(0,startN);
-  const endPart=endN>0?arr.slice(total-endN):[];
-  const midPart=arr.slice(startN,total-endN);
-  const middleMode=cfg.middleMode||((cfg.routeMode||'fixed')==='random'?'shuffle-all':'fixed-order');
-  let processedMid;
-  if(middleMode==='random-subset'){
-    // 從中段X關裡隨機抽Y關（Y=middleSubsetCount，未設定或超過範圍時退回全部）
-    const y=Math.max(0,Math.min(midPart.length,parseInt(cfg.middleSubsetCount)||midPart.length));
-    processedMid=shuffleForTeam(midPart,teamKey).slice(0,y);
-  } else if(middleMode==='shuffle-all'){
-    processedMid=shuffleForTeam(midPart,teamKey);
-  } else {
-    processedMid=midPart;// fixed-order：中段維持原本順序
-  }
-  return [...startPart,...processedMid,...endPart];
-}
-
 function shuffleForTeam(arr,teamKey){
   // 真正隨機：每次活動不同順序，但同局遊戲重整後保持相同
   // 用 sessionStorage 儲存本局的隨機順序
@@ -1676,7 +1535,11 @@ function shuffleForTeam(arr,teamKey){
     if(saved&&saved.trim())savedOrder=JSON.parse(saved);
   }catch(e){}
 
-  let middle=[...arr];
+  const a=[...arr];
+  // 支援固定第一關/最後一關
+  const firstFixed=a.find(s=>s.fixedFirst);
+  const lastFixed=a.find(s=>s.fixedLast);
+  let middle=a.filter(s=>!s.fixedFirst&&!s.fixedLast);
 
   if(savedOrder&&savedOrder.length>0){
     // 用上次儲存的順序重排（重整後維持相同順序）
@@ -1696,7 +1559,11 @@ function shuffleForTeam(arr,teamKey){
     try{sessionStorage.setItem(storageKey,JSON.stringify(middle.map(s=>s.key)));}catch(e){}
   }
 
-  return middle;
+  const result=[];
+  if(firstFixed)result.push(firstFixed);
+  result.push(...middle);
+  if(lastFixed)result.push(lastFixed);
+  return result;
 }
 
 function startCountdown(endTimeMs){
@@ -1738,68 +1605,89 @@ function updateProgress(){
   document.getElementById('currentScore').textContent=`${state.score} 分`;
 }
 
-// ── 圖片預載：提早在背景下載，減少提示畫面顯示圖片時的等待感 ──
-const _preloadedImgCache={};
+// 防呆：renderStage 找不到 state.currentIdx 對應的關卡資料時呼叫。
+// 不直接判定完賽，先跟 Firebase 的 stageLogs 核對「實際完成了幾關」：
+// 若真的全部完成了才正常結算；若沒有，代表資料錯位，導回第一個尚未完成的關卡繼續玩，
+// 避免玩家還沒全破就看到「破關成功」畫面。
+// 顯示「此關卡資料異動」畫面（stage._missing 為 true 時使用）。
+// 發生時機：活動進行中工作人員編輯/重建了玩家「目前正卡在的那一關」，
+// 玩家的分數、其他已過關紀錄完全不受影響，只是這一關暫時需要工作人員手動協助過關。
+function renderMissingStageScreen(){
+  clearInterval(state.timerInterval);
+  const content=document.getElementById('gameContent');
+  if(!content)return;
+  content.innerHTML=`
+    <div class="state-card" style="text-align:center;padding:32px 20px">
+      <div style="font-size:48px;margin-bottom:12px">⚠️</div>
+      <div style="font-size:16px;font-weight:700;margin-bottom:8px;color:#e65100">此關卡資料有異動</div>
+      <div style="font-size:13px;color:var(--text-light);line-height:1.7;margin-bottom:20px">
+        工作人員正在調整這一關的內容，你目前的分數與過關紀錄都不受影響。<br>
+        請在原地稍候，或按下方按鈕通知工作人員協助你繼續闖關。
+      </div>
+      <button class="action-btn btn-help" id="missingStageHelpBtn" style="width:100%">🆘 通知工作人員協助</button>
+    </div>`;
+  const btn=document.getElementById('missingStageHelpBtn');
+  if(btn)btn.onclick=()=>showHelp();
+}
+
+async function handleMissingStage(){
+  console.error(`[renderStage] 找不到 currentIdx=${state.currentIdx} 對應的關卡資料，觸發防呆檢查`);
+  const total=state.stages.length;
+  try{
+    const logsSnap=await get(ref(db,`sessions/${state.sessionKey}/stageLogs`));
+    const logs=logsSnap.val()||{};
+    const completedCount=Object.values(logs).filter(l=>l&&l.correct).length;
+    if(total>0&&completedCount>=total){
+      // 核對後確實全部完成，正常結算
+      showFinish();
+    } else {
+      // 資料異常：找出第一個尚未完成的關卡，導回去繼續玩，而不是誤判完賽
+      let recoverIdx=0;
+      for(let i=0;i<total;i++){
+        if(!(logs[i]&&logs[i].correct)){recoverIdx=i;break;}
+      }
+      console.warn(`[renderStage] 防呆：已完成 ${completedCount}/${total} 關，導回第 ${recoverIdx+1} 關繼續（原索引 ${state.currentIdx}）`);
+      state.currentIdx=recoverIdx;
+      set(ref(db,`sessions/${state.sessionKey}/currentStage`),state.currentIdx).catch(()=>{});
+      renderStage();
+    }
+  }catch(e){
+    console.error('[renderStage] 防呆檢查失敗，保底直接結算避免玩家卡死',e);
+    showFinish();
+  }
+}
+
+// 圖片預載：在背景先下載圖片並放進瀏覽器快取，之後真正顯示時就能秒開，不用再等下載
+const _preloadedImgUrls=new Set();
 function preloadImage(url){
-  if(!url||_preloadedImgCache[url])return;
-  _preloadedImgCache[url]=true;
+  if(!url||_preloadedImgUrls.has(url))return;
+  _preloadedImgUrls.add(url);
   const img=new Image();
   img.src=url;
 }
-// 答對當下就先預載「下一關」的圖片（提示彈窗跳出來前就先偷偷下載，爭取更多提前量）
-function preloadNextStageImage(){
-  const nextStage=state.stages[state.currentIdx+1];
-  if(nextStage&&nextStage.imageUrl)preloadImage(nextStage.imageUrl);
-}
-
-// ── N關中至少跑M關才算過關：達到門檻後顯示「可以結算」選項，玩家可自行選擇
-// 立即結算，或繼續挑戰剩下已分配的關卡衝高分。──
-function updateSettleButtonVisibility(){
-  const banner=document.getElementById('settleBanner');
-  if(!banner)return;
-  const m=parseInt(state.settings.minStagesRequired)||0;
-  const reachedEnd=state.currentIdx>=state.stages.length;
-  if(m>0&&(state.completedCount||0)>=m&&!reachedEnd){
-    banner.classList.remove('hidden');
-  } else {
-    banner.classList.add('hidden');
-  }
-}
-function offerSettle(){
-  if(!confirm(`確定要結算完成嗎？\n目前已完成 ${state.completedCount||0} 關，分數 ${state.score} 分。\n結算後將直接前往完賽畫面，無法再繼續挑戰其他關卡。`))return;
-  showFinish();
-}
-window.offerSettle=offerSettle;
 
 function renderStage(){
   stopOverlayCamera();// 換關前先停止舊的相機串流
+  stopWatchGPS();// 換關前先停止舊的背景定位
   state.selectedOption=null;state.photoFile=null;state.stageAttempts=0;state.lastCorrect=false;state.photoFailCount=0;state.hintUsed=0;
-  // 關卡資料被異動/遺失時（例如活動進行中被編輯過，resume時對不到）：
-  // 不能直接showFinish()，那樣會讓沒破完的人誤判成完賽——自動跳過這關繼續往下走。
-  let stage=state.stages[state.currentIdx];
-  while(stage&&stage._missing){
-    console.warn(`[renderStage] 第${state.currentIdx+1}關資料已異動，自動跳過`);
-    state.currentIdx++;
-    stage=state.stages[state.currentIdx];
-  }
   updateProgress();
-  if(!stage){showFinish();return;}
+  const stage=state.stages[state.currentIdx];
+  if(!stage){handleMissingStage();return;}
+  if(stage._missing){renderMissingStageScreen();return;}
   clearInterval(state.timerInterval);state.stageSeconds=0;
   state.timerInterval=setInterval(tickTimer,1000);
-  set(aRef(`sessions/${state.sessionKey}/currentStage`),state.currentIdx);
+  set(ref(db,`sessions/${state.sessionKey}/currentStage`),state.currentIdx);
 
   const stageType=stage.stageType||'quiz';
   const hasGPS=!!(stage.lat&&stage.lng);
   const hasLocation=!!(stage.locationHint);
-  // 一進這關就在背景開始持續定位（不用等玩家按按鈕才冷啟動抓GPS，先爭取時間）
-  stopWatchGPS();
-  if(hasGPS)startWatchGPS();
   const letters=['A','B','C','D'];
   const sc=state.scoring;
   const cfg=state.settings;
   const maxHelp=cfg.helpMaxTimes||2;
   const helpRemain=Math.max(0,maxHelp-state.helpUsed);
   const maxHintPerStage=parseInt(cfg.hintAfter)||2;// 從設定讀取，預設2次
+  const showRankBtn=cfg.showRanking!==false;
 
   // 各類型的題目卡 HTML
   let questionCardInner='';
@@ -1820,6 +1708,7 @@ function renderStage(){
       `:''}
       <div class="action-bar">
         <button class="action-btn btn-help" id="helpBtn" onclick="showHelp()" ${helpRemain<=0?'disabled':''}>🆘 求救（${helpRemain}次）</button>
+        <button class="action-btn btn-rank ${showRankBtn?'':'hidden-rank'}" onclick="showRank()">🏆 排行</button>
         <button class="action-btn btn-hint" id="hintBtn" onclick="useHint()" ${state.hintUsed>=maxHintPerStage?'disabled':''}>💡 提示（${maxHintPerStage-state.hintUsed}次）</button>
       </div>
       <button class="tf-btn tf-true" id="tfBtnTrue" onclick="selectTF(true)">⭕ 對（是）</button>
@@ -1844,6 +1733,7 @@ function renderStage(){
       `:''}
       <div class="action-bar">
         <button class="action-btn btn-help" id="helpBtn" onclick="showHelp()" ${helpRemain<=0?'disabled':''}>🆘 求救（${helpRemain}次）</button>
+        <button class="action-btn btn-rank ${showRankBtn?'':'hidden-rank'}" onclick="showRank()">🏆 排行</button>
         <button class="action-btn btn-hint" id="hintBtn" onclick="useHint()" ${state.hintUsed>=maxHintPerStage?'disabled':''}>💡 提示（${maxHintPerStage-state.hintUsed}次）</button>
       </div>
       <div class="options-list" id="optionsList">
@@ -1877,33 +1767,9 @@ function renderStage(){
       <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handlePhotoOnly()"/>
       <div class="action-bar">
         <button class="action-btn btn-help" id="helpBtn" onclick="showHelp()" ${helpRemain<=0?'disabled':''}>🆘 求救（${helpRemain}次）</button>
+        <button class="action-btn btn-rank ${showRankBtn?'':'hidden-rank'}" onclick="showRank()">🏆 排行</button>
         <button class="action-btn btn-hint" id="hintBtn" onclick="useHint()" ${state.hintUsed>=maxHintPerStage?'disabled':''}>💡 提示（${maxHintPerStage-state.hintUsed}次）</button>
       </div>`;
-
-  } else if(stageType==='qa'){
-    questionCardInner=`
-      <div class="q-tag" style="background:#e8f8f0;color:#1a7a40">❓ 問答題</div>
-      <div id="stageImgWrap"></div>
-      <div class="q-title" id="stageTitle"></div>
-      <div class="q-desc" id="stageDesc"></div>
-      <div id="hintArea"></div>
-      ${stage.requirePhoto?`
-      <div onclick="triggerPhoto()" class="photo-upload-area" id="photoArea">
-        <div class="icon">📷</div><div class="text">📌 此關需拍照上傳</div>
-      </div>
-      <img id="photoPreview" class="photo-preview" alt="照片預覽"/>
-      <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handlePhoto()"/>
-      `:''}
-      <div style="margin-bottom:10px">
-        <label style="font-size:12px;color:var(--text-light);font-weight:500;display:block;margin-bottom:5px">請輸入你的答案</label>
-        <input type="text" id="qaAnswerInput" placeholder="在這裡輸入答案..." style="width:100%;padding:12px 14px;border:2px solid #3db87a;border-radius:12px;font-size:16px;font-family:'Noto Sans TC',sans-serif;outline:none;text-align:center"/>
-        <div id="qaAnswerError" style="color:var(--coral);font-size:12px;margin-top:5px;min-height:16px;text-align:center"></div>
-      </div>
-      <div class="action-bar">
-        <button class="action-btn btn-help" id="helpBtn" onclick="showHelp()" ${helpRemain<=0?'disabled':''}>🆘 求救（${helpRemain}次）</button>
-        <button class="action-btn btn-hint" id="hintBtn" onclick="useHint()" ${state.hintUsed>=maxHintPerStage?'disabled':''}>💡 提示（${maxHintPerStage-state.hintUsed}次）</button>
-      </div>
-      <button class="btn-submit" id="submitBtn" onclick="submitQA()">✅ 確認答案</button>`;
 
   } else if(stageType==='password'){
     questionCardInner=`
@@ -1929,6 +1795,7 @@ function renderStage(){
       </div>
       <div class="action-bar">
         <button class="action-btn btn-help" id="helpBtn" onclick="showHelp()" ${helpRemain<=0?'disabled':''}>🆘 求救（${helpRemain}次）</button>
+        <button class="action-btn btn-rank ${showRankBtn?'':'hidden-rank'}" onclick="showRank()">🏆 排行</button>
         <button class="action-btn btn-hint" id="hintBtn" onclick="useHint()" ${state.hintUsed>=maxHintPerStage?'disabled':''}>💡 提示（${maxHintPerStage-state.hintUsed}次）</button>
       </div>
       <button class="btn-submit" id="submitBtn" onclick="submitPasscode()">🔑 確認密碼</button>`;
@@ -1956,6 +1823,7 @@ function renderStage(){
       </div>
       <div class="action-bar">
         <button class="action-btn btn-help" id="helpBtn" onclick="showHelp()" ${helpRemain<=0?'disabled':''}>🆘 求救（${helpRemain}次）</button>
+        <button class="action-btn btn-rank ${showRankBtn?'':'hidden-rank'}" onclick="showRank()">🏆 排行</button>
         <button class="action-btn btn-hint" id="hintBtn" onclick="useHint()" ${state.hintUsed>=maxHintPerStage?'disabled':''}>💡 提示（${maxHintPerStage-state.hintUsed}次）</button>
       </div>
       <button class="btn-submit" id="confirmBtn" onclick="notifyConfirm()" style="background:linear-gradient(90deg,var(--green),#5dd490)">
@@ -1992,6 +1860,7 @@ function renderStage(){
       <button class="overlay-retry hidden" id="overlayRetryBtn" onclick="overlayRetake()">🔄 重新拍照</button>
       <div class="action-bar">
         <button class="action-btn btn-help" id="helpBtn" onclick="showHelp()" ${helpRemain<=0?'disabled':''}>🆘 求救（${helpRemain}次）</button>
+        <button class="action-btn btn-rank ${showRankBtn?'':'hidden-rank'}" onclick="showRank()">🏆 排行</button>
         <button class="action-btn btn-hint" id="hintBtn" onclick="useHint()" ${state.hintUsed>=maxHintPerStage?'disabled':''}>💡 提示（${maxHintPerStage-state.hintUsed}次）</button>
       </div>`;
 
@@ -2022,6 +1891,7 @@ function renderStage(){
       </div>
       <div class="action-bar">
         <button class="action-btn btn-help" id="helpBtn" onclick="showHelp()" ${helpRemain<=0?'disabled':''}>🆘 求救（${helpRemain}次）</button>
+        <button class="action-btn btn-rank ${showRankBtn?'':'hidden-rank'}" onclick="showRank()">🏆 排行</button>
         <button class="action-btn btn-hint" id="hintBtn" onclick="useHint()" ${state.hintUsed>=maxHintPerStage?'disabled':''}>💡 提示（${maxHintPerStage-state.hintUsed}次）</button>
       </div>`;
   }
@@ -2048,6 +1918,7 @@ function renderStage(){
   // 填入文字內容
   if(hasLocation)document.getElementById('locText').textContent=stage.locationHint;
   if(hasGPS)document.getElementById('gpsHint').textContent=stage.locationHint||'請前往指定地點，按下按鈕驗證位置。';
+  if(hasGPS)startWatchGPS();// 進入GPS關卡就開始背景持續定位，玩家按驗證鈕時可直接使用
   const titleEl=document.getElementById('stageTitle');if(titleEl)titleEl.textContent=stage.title||'';
   const descEl=document.getElementById('stageDesc');if(descEl)descEl.textContent=stage.description||'';
   if(stageType==='quiz')(stage.options||[]).forEach((opt,i)=>{const el=document.getElementById('optText'+i);if(el)el.textContent=opt;});
@@ -2055,7 +1926,11 @@ function renderStage(){
   const hasHints=!!(stage.hints&&(stage.hints.h1||stage.hints.h2));
   const hintBtns=document.querySelectorAll('#hintBtn,#gpsHintBtn');
   hintBtns.forEach(btn=>{
-    btn.style.display=hasHints?'':'none';
+    if(!hasHints){
+      btn.disabled=true;
+      btn.title='此關卡無提示';
+      btn.style.opacity='0.4';
+    }
   });
 
   // 無 GPS 關卡：直接顯示開場故事
@@ -2093,31 +1968,92 @@ function renderStage(){
   if(stageType==='qrcode'){
     const token=Math.random().toString(36).substring(2,10).toUpperCase();
     state.qrToken=token;
-    set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/waitingConfirm`),true);
-    set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/waitSince`),Date.now());
-    set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/qrToken`),token);
-    set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/stageName`),(state.stages[state.currentIdx]&&state.stages[state.currentIdx].title||''));
+    set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/waitingConfirm`),true);
+    set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/waitSince`),Date.now());
+    set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/qrToken`),token);
+    set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/stageName`),(state.stages[state.currentIdx]&&state.stages[state.currentIdx].title||''));
     setTimeout(()=>generateQRCode(token),300);
   }
   // 關主確認：監聽Firebase確認狀態
   if(stageType==='confirm'||stageType==='qrcode'){
     listenForStageConfirm(state.currentIdx);
   }
-  // 進這一關時，順便在背景預載下一關圖片，多爭取一點提前量
-  preloadNextStageImage();
-  updateSettleButtonVisibility();
+  // 預載下一關的圖片（提早在背景下載，玩家過關看到過關故事/下一關提示時就能秒開）
+  const nextS=state.stages[state.currentIdx+1];
+  if(nextS){
+    if(nextS.imageUrl)preloadImage(nextS.imageUrl);
+    if(nextS.overlayImageUrl)preloadImage(nextS.overlayImageUrl);
+  }
+}
+
+// ── GPS定位模式 ──
+// gpsMode='continuous'（預設，背景持續定位）或 'manual'（只有按按鈕時才定位一次，行為與改版前接近）
+// 由後台「活動設定」的 gpsMode 欄位控制，依你的需求開放選擇。
+// 不論哪種模式，都採用「先嘗試高精度，若一段時間沒有結果就自動降級為一般精度」的策略：
+// 在沒有GPS晶片的裝置（如Wi-Fi版iPad）上，一般精度定位（Wi-Fi/網路定位）通常反而比較快取得結果。
+let _gpsWatchId=null;
+let _gpsLastPos=null;
+let _gpsFallbackTimer=null;
+function startWatchGPS(){
+  stopWatchGPS();
+  _gpsLastPos=null;
+  if(!navigator.geolocation)return;
+  if((state.settings.gpsMode||'continuous')==='manual')return;// 手動模式：不啟動背景定位，按按鈕才抓
+  try{
+    _gpsWatchId=navigator.geolocation.watchPosition(
+      pos=>{_gpsLastPos=pos;},
+      err=>{/* 背景定位失敗先不打擾玩家，等實際按下驗證鈕時再顯示錯誤訊息 */},
+      {enableHighAccuracy:true,maximumAge:5000,timeout:20000}
+    );
+    // 8秒內高精度都還沒有任何結果，改用一般精度重新啟動背景定位（較快取得Wi-Fi/網路定位結果）
+    _gpsFallbackTimer=setTimeout(()=>{
+      if(!_gpsLastPos&&_gpsWatchId!=null&&navigator.geolocation){
+        console.warn('[GPS] 高精度背景定位8秒內無結果，改用一般精度重新啟動');
+        try{navigator.geolocation.clearWatch(_gpsWatchId);}catch(e){}
+        _gpsWatchId=navigator.geolocation.watchPosition(
+          pos=>{_gpsLastPos=pos;},
+          err=>{},
+          {enableHighAccuracy:false,maximumAge:5000,timeout:20000}
+        );
+      }
+    },8000);
+  }catch(e){console.warn('[GPS] watchPosition 啟動失敗',e);}
+}
+function stopWatchGPS(){
+  if(_gpsFallbackTimer){clearTimeout(_gpsFallbackTimer);_gpsFallbackTimer=null;}
+  if(_gpsWatchId!=null&&navigator.geolocation){
+    try{navigator.geolocation.clearWatch(_gpsWatchId);}catch(e){}
+    _gpsWatchId=null;
+  }
+}
+// 單次定位＋高精度逾時自動降級一般精度重試一次（手動模式／背景定位還沒有結果時使用）
+function getPositionWithFallback(onSuccess,onError){
+  navigator.geolocation.getCurrentPosition(
+    onSuccess,
+    err=>{
+      if(err.code===3){// 高精度逾時：改用一般精度重試一次
+        console.warn('[GPS] 高精度定位逾時，改用一般精度重試');
+        navigator.geolocation.getCurrentPosition(onSuccess,onError,{enableHighAccuracy:false,timeout:15000,maximumAge:5000});
+      } else {
+        onError(err);
+      }
+    },
+    {enableHighAccuracy:true,timeout:8000,maximumAge:5000}
+  );
 }
 
 // 跳過 GPS 驗證（扣分）
 async function skipGPSVerify(){
   const penalty=state.scoring.skipGPSPenalty!=null?state.scoring.skipGPSPenalty:20;
   if(!confirm(`確定要跳過GPS驗證嗎？\n將扣除 ${penalty} 分`))return;
+  stopWatchGPS();
   state.score=Math.max(0,state.score-penalty);
-  set(aRef(`sessions/${state.sessionKey}/score`),state.score);
+  set(ref(db,`sessions/${state.sessionKey}/score`),state.score);
+  logScoreChange(-penalty,'跳過GPS驗證');
   document.getElementById('currentScore').textContent=`${state.score} 分`;
   // 記錄跳過GPS
-  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/gpsSkipped`),true);
-  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/arrivedAt`),serverTimestamp());
+  set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/gpsSkipped`),true);
+  set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/arrivedAt`),serverTimestamp());
   // 直接進入關卡（與 arriveAtStage 相同流程）
   const gpsCard=document.getElementById('gpsCard');
   const qCard=document.getElementById('questionCard');
@@ -2131,53 +2067,8 @@ async function skipGPSVerify(){
 }
 window.skipGPSVerify=skipGPSVerify;
 
-// ── 背景持續定位：一進GPS關卡就開始在背景抓位置(watchPosition)，
-// 玩家按驗證鈕時直接讀取已經抓到的最新位置，不用每次都冷啟動等待，
-// 位置精準度也會隨背景持續更新越來越準。iPad Wi-Fi版無GPS晶片的先天限制無法完全解決，
-// 但可以大幅縮短「按下驗證→拿到座標」之間的等待時間 ──
-function startWatchGPS(){
-  stopWatchGPS();
-  state._gpsWatchPos=null;
-  if(!navigator.geolocation)return;
-  try{
-    state._gpsWatchId=navigator.geolocation.watchPosition(
-      pos=>{state._gpsWatchPos={lat:pos.coords.latitude,lng:pos.coords.longitude,ts:Date.now()};},
-      ()=>{/* 背景定位失敗先靜默忽略，按鈕仍會fallback做一次性定位 */},
-      {enableHighAccuracy:true,maximumAge:5000,timeout:20000}
-    );
-  }catch(e){/* 少數瀏覽器情境可能丟出例外，不影響按鈕的一次性定位備援 */}
-}
-function stopWatchGPS(){
-  if(state._gpsWatchId!=null&&navigator.geolocation&&navigator.geolocation.clearWatch){
-    navigator.geolocation.clearWatch(state._gpsWatchId);
-  }
-  state._gpsWatchId=null;
-}
-function handleGPSCoords(lat,lng){
-  const stage=state.stages[state.currentIdx];
-  const statusEl=document.getElementById('gpsStatus');
-  const btn=document.getElementById('gpsBtn');
-  const dist=calcDist(lat,lng,stage.lat,stage.lng);
-  const passed=dist<=(stage.radius||100);
-  recordGPSLog(lat,lng,dist,passed,state.currentIdx);
-  if(passed){
-    statusEl.textContent='✅ 位置驗證成功！';
-    setTimeout(arriveAtStage,800);
-  } else {
-    statusEl.innerHTML=`⚠️ 距離目標還有約 <b>${Math.round(dist)} 公尺</b>，請再靠近！<br><span style="font-size:11px;color:var(--text-light)">如果無法靠近，可使用下方「🆘 求救」按鈕</span>`;
-    btn.disabled=false;
-  }
-}
-function handleGPSError(err){
-  const statusEl=document.getElementById('gpsStatus');
-  const btn=document.getElementById('gpsBtn');
-  const msgs={1:'⚠️ 請允許位置權限後重試',2:'⚠️ GPS訊號不佳，請到空曠處',3:'⚠️ 定位逾時，請重試'};
-  statusEl.textContent=(err&&msgs[err.code])||'⚠️ 定位失敗';
-  recordGPSLog(null,null,null,false,state.currentIdx);
-  if((state.settings.gpsFail||'block')==='allow'){setTimeout(()=>{statusEl.textContent+=' (已自動跳過)';setTimeout(arriveAtStage,1000);},1500);}
-  else btn.disabled=false;
-}
 function checkGPS(){
+  const stage=state.stages[state.currentIdx];
   const statusEl=document.getElementById('gpsStatus');
   const btn=document.getElementById('gpsBtn');
   btn.disabled=true;statusEl.textContent='📡 正在取得GPS位置...';
@@ -2187,26 +2078,43 @@ function checkGPS(){
     else{statusEl.textContent='⚠️ 不支援GPS，請聯絡工作人員';btn.disabled=false;}
     return;
   }
-  // 優先使用背景持續定位（watchPosition）已經抓到的最新位置，不用再等一次全新冷啟動
-  const cached=state._gpsWatchPos;
-  if(cached){
-    handleGPSCoords(cached.lat,cached.lng);
+  // 持續定位模式：優先使用背景已經抓到的最新位置，速度快很多；
+  // 若背景定位還沒有結果（例如剛進入這關沒幾秒），才退回單次定位
+  if(_gpsLastPos){
+    handleGPSPosition(_gpsLastPos,stage,statusEl,btn);
     return;
   }
-  // 背景定位還沒有結果（剛進這關，或裝置不支援watchPosition）→ 一次性定位當備援
-  navigator.geolocation.getCurrentPosition(
-    pos=>handleGPSCoords(pos.coords.latitude,pos.coords.longitude),
-    err=>handleGPSError(err),
-    {enableHighAccuracy:true,timeout:15000,maximumAge:0}
+  getPositionWithFallback(
+    pos=>handleGPSPosition(pos,stage,statusEl,btn),
+    err=>{
+      const msgs={1:'⚠️ 請允許位置權限後重試',2:'⚠️ GPS訊號不佳，請到空曠處',3:'⚠️ 定位逾時，請重試'};
+      statusEl.textContent=msgs[err.code]||'⚠️ 定位失敗';
+      recordGPSLog(null,null,null,false,state.currentIdx);
+      if((state.settings.gpsFail||'block')==='allow'){setTimeout(()=>{statusEl.textContent+=' (已自動跳過)';setTimeout(arriveAtStage,1000);},1500);}
+      else btn.disabled=false;
+    }
   );
+}
+function handleGPSPosition(pos,stage,statusEl,btn){
+  const dist=calcDist(pos.coords.latitude,pos.coords.longitude,stage.lat,stage.lng);
+  const passed=dist<=(stage.radius||100);
+  recordGPSLog(pos.coords.latitude,pos.coords.longitude,dist,passed,state.currentIdx);
+  if(passed){
+    statusEl.textContent='✅ 位置驗證成功！';
+    stopWatchGPS();
+    setTimeout(arriveAtStage,800);
+  } else {
+    statusEl.innerHTML=`⚠️ 距離目標還有約 <b>${Math.round(dist)} 公尺</b>，請再靠近！<br><span style="font-size:11px;color:var(--text-light)">如果無法靠近，可使用下方「🆘 求救」按鈕</span>`;
+    btn.disabled=false;
+  }
 }
 function calcDist(lat1,lng1,lat2,lng2){const R=6371000,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
 function arriveAtStage(){
-  stopWatchGPS();// 已到達，背景定位可以停了，省電
+  stopWatchGPS();
   playBGM('game');// 到達後回到闖關BGM（停止GPS音效）
   const g=document.getElementById('gpsCard'),q=document.getElementById('questionCard');
   if(g)g.style.display='none';
-  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/arrivedAt`),serverTimestamp());
+  set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/arrivedAt`),serverTimestamp());
   const stage=state.stages[state.currentIdx];
   const startCameraIfNeeded=()=>{
     if(stage&&(stage.stageType||'quiz')==='overlay')startOverlayCamera();
@@ -2221,8 +2129,8 @@ function arriveAtStage(){
 }
 async function recordGPSLog(lat,lng,dist,passed,stageIdx){
   state.gpsLogCount++;
-  if(state.gpsLogCount>10){const snap=await get(aRef(`sessions/${state.sessionKey}/gpsLogs`));const logs=snap.val()||{};const keys=Object.keys(logs).sort((a,b)=>logs[a].ts-logs[b].ts);if(keys.length>=10)set(aRef(`sessions/${state.sessionKey}/gpsLogs/${keys[0]}`),null);}
-  push(aRef(`sessions/${state.sessionKey}/gpsLogs`)).then(r=>set(r,{lat,lng,dist,passed,stageIdx,ts:Date.now()}));
+  if(state.gpsLogCount>10){const snap=await get(ref(db,`sessions/${state.sessionKey}/gpsLogs`));const logs=snap.val()||{};const keys=Object.keys(logs).sort((a,b)=>logs[a].ts-logs[b].ts);if(keys.length>=10)set(ref(db,`sessions/${state.sessionKey}/gpsLogs/${keys[0]}`),null);}
+  push(ref(db,`sessions/${state.sessionKey}/gpsLogs`)).then(r=>set(r,{lat,lng,dist,passed,stageIdx,ts:Date.now()}));
 }
 
 function useHint(){
@@ -2253,7 +2161,8 @@ function useHint(){
   state.hintUsed++;
   const penalty=state.scoring.hintPenalty||5;
   state.score=Math.max(0,state.score-penalty);
-  set(aRef(`sessions/${state.sessionKey}/score`),state.score);
+  set(ref(db,`sessions/${state.sessionKey}/score`),state.score);
+  logScoreChange(-penalty,`使用提示 ${state.hintUsed}`);
   document.getElementById('currentScore').textContent=`${state.score} 分`;
   const hintArea=document.getElementById('hintArea');
   const box=document.createElement('div');box.className='hint-box';
@@ -2272,12 +2181,12 @@ async function notifyConfirm(){
   // 上傳照片（如有）
   if(state.photoFile){
     const path=`photos/${state.sessionKey}/${state.currentIdx}_${Date.now()}`;
-    try{const snap=await uploadBytes(aStorageRef(path),state.photoFile);const url=await getDownloadURL(snap.ref);await set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/photoUrl`),url);}catch(e){console.warn(e);}
+    try{const snap=await uploadBytes(sRef(storage,path),state.photoFile);const url=await getDownloadURL(snap.ref);await set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/photoUrl`),url);}catch(e){console.warn(e);}
   }
   // 寫入等待確認狀態
-  await set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/waitingConfirm`),true);
-  await set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/waitSince`),Date.now());
-  await set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/stageName`),stage.title||'');
+  await set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/waitingConfirm`),true);
+  await set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/waitSince`),Date.now());
+  await set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/stageName`),stage.title||'');
   // 顯示等待動畫
   if(btn)btn.style.display='none';
   const waiting=document.getElementById('confirmWaiting');
@@ -2296,7 +2205,7 @@ function generateQRCode(token){
   const baseUrl=window.location.origin+window.location.pathname.replace('player.html','');
   const t=token||state.qrToken||'';
   const stageKey=(state.stages[state.currentIdx]&&state.stages[state.currentIdx].key||'');
-  const confirmUrl=`${baseUrl}confirm.html?a=${ACTIVITY_ID}&sess=${state.sessionKey}&stage=${state.currentIdx}&team=${encodeURIComponent(state.teamName)}&token=${t}&stageKey=${stageKey}`;
+  const confirmUrl=`${baseUrl}confirm.html?sess=${state.sessionKey}&stage=${state.currentIdx}&team=${encodeURIComponent(state.teamName)}&token=${t}&stageKey=${stageKey}`;
   try{
     new QRCode(container,{
       text:confirmUrl,width:160,height:160,
@@ -2313,7 +2222,7 @@ function generateQRCode(token){
 
 // ── 監聽關主確認狀態（confirm 和 qrcode 共用）──
 function listenForStageConfirm(stageIdx){
-  const logRef=aRef(`sessions/${state.sessionKey}/stageLogs/${stageIdx}`);
+  const logRef=ref(db,`sessions/${state.sessionKey}/stageLogs/${stageIdx}`);
   const unsubscribe=onValue(logRef,snap=>{
     if(!snap.exists())return;
     const log=snap.val();
@@ -2336,10 +2245,10 @@ async function handleConfirmPass(stageIdx){
   const timeBonus=Math.max(0,Math.round((sc.timeBonus||50)*(1-state.stageSeconds/300)));
   const scoreChange=Math.max(0,base+timeBonus);
   state.score+=scoreChange;
-  set(aRef(`sessions/${state.sessionKey}/score`),state.score);
+  set(ref(db,`sessions/${state.sessionKey}/score`),state.score);
+  logScoreChange(scoreChange,'關主確認通過');
   document.getElementById('currentScore').textContent=`${state.score} 分`;
   state.lastCorrect=true;
-  preloadNextStageImage();
   document.getElementById('feedbackIcon').textContent='✅';
   document.getElementById('feedbackTitle').textContent='關主確認通過！';
   document.getElementById('feedbackTitle').className='feedback-title correct';
@@ -2365,12 +2274,12 @@ function handleConfirmReject(stageIdx){
   toast.textContent='❌ 關主退回：請重新完成任務後再通知';
   document.body.appendChild(toast);setTimeout(()=>toast.remove(),5000);
   // 重置Firebase狀態
-  set(aRef(`sessions/${state.sessionKey}/stageLogs/${stageIdx}/rejected`),false);
-  set(aRef(`sessions/${state.sessionKey}/stageLogs/${stageIdx}/waitingConfirm`),false);
+  set(ref(db,`sessions/${state.sessionKey}/stageLogs/${stageIdx}/rejected`),false);
+  set(ref(db,`sessions/${state.sessionKey}/stageLogs/${stageIdx}/waitingConfirm`),false);
 }
 
 // ── 音樂系統 ──
-const MUSIC_BASE='https://turtlekfc.github.io/Checkpoint-Challenge/music/';
+const MUSIC_BASE='https://turtlekfc.github.io/Real-world-puzzle/music/';
 const musicFiles={
   wait: MUSIC_BASE+'wait.mp3',
   game: MUSIC_BASE+'game.mp3',
@@ -2585,21 +2494,13 @@ function overlayShoot(){
     return;
   }
   // 拍照：只拍相機畫面本身（套圖PNG只是輔助對準的視覺疊層，不燒進照片，避免Firebase Storage跨域問題）
-  // 縮圖：直接以壓縮後的尺寸繪製，減少Firebase Storage儲存/流量用量（跟其他拍照/上傳入口的compressImage()邏輯一致，長邊上限1280px）
-  {
-    const _maxDim=1280;
-    let _w=video.videoWidth,_h=video.videoHeight;
-    if(_w>_maxDim||_h>_maxDim){
-      if(_w>=_h){_h=Math.round(_h*_maxDim/_w);_w=_maxDim;}
-      else{_w=Math.round(_w*_maxDim/_h);_h=_maxDim;}
-    }
-    canvas.width=_w;canvas.height=_h;
-  }
+  canvas.width=video.videoWidth;
+  canvas.height=video.videoHeight;
   const ctx=canvas.getContext('2d');
   ctx.drawImage(video,0,0,canvas.width,canvas.height);
   function doToBlob(){
     try{
-      canvas.toBlob(handleBlob,'image/jpeg',0.8);
+      canvas.toBlob(handleBlob,'image/jpeg',0.88);
     }catch(e){
       showDebugError('canvas.toBlob 失敗: '+e.message);
       alert('拍照失敗，請重新整理頁面後再試');
@@ -2641,7 +2542,14 @@ function overlayShoot(){
       submitOverlayBtn.onclick=async()=>{
         submitOverlayBtn.disabled=true;
         submitOverlayBtn.textContent='🔍 AI 辨識中...';
+        logPhotoAttempt(state.photoFile||blob);
         const reader=new FileReader();
+        reader.onerror=()=>{
+          console.warn('[overlay AI] 照片讀取失敗',reader.error);
+          submitOverlayBtn.disabled=false;
+          submitOverlayBtn.textContent='📤 重新送出辨識';
+          if(statusEl){statusEl.style.display='';statusEl.className='photo-verify-status fail';statusEl.textContent='⚠️ 照片讀取失敗，請重新拍照';}
+        };
         reader.onload=async e=>{
           try{
             const passed=await verifyPhotoWithAI(e.target.result,stage.overlayAIDesc,stage.overlayStrictness||'standard');
@@ -2697,10 +2605,10 @@ async function overlayNotifyConfirm(){
   // 套圖+關主確認模式：上傳照片後等關主確認
   if(state.photoFile){
     const path=`photos/${state.sessionKey}/${state.currentIdx}_${Date.now()}`;
-    try{const snap=await uploadBytes(aStorageRef(path),state.photoFile);const url=await getDownloadURL(snap.ref);await set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/photoUrl`),url);}catch(e){console.warn(e);}
+    try{const snap=await uploadBytes(sRef(storage,path),state.photoFile);const url=await getDownloadURL(snap.ref);await set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/photoUrl`),url);}catch(e){console.warn(e);}
   }
-  await set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/waitingConfirm`),true);
-  await set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/waitSince`),Date.now());
+  await set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/waitingConfirm`),true);
+  await set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/waitSince`),Date.now());
   listenForStageConfirm(state.currentIdx);
   const statusEl=document.getElementById('photoVerifyStatus');
   if(statusEl){statusEl.className='photo-verify-status checking';statusEl.style.display='';statusEl.textContent='⏳ 照片已送出，等待關主確認中...';}
@@ -2824,7 +2732,7 @@ function triggerPhoto(){
 }
 
 // 標準選擇題：上傳照片後直接預覽（不自動辨識，送答案時才辨識）
-async function handlePhoto(){
+function handlePhoto(){
   const input=document.getElementById('photoInput');
   if(!input){return;}
   const file=input.files[0];
@@ -2837,8 +2745,9 @@ async function handlePhoto(){
     alert('圖片太大，請選擇 10MB 以內的圖片');
     input.value='';return;
   }
-  state.photoFile=await compressImage(file);
+  state.photoFile=file;
   const reader=new FileReader();
+  reader.onerror=()=>{console.warn('[photo preview] 讀取失敗',reader.error);alert('照片讀取失敗，請重新選擇');state.photoFile=null;};
   reader.onload=e=>{
     const p=document.getElementById('photoPreview');
     if(p){p.src=e.target.result;p.style.display='block';}
@@ -2866,17 +2775,18 @@ async function handlePhoto(){
       if(p&&p.parentNode)p.parentNode.insertBefore(retakeBtn,p.nextSibling);
     } else {retakeBtn.style.display='block';}
   };
-  reader.readAsDataURL(state.photoFile);
+  reader.readAsDataURL(file);
 }
 
 // 照片關卡：先預覽確認，再按「送出辨識」按鈕才進行AI辨識
-async function handlePhotoOnly(){
+function handlePhotoOnly(){
   const file=document.getElementById('photoInput').files[0];
   if(!file)return;
   if(!file.type.startsWith('image/')){alert('請選擇圖片檔案（JPG、PNG等）');return;}
   if(file.size>10*1024*1024){alert('圖片太大，請選擇10MB以內的圖片');return;}
-  state.photoFile=await compressImage(file);
+  state.photoFile=file;
   const reader=new FileReader();
+  reader.onerror=()=>{console.warn('[handlePhotoOnly] 讀取失敗',reader.error);alert('照片讀取失敗，請重新選擇');state.photoFile=null;};
   reader.onload=e=>{
     // 顯示照片預覽
     const p=document.getElementById('photoPreview');
@@ -2909,7 +2819,7 @@ async function handlePhotoOnly(){
       if(retakeBtn&&retakeBtn.parentNode)retakeBtn.parentNode.insertBefore(submitPhotoBtn,retakeBtn);
     } else {submitPhotoBtn.style.display='block';}
   };
-  reader.readAsDataURL(state.photoFile);
+  reader.readAsDataURL(file);
 }
 
 // 玩家確認後才送出AI辨識
@@ -2921,8 +2831,16 @@ async function submitPhotoForAI(){
   const stage=state.stages[state.currentIdx];
   const p=document.getElementById('photoPreview');
   if(!p||!state.photoFile){if(submitBtn){submitBtn.disabled=false;submitBtn.textContent='📤 送出照片辨識';}return;}
+  // 不論AI最後判斷結果，先把這次的照片上傳留存，後台照片審核區才看得到（含失敗的嘗試）
+  logPhotoAttempt(state.photoFile);
   // 轉成 base64
   const reader=new FileReader();
+  reader.onerror=()=>{
+    console.warn('[submitPhotoForAI] 照片讀取失敗',reader.error);
+    if(submitBtn){submitBtn.disabled=false;submitBtn.textContent='📤 重新送出辨識';}
+    const statusEl=document.getElementById('photoVerifyStatus');
+    if(statusEl){statusEl.style.display='';statusEl.className='photo-verify-status fail';statusEl.textContent='⚠️ 照片讀取失敗，請重新拍照';}
+  };
   reader.onload=async e=>{
     try{
       if(state.settings.geminiKey&&stage.photoDescription){
@@ -2959,21 +2877,21 @@ async function passPhotoStage(){
   // 上傳照片
   if(state.photoFile){
     const path=`photos/${state.sessionKey}/${state.currentIdx}_${Date.now()}`;
-    try{const snap=await uploadBytes(aStorageRef(path),state.photoFile);const url=await getDownloadURL(snap.ref);set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/photoUrl`),url);}catch(e){console.warn(e);}
+    try{const snap=await uploadBytes(sRef(storage,path),state.photoFile);const url=await getDownloadURL(snap.ref);set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/photoUrl`),url);}catch(e){console.warn(e);}
   }
-  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/correct`),true);
-  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/answeredAt`),serverTimestamp());
+  set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/correct`),true);
+  set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/answeredAt`),serverTimestamp());
   // 計分
   const sc=state.scoring;
   const base=sc.baseScore||100;
   const timeBonus=Math.max(0,Math.round((sc.timeBonus||50)*(1-state.stageSeconds/300)));
   const scoreChange=Math.max(0,base+timeBonus);
   state.score+=scoreChange;
-  set(aRef(`sessions/${state.sessionKey}/score`),state.score);
+  set(ref(db,`sessions/${state.sessionKey}/score`),state.score);
+  logScoreChange(scoreChange,'照片關卡過關');
   document.getElementById('currentScore').textContent=`${state.score} 分`;
   // 顯示過關
   state.lastCorrect=true;
-  preloadNextStageImage();
   playSFX('correct');// 答對音效
   document.getElementById('feedbackIcon').textContent='🎉';
   document.getElementById('feedbackTitle').textContent='照片驗證通過！';
@@ -2985,56 +2903,6 @@ async function passPhotoStage(){
   document.getElementById('feedbackOverlay').classList.remove('hidden');
 }
 
-// 問答題：文字填空作答
-async function submitQA(){
-  const input=document.getElementById('qaAnswerInput');
-  const errorEl=document.getElementById('qaAnswerError');
-  if(!input)return;
-  const entered=input.value.trim();
-  if(!entered){errorEl.textContent='請輸入答案！';return;}
-  const stage=state.stages[state.currentIdx];
-  if(stage.requirePhoto&&!state.photoFile){errorEl.textContent='此關必須先拍照才能作答！';return;}
-  const guessHash=await sha256(`${stage.key}_qa_${qaNormalize(entered)}`);
-  const correct=(stage.qaAnswerHashes||[]).includes(guessHash);
-  state.stageAttempts++;state.totalAttempts++;
-  errorEl.textContent='';
-  if(!correct){
-    state.score=Math.max(0,state.score-(state.scoring.wrongPenalty||10));
-    set(aRef(`sessions/${state.sessionKey}/score`),state.score);
-    document.getElementById('currentScore').textContent=`${state.score} 分`;
-    errorEl.textContent=`❌ 答案不對！已扣 ${state.scoring.wrongPenalty||10} 分，請再想想看`;
-    input.value='';input.focus();
-    return;
-  }
-  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/correct`),true);
-  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/attempts`),state.stageAttempts);
-  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/answeredAt`),serverTimestamp());
-  if(stage.requirePhoto&&state.photoFile){
-    const path=`photos/${state.sessionKey}/${state.currentIdx}_${Date.now()}`;
-    try{const snap=await uploadBytes(aStorageRef(path),state.photoFile);const url=await getDownloadURL(snap.ref);set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/photoUrl`),url);}catch(e){console.warn(e);}
-  }
-  const sc=state.scoring;
-  const base=sc.baseScore||100;
-  const timeBonus=Math.max(0,Math.round((sc.timeBonus||50)*(1-state.stageSeconds/300)));
-  const wrongPenalty=(state.stageAttempts-1)*(sc.wrongPenalty||10);
-  const scoreChange=Math.max(0,base+timeBonus-wrongPenalty);
-  state.score+=scoreChange;
-  set(aRef(`sessions/${state.sessionKey}/score`),state.score);
-  document.getElementById('currentScore').textContent=`${state.score} 分`;
-  state.lastCorrect=true;
-  preloadNextStageImage();
-  playSFX('correct');
-  document.getElementById('feedbackIcon').textContent='🎉';
-  document.getElementById('feedbackTitle').textContent='答對了！';
-  document.getElementById('feedbackTitle').className='feedback-title correct';
-  document.getElementById('feedbackMsg').textContent='太棒了！答案正確，準備前往下一關！';
-  document.getElementById('feedbackScore').textContent=`+${scoreChange}分`;
-  document.getElementById('feedbackBtn').textContent='前往下一關 →';
-  document.getElementById('feedbackBtn').className='btn-next';
-  document.getElementById('feedbackOverlay').classList.remove('hidden');
-}
-window.submitQA=submitQA;
-
 // 密碼確認關卡
 async function submitPasscode(){
   const input=document.getElementById('passcodeInput');
@@ -3043,25 +2911,25 @@ async function submitPasscode(){
   const entered=input.value.trim().toLowerCase();
   if(!entered){errorEl.textContent='請輸入密碼！';return;}
   const stage=state.stages[state.currentIdx];
-  const guessHash=await sha256(`${stage.key}_pass_${entered}`);
-  const correct=(guessHash===stage.passcodeHash);
+  const correct=entered===(stage.passcode||'').toLowerCase();
   state.stageAttempts++;state.totalAttempts++;
   errorEl.textContent='';
   if(!correct){
     state.score=Math.max(0,state.score-(state.scoring.wrongPenalty||10));
-    set(aRef(`sessions/${state.sessionKey}/score`),state.score);
+    set(ref(db,`sessions/${state.sessionKey}/score`),state.score);
+    logScoreChange(-(state.scoring.wrongPenalty||10),'密碼錯誤');
     document.getElementById('currentScore').textContent=`${state.score} 分`;
     errorEl.textContent=`❌ 密碼錯誤！已扣 ${state.scoring.wrongPenalty||10} 分，請再試一次`;
     input.value='';input.focus();
     return;
   }
   // 密碼正確
-  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/correct`),true);
-  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/attempts`),state.stageAttempts);
-  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/answeredAt`),serverTimestamp());
+  set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/correct`),true);
+  set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/attempts`),state.stageAttempts);
+  set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/answeredAt`),serverTimestamp());
   if(stage.requirePhoto&&state.photoFile){
     const path=`photos/${state.sessionKey}/${state.currentIdx}_${Date.now()}`;
-    try{const snap=await uploadBytes(aStorageRef(path),state.photoFile);const url=await getDownloadURL(snap.ref);set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/photoUrl`),url);}catch(e){console.warn(e);}
+    try{const snap=await uploadBytes(sRef(storage,path),state.photoFile);const url=await getDownloadURL(snap.ref);set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/photoUrl`),url);}catch(e){console.warn(e);}
   }
   const sc=state.scoring;
   const base=sc.baseScore||100;
@@ -3069,10 +2937,10 @@ async function submitPasscode(){
   const wrongPenalty=(state.stageAttempts-1)*(sc.wrongPenalty||10);
   const scoreChange=Math.max(0,base+timeBonus-wrongPenalty);
   state.score+=scoreChange;
-  set(aRef(`sessions/${state.sessionKey}/score`),state.score);
+  set(ref(db,`sessions/${state.sessionKey}/score`),state.score);
+  logScoreChange(scoreChange,'密碼正確過關');
   document.getElementById('currentScore').textContent=`${state.score} 分`;
   state.lastCorrect=true;
-  preloadNextStageImage();
   document.getElementById('feedbackIcon').textContent='🔓';
   document.getElementById('feedbackTitle').textContent='密碼正確！';
   document.getElementById('feedbackTitle').className='feedback-title correct';
@@ -3084,6 +2952,19 @@ async function submitPasscode(){
 }
 
 // ── AI 照片辨識（含嚴謹度 + 雙KEY自動切換）──
+// 每次玩家送出照片辨識，不論AI最後判斷通過或失敗，都先把這張照片上傳留存，
+// 讓後台「照片審核區」能看到所有嘗試（原本只有AI判斷通過才會上傳，失敗的完全看不到）
+async function logPhotoAttempt(file){
+  if(!file||!state.sessionKey)return;
+  try{
+    const path=`photos/${state.sessionKey}/${state.currentIdx}_${Date.now()}`;
+    const snap=await uploadBytes(sRef(storage,path),file);
+    const url=await getDownloadURL(snap.ref);
+    await set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/photoUrl`),url);
+    await set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/photoAttemptAt`),serverTimestamp());
+  }catch(e){console.warn('[logPhotoAttempt] 上傳失敗',e);}
+}
+
 async function verifyPhotoWithAI(base64Data,description,strictness){
   const statusEl=document.getElementById('photoVerifyStatus');
   if(statusEl){statusEl.className='photo-verify-status checking';statusEl.style.display='';statusEl.textContent='🔍 AI 正在分析照片...';}
@@ -3110,13 +2991,21 @@ async function verifyPhotoWithAI(base64Data,description,strictness){
   const keys=[state.settings.geminiKey,state.settings.geminiKey2].filter(Boolean);
   let lastError=null;
   for(const key of keys){
+    let timeoutId=null;
     try{
       const imageData=base64Data.split(',')[1];
       const mimeType=base64Data.split(';')[0].split(':')[1]||'image/jpeg';
+      // 加上逾時控制：現場多隊同時使用AI辨識、Wi-Fi壅塞時，fetch可能長時間沒有回應也沒有錯誤，
+      // 導致畫面永遠卡在「辨識中」。用 AbortController 設定15秒逾時，逾時就換下一組Key或判定失敗，
+      // 不會讓玩家卡住等不到結果。
+      const controller=new AbortController();
+      timeoutId=setTimeout(()=>controller.abort(),15000);
       const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`,{
         method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({contents:[{parts:[{inlineData:{mimeType,data:imageData}},{text:prompt}]}]})
+        body:JSON.stringify({contents:[{parts:[{inlineData:{mimeType,data:imageData}},{text:prompt}]}]}),
+        signal:controller.signal
       });
+      clearTimeout(timeoutId);
       if(res.status===429||res.status===403){lastError=res.status;continue;}// 超限，換KEY
       if(!res.ok){lastError=res.status;continue;}// 其他錯誤狀態，換KEY或略過
       const rawText=await res.text();
@@ -3124,6 +3013,9 @@ async function verifyPhotoWithAI(base64Data,description,strictness){
       let data;try{data=JSON.parse(rawText);}catch(jsonErr){continue;}// 非JSON回應，略過
       const text=(data&&data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts&&data.candidates[0].content.parts[0]&&data.candidates[0].content.parts[0].text||'');
       const pass=text.includes('結果：符合');
+      // 不論通過與否，都把這次AI判斷結果寫回後台，方便工作人員在照片審核區查看每一次嘗試
+      set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/aiResult`),pass?'pass':'fail').catch(()=>{});
+      set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/aiCheckedAt`),serverTimestamp()).catch(()=>{});
       if(pass){
         statusEl.className='photo-verify-status pass';
         const reasonMatch=text.match(/原因：(.+)/);
@@ -3149,9 +3041,14 @@ async function verifyPhotoWithAI(base64Data,description,strictness){
         if(state.photoFailCount>=3)document.getElementById('skipPhotoArea').classList.remove('hidden');
       }
       return pass;// 回傳結果
-    }catch(e){continue;}
+    }catch(e){
+      if(timeoutId)clearTimeout(timeoutId);
+      if(e.name==='AbortError')console.warn('[verifyPhotoWithAI] 請求逾時（15秒），換下一組Key或判定失敗');
+      continue;
+    }
   }
   // 所有KEY都失敗
+  set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/aiResult`),'unavailable').catch(()=>{});
   if(statusEl){statusEl.className='photo-verify-status fail';statusEl.textContent='⚠️ AI辨識暫時無法使用，請繼續作答';setTimeout(()=>{statusEl.style.display='none';},3000);}
   return false;
 }
@@ -3165,7 +3062,8 @@ function skipPhotoVerify(){
   const statusEl=document.getElementById('photoVerifyStatus');
   statusEl.className='photo-verify-status pass';
   statusEl.textContent=`⚡ 已跳過照片驗證（扣${penalty}分）`;
-  set(aRef(`sessions/${state.sessionKey}/score`),state.score);
+  set(ref(db,`sessions/${state.sessionKey}/score`),state.score);
+  logScoreChange(-penalty,'跳過照片驗證');
 }
 function retakePhoto(){
   const skipArea=document.getElementById('skipPhotoArea');if(skipArea)skipArea.classList.add('hidden');
@@ -3201,7 +3099,7 @@ async function submitTF(){
   const correct=(state.tfAnswer===true && stage.tfAnswer!==false) ||
                 (state.tfAnswer===false && stage.tfAnswer===false);
   state.lastCorrect=correct;
-  if(correct){playSFX('correct');preloadNextStageImage();}else{playSFX('wrong');}
+  if(correct)playSFX('correct'); else playSFX('wrong');
   // 顯示對錯
   const trueBtn=document.getElementById('tfBtnTrue');
   const falseBtn=document.getElementById('tfBtnFalse');
@@ -3215,11 +3113,11 @@ async function submitTF(){
   // 上傳照片
   if(state.photoFile){
     const path=`photos/${state.sessionKey}/${state.currentIdx}_${Date.now()}`;
-    try{const snap=await uploadBytes(aStorageRef(path),state.photoFile);const url=await getDownloadURL(snap.ref);set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/photoUrl`),url);}catch(e){console.warn(e);}
+    try{const snap=await uploadBytes(sRef(storage,path),state.photoFile);const url=await getDownloadURL(snap.ref);set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/photoUrl`),url);}catch(e){console.warn(e);}
   }
-  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/answeredAt`),serverTimestamp());
-  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/correct`),correct);
-  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/attempts`),state.stageAttempts);
+  set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/answeredAt`),serverTimestamp());
+  set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/correct`),correct);
+  set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/attempts`),state.stageAttempts);
   // 計分
   const sc=state.scoring;
   let scoreMsg='';
@@ -3230,11 +3128,14 @@ async function submitTF(){
     const scoreChange=Math.max(0,base+timeBonus-wrongPenalty);
     state.score+=scoreChange;
     scoreMsg=`+${scoreChange}分`;
+    logScoreChange(scoreChange,'是非題答對');
   } else {
-    state.score=Math.max(0,state.score-(sc.wrongPenalty||10));
-    scoreMsg=`答錯扣${sc.wrongPenalty||10}分`;
+    const penalty=sc.wrongPenalty||10;
+    state.score=Math.max(0,state.score-penalty);
+    scoreMsg=`答錯扣${penalty}分`;
+    logScoreChange(-penalty,'是非題答錯');
   }
-  set(aRef(`sessions/${state.sessionKey}/score`),state.score);
+  set(ref(db,`sessions/${state.sessionKey}/score`),state.score);
   document.getElementById('currentScore').textContent=`${state.score} 分`;
   // 顯示結果
   document.getElementById('feedbackIcon').textContent=correct?'🎉':'😅';
@@ -3264,15 +3165,15 @@ async function submitAns(){
   const guessHash=await sha256(`${stage.key}_${state.selectedOption}`);
   const correct=(guessHash===stage.answerHash);
   state.lastCorrect=correct;
-  if(correct){playSFX('correct');preloadNextStageImage();}else{playSFX('wrong');}
+  if(correct)playSFX('correct'); else playSFX('wrong');
 
   if(state.photoFile){
     const path=`photos/${state.sessionKey}/${state.currentIdx}_${Date.now()}`;
-    try{const snap=await uploadBytes(aStorageRef(path),state.photoFile);const url=await getDownloadURL(snap.ref);set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/photoUrl`),url);}catch(e){console.warn(e);}
+    try{const snap=await uploadBytes(sRef(storage,path),state.photoFile);const url=await getDownloadURL(snap.ref);set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/photoUrl`),url);}catch(e){console.warn(e);}
   }
-  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/answeredAt`),serverTimestamp());
-  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/correct`),correct);
-  set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/attempts`),state.stageAttempts);
+  set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/answeredAt`),serverTimestamp());
+  set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/correct`),correct);
+  set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/attempts`),state.stageAttempts);
 
   document.querySelectorAll('.option-btn').forEach((b,i)=>{b.classList.remove('selected','correct','wrong');if(i===state.selectedOption)b.classList.add(correct?'correct':'wrong');});
 
@@ -3285,10 +3186,15 @@ async function submitAns(){
     scoreChange=Math.max(0,base+timeBonus-wrongPenalty);
     state.score+=scoreChange;
     scoreMsg=`+${scoreChange}分（基礎${base}+時間${timeBonus}-答錯${(state.stageAttempts-1)*(sc.wrongPenalty||10)}）`;
+    logScoreChange(scoreChange,'選擇題答對');
   } else {
-    scoreMsg=`答錯扣${sc.wrongPenalty||10}分（已答錯${state.stageAttempts}次）`;
+    // 修正：之前這裡只顯示「答錯扣X分」的訊息，卻沒有真的扣分（與是非題邏輯不一致），現在補上實際扣分
+    const penalty=sc.wrongPenalty||10;
+    state.score=Math.max(0,state.score-penalty);
+    scoreMsg=`答錯扣${penalty}分（已答錯${state.stageAttempts}次）`;
+    logScoreChange(-penalty,'選擇題答錯');
   }
-  set(aRef(`sessions/${state.sessionKey}/score`),state.score);
+  set(ref(db,`sessions/${state.sessionKey}/score`),state.score);
   document.getElementById('currentScore').textContent=`${state.score} 分`;
 
   document.getElementById('feedbackIcon').textContent=correct?'🎉':'😅';
@@ -3305,15 +3211,15 @@ function closeFeedback(){
   if(state.lastCorrect){
     stopOverlayCamera();
     clearInterval(state.timerInterval);
-    set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/stageSec`),state.stageSeconds);
+    set(ref(db,`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/stageSec`),state.stageSeconds);
     const currentStage=state.stages[state.currentIdx];
     const isLast=(state.currentIdx+1>=state.stages.length);
     // 取得下一關的位置提示（nextHint 代表「本關位置提示」，在進此關前顯示）
     const nextStage=!isLast?state.stages[state.currentIdx+1]:null;
     const nextStageHint=(nextStage&&nextStage.nextHint)||'';
     const nextStageImg=(nextStage&&nextStage.imageUrl)||'';// 下一關照片
+    if(nextStageImg)preloadImage(nextStageImg);// 提早在背景下載，等等彈窗打開時可直接秒開
     state.currentIdx++;state.hintUsed=0;
-    state.completedCount=(state.completedCount||0)+1;
     if(currentStage&&(currentStage.storyOutro||nextStageHint||isLast)){
       showStoryOutro(currentStage,isLast,nextStageHint,()=>{
         if(isLast){showFinish();}
@@ -3334,8 +3240,41 @@ function closeFeedback(){
 }
 
 // ── 排行榜（可關閉顯示）──
-// 開放式個人闖關：遊戲進行中不再有即時排行榜（每個人開始/結束時間不同，比較沒有意義），
-// 名次只會在完賽畫面顯示，見 buildFinishLeaderboard()。
+async function showRank(){
+  if(state.settings.showRanking===false)return;
+  document.getElementById('rankOverlay').classList.remove('hidden');
+  const snap=await get(ref(db,'sessions'));
+  const sess=snap.val()||{};
+  const cfg=state.settings;
+  const showScore=cfg.showRankingScore!==false;
+  const showTeamName=cfg.showRankingTeamName!==false;
+  const list=document.getElementById('rankList');
+  list.innerHTML='<div style="text-align:center;color:#999;font-size:13px">載入中...</div>';
+  const latestByTeam={};
+  Object.values(sess).forEach(s=>{if(!latestByTeam[s.teamKey]||s.startTime>latestByTeam[s.teamKey].startTime)latestByTeam[s.teamKey]=s;});
+  const rows=Object.values(latestByTeam).sort((a,b)=>(b.score||0)-(a.score||0));
+  if(!rows.length){list.innerHTML='<div style="text-align:center;color:#999;font-size:13px">尚無資料</div>';return;}
+  const numClasses=['gold','silver','bronze','other'];
+  list.innerHTML='';
+  rows.forEach((s,i)=>{
+    const isMe=s.teamKey===state.teamKey;
+    const item=document.createElement('div');item.className='rank-item'+(isMe?' me':'');
+    const numEl=document.createElement('div');numEl.className='rank-num '+(numClasses[i]||'other');numEl.textContent=i+1;
+    const info=document.createElement('div');info.className='rank-info';
+    const name=document.createElement('div');name.className='rank-name';
+    name.textContent=showTeamName?(s.teamName||s.teamKey)+(isMe?' (我)':''):`隊伍${i+1}`+(isMe?' (我)':'');
+    const detail=document.createElement('div');detail.className='rank-detail';
+    detail.textContent=`第${(s.currentStage||0)+1}關・${s.status==='finished'?'已完成':'進行中'}`;
+    info.appendChild(name);info.appendChild(detail);
+    item.appendChild(numEl);item.appendChild(info);
+    if(showScore){const score=document.createElement('div');score.className='rank-score';score.textContent=`${s.score||0}分`;item.appendChild(score);}
+    list.appendChild(item);
+  });
+  // 更新排名
+  const myRank=rows.findIndex(s=>s.teamKey===state.teamKey);
+  if(myRank>=0)document.getElementById('currentRank').textContent=`第${myRank+1}名`;
+}
+function closeRank(){document.getElementById('rankOverlay').classList.add('hidden');}
 
 function showHelp(){
   pauseBGM();// 求救彈窗暫停音樂
@@ -3368,8 +3307,8 @@ async function sendHelp(){
   const penalty=state.scoring.helpPenalty||30;
   state.helpUsed++;state.score=Math.max(0,state.score-penalty);
   document.getElementById('currentScore').textContent=`${state.score} 分`;
-  set(aRef(`sessions/${state.sessionKey}/score`),state.score);
-  const helpRef=push(aRef(`sessions/${state.sessionKey}/helpLogs`));
+  set(ref(db,`sessions/${state.sessionKey}/score`),state.score);
+  const helpRef=push(ref(db,`sessions/${state.sessionKey}/helpLogs`));
   await set(helpRef,{msg,stageIdx:state.currentIdx,stageName:(state.stages[state.currentIdx]&&state.stages[state.currentIdx].title||''),ts:Date.now(),answered:false,reply:'',teamName:state.teamName,teamKey:state.teamKey});
   state._lastHelpTime=Date.now();// 記錄求救時間（冷卻用）
   closeHelp();
@@ -3379,7 +3318,7 @@ async function sendHelp(){
 }
 
 function listenForHelpReplies(){
-  onValue(aRef(`sessions/${state.sessionKey}/helpLogs`),snap=>{
+  onValue(ref(db,`sessions/${state.sessionKey}/helpLogs`),snap=>{
     if(!snap.exists())return;
     Object.entries(snap.val()).forEach(([key,log])=>{
       if(log.answered&&log.reply&&!log.notified){
@@ -3400,7 +3339,7 @@ function listenForHelpReplies(){
         btn.onclick=()=>overlay.remove();
         box.appendChild(icon);box.appendChild(title);box.appendChild(msg);box.appendChild(btn);
         overlay.appendChild(box);document.body.appendChild(overlay);
-        set(aRef(`sessions/${state.sessionKey}/helpLogs/${key}/notified`),true);
+        set(ref(db,`sessions/${state.sessionKey}/helpLogs/${key}/notified`),true);
       }
     });
   });
@@ -3412,12 +3351,12 @@ function closeBroadcast(){
 }
 
 async function showFinish(){
-  stopWatchGPS();// 完賽了，背景定位可以停了
   clearInterval(state.timerInterval);clearInterval(state.countdownInterval);
+  stopWatchGPS();
   playBGM('finish');// 完賽音樂
   // 完賽後清除 sessionStorage（含隨機順序），下次開啟回到登入頁
   try{
-    localStorage.removeItem(playerLoginKey());
+    sessionStorage.removeItem('playerLogin');
     // 清除本局隨機順序（下次活動重新隨機）
     Object.keys(sessionStorage).filter(k=>k.startsWith('stageOrder_')).forEach(k=>sessionStorage.removeItem(k));
   }catch(e){}
@@ -3425,99 +3364,61 @@ async function showFinish(){
   const t=`${String(Math.floor(elapsed/60)).padStart(2,'0')}:${String(elapsed%60).padStart(2,'0')}`;
   const sc=state.scoring;
   state.score+=sc.completionBonus||200;
-  set(aRef(`sessions/${state.sessionKey}/status`),'finished');
-  set(aRef(`sessions/${state.sessionKey}/totalSec`),elapsed);
-  set(aRef(`sessions/${state.sessionKey}/finishedAt`),serverTimestamp());
-  set(aRef(`sessions/${state.sessionKey}/score`),state.score);
+  const snap=await get(ref(db,'sessions'));
+  const finishedCount=Object.values(snap.val()||{}).filter(s=>s.status==='finished').length;
+  const rankBonus=(sc.rankBonus||[100,70,50,30])[finishedCount]||0;
+  state.score+=rankBonus;
+  set(ref(db,`sessions/${state.sessionKey}/status`),'finished');
+  set(ref(db,`sessions/${state.sessionKey}/totalSec`),elapsed);
+  set(ref(db,`sessions/${state.sessionKey}/finishedAt`),serverTimestamp());
+  set(ref(db,`sessions/${state.sessionKey}/score`),state.score);
   document.getElementById('finishTeamName').textContent=state.teamName;
   document.getElementById('finishScore').textContent=state.score;
-  // 用實際完成關卡數（completedCount），不用分配到的總關卡數——
-  // 提早結算(M關達標)或有關卡因資料異動被自動跳過時，兩者不一定相等
-  document.getElementById('finishStages').textContent=(state.completedCount!=null?state.completedCount:state.stages.length);
+  document.getElementById('finishStages').textContent=state.stages.length;
   document.getElementById('finishTime').textContent=t;
   document.getElementById('finishAttempts').textContent=state.totalAttempts;
   document.getElementById('finishHelps').textContent=state.helpUsed;
   document.getElementById('finishMsg').textContent=state.settings.finishMsg||'🐚 恭喜完成所有挑戰！感謝參與！';
-  // 排行榜顯示控制（開放式個人闖關：只在自己的完賽畫面顯示高分榜，不做即時排行）
-  if(state.settings.showFinishRank===false){document.getElementById('finishRankSection').style.display='none';}
+  // 排行榜顯示控制
+  if(state.settings.showRanking===false){document.getElementById('finishRankSection').style.display='none';}
   else setTimeout(loadFinishRank,1500);
   showScreen('finishScreen');
 }
 
-// 完賽高分榜：依 rankingScope（當日／總成績）與 rankingTopN（前3／前10）設定，
-// 只顯示前 N 名 + 自己的名次（若不在前 N 名內），不會把整份名單/其他人資料攤給玩家看。
 async function loadFinishRank(){
-  const container=document.getElementById('finishRankList');
-  if(!container)return;
-  container.innerHTML='<div style="text-align:center;color:#999;font-size:13px">載入中...</div>';
-  const cfg=state.settings;
-  const scope=cfg.rankingScope==='daily'?'daily':'cumulative';
-  const topN=(cfg.rankingTopN===3)?3:10;
-  const snap=await get(aRef('sessions'));
+  const snap=await get(ref(db,'sessions'));
   const sess=snap.val()||{};
-  // 每個身分只取「已完成」中分數最高的一筆（同一人若可重複闖關，計入其最佳成績）
-  const bestByIdentity={};
-  const now=new Date();
-  const todayStr=`${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
-  Object.values(sess).forEach(s=>{
-    if(s.status!=='finished')return;
-    if(scope==='daily'){
-      const ft=s.finishedAt;
-      if(!ft)return;
-      const d=new Date(typeof ft==='number'?ft:Date.now());
-      const dStr=`${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
-      if(dStr!==todayStr)return;
-    }
-    const key=s.teamKey;if(!key)return;
-    if(!bestByIdentity[key]||(s.score||0)>(bestByIdentity[key].score||0))bestByIdentity[key]=s;
-  });
-  const rows=Object.values(bestByIdentity).sort((a,b)=>(b.score||0)-(a.score||0));
-  const myIdx=rows.findIndex(s=>s.teamKey===state.teamKey);
-  const topRows=rows.slice(0,topN);
-  const medals=['🥇','🥈','🥉'];
-  container.innerHTML='';
-  if(!topRows.length){
-    container.innerHTML='<div style="text-align:center;color:#999;font-size:13px">尚無資料</div>';
-    return;
-  }
-  topRows.forEach((s,i)=>{
-    const isMe=s.teamKey===state.teamKey;
-    const div=document.createElement('div');
-    div.style.cssText=`display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #eee;font-size:13px${isMe?';background:#fff8e0;border-radius:6px;padding-left:6px;padding-right:6px':''}`;
+  const cfg=state.settings;
+  const showScore=cfg.showRankingScore!==false;
+  const showTeamName=cfg.showRankingTeamName!==false;
+  const latestByTeam={};
+  Object.values(sess).forEach(s=>{if(!latestByTeam[s.teamKey]||s.startTime>latestByTeam[s.teamKey].startTime)latestByTeam[s.teamKey]=s;});
+  const rows=Object.values(latestByTeam).sort((a,b)=>(b.score||0)-(a.score||0));
+  const medals=['🥇','🥈','🥉','4️⃣'];
+  const container=document.getElementById('finishRankList');container.innerHTML='';
+  rows.forEach((s,i)=>{
+    const div=document.createElement('div');div.style.cssText='display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #eee;font-size:13px';
     const medal=document.createElement('span');medal.textContent=medals[i]||`${i+1}.`;
-    const name=document.createElement('span');name.style.flex='1';name.style.fontWeight=isMe?'700':'400';
-    name.textContent=(s.teamName||'玩家')+(isMe?' (我)':'');
-    const score=document.createElement('span');score.style.fontWeight='700';score.style.color='var(--primary)';score.textContent=`${s.score||0}分`;
-    div.appendChild(medal);div.appendChild(name);div.appendChild(score);
+    const name=document.createElement('span');name.style.flex='1';name.textContent=showTeamName?(s.teamName||s.teamKey)+(s.teamKey===state.teamKey?' ⬅':''):`隊伍${i+1}`+(s.teamKey===state.teamKey?' ⬅':'');
+    div.appendChild(medal);div.appendChild(name);
+    if(showScore){const score=document.createElement('span');score.style.fontWeight='700';score.style.color='var(--primary)';score.textContent=`${s.score||0}分`;div.appendChild(score);}
     container.appendChild(div);
   });
-  // 若自己不在前 N 名內，額外顯示自己的名次（只提自己，不揭露他人資料）
-  if(myIdx>=topN){
-    const mine=document.createElement('div');
-    mine.style.cssText='text-align:center;margin-top:8px;padding-top:8px;border-top:1px dashed #ccc;font-size:13px;color:var(--text-light)';
-    mine.textContent=`你的名次：第 ${myIdx+1} 名（共 ${rows.length} 人）`;
-    container.appendChild(mine);
-  }
-  const titleEl=document.getElementById('finishRankTitle');
-  if(titleEl)titleEl.textContent=scope==='daily'?`🏆 今日高分榜（前${topN}名）`:`🏆 總排行榜（前${topN}名）`;
 }
 
 // ── 玩家主動登出 ──
-let _loggingOut=false;// 防止快速重複點擊登出按鈕，造成寫入/狀態重置的競爭問題
 async function playerLogout(){
-  if(_loggingOut)return;
   // 如果在遊戲中才問確認
   if(state.sessionKey&&state.currentIdx>0){
     if(!confirm('確定要離開？目前進度將不會保留，下次重新登入會從頭開始。'))return;
   }
-  _loggingOut=true;
   // 先清除計時器
   clearInterval(state.timerInterval);
   clearInterval(state.countdownInterval);
   // 等待 Firebase 寫入完成（這樣重新登入時才不會被擋）
   if(state.sessionKey){
     try{
-      await set(aRef(`sessions/${state.sessionKey}/status`),'left');
+      await set(ref(db,`sessions/${state.sessionKey}/status`),'left');
     }catch(e){
       console.warn('登出時寫入失敗:',e);
     }
@@ -3525,7 +3426,7 @@ async function playerLogout(){
   // 等待登入前，先在等待頁面就登出的情況（沒有 session，只有 teamKey）
   // → 不需要做什麼，直接重置狀態即可
   // 清除記住的登入資訊
-  try{localStorage.removeItem(playerLoginKey());}catch(e){}
+  try{sessionStorage.removeItem('playerLogin');}catch(e){}
   // 重置所有狀態
   const prevTeamKey=state.teamKey;
   state.teamKey=null;
@@ -3541,12 +3442,7 @@ async function playerLogout(){
   state.selectedOption=null;
   // 回到登入頁並重新初始化
   showScreen('loginScreen');
-  document.getElementById('alreadyDoneArea').classList.add('hidden');
-  document.getElementById('guestFormArea').classList.add('hidden');
-  document.getElementById('loginChoiceArea').classList.remove('hidden');
   await initLogin();
-  await setupLoginChoices();
-  _loggingOut=false;
 }
 
 function tickTimer(){
@@ -3554,7 +3450,7 @@ function tickTimer(){
   const ss=state.stageSeconds,ts=state.totalSeconds;
   document.getElementById('stageTimer').textContent=`${String(Math.floor(ss/60)).padStart(2,'0')}:${String(ss%60).padStart(2,'0')}`;
   document.getElementById('totalTimer').textContent=`${String(Math.floor(ts/60)).padStart(2,'0')}:${String(ts%60).padStart(2,'0')}`;
-  if(ts%10===0)set(aRef(`sessions/${state.sessionKey}/totalSec`),ts);
+  if(ts%10===0)set(ref(db,`sessions/${state.sessionKey}/totalSec`),ts);
 }
 </script>
 </body>
