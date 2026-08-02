@@ -211,7 +211,7 @@ tr:hover td{background:#f8fcff}
 .confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;display:flex;align-items:center;justify-content:center;padding:24px}
 .confirm-box{background:white;border-radius:18px;padding:24px;max-width:360px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,0.3)}
 .confirm-box h3{font-size:17px;font-weight:700;margin-bottom:8px;color:var(--coral)}
-.confirm-box p{font-size:13px;color:var(--text);line-height:1.6;margin-bottom:14px}
+.confirm-box p{font-size:13px;color:var(--text);line-height:1.6;margin-bottom:14px;white-space:pre-line}
 .confirm-input{width:100%;padding:10px 12px;border:2px solid var(--coral);border-radius:10px;font-size:14px;font-family:'Noto Sans TC',sans-serif;outline:none;margin-bottom:14px}
 .confirm-btns{display:flex;gap:8px}
 /* API KEY 狀態 */
@@ -398,13 +398,13 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
     </div>
     <div id="stageMasterLoginArea">
       <div style="display:flex;gap:8px;margin-bottom:10px">
-        <button id="roleBtn-stagemaster" onclick="selectLoginRole('stagemaster')" style="flex:1;padding:9px;border:2px solid #3db87a;border-radius:10px;background:#eaf7ee;color:#1a7a40;font-size:13px;font-weight:700;cursor:pointer">🔑 總關主</button>
+        <button id="roleBtn-stagemaster" onclick="selectLoginRole('stagemaster')" style="flex:1;padding:9px;border:2px solid #3db87a;border-radius:10px;background:#eaf7ee;color:#1a7a40;font-size:13px;font-weight:700;cursor:pointer">🔑 關主</button>
         <button id="roleBtn-viewer" onclick="selectLoginRole('viewer')" style="flex:1;padding:9px;border:2px solid #e0e0e0;border-radius:10px;background:white;color:#888;font-size:13px;font-weight:700;cursor:pointer">🙋 協助管理者</button>
       </div>
       <input type="text" id="activityCodeInput" placeholder="活動代碼（由専案管理者提供的連結會自動帶入）" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:12px;font-size:14px;outline:none;margin-bottom:10px"/>
-      <input type="password" id="stageMasterPassInput" placeholder="輸入總關主密碼" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:12px;font-size:14px;outline:none;margin-bottom:10px" onkeydown="if(event.key==='Enter')signInWithStageMasterPass()"/>
+      <input type="password" id="stageMasterPassInput" placeholder="輸入關主密碼" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:12px;font-size:14px;outline:none;margin-bottom:10px" onkeydown="if(event.key==='Enter')signInWithStageMasterPass()"/>
       <button onclick="signInWithStageMasterPass()" style="width:100%;padding:12px;background:linear-gradient(90deg,#1a7a40,#3db87a);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer" id="smLoginBtn">
-        🔑 總關主密碼登入
+        🔑 關主密碼登入
       </button>
     </div>
     <div class="login-err" id="loginErr"></div>
@@ -661,6 +661,38 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
         </div>
       </div>
       <div class="card">
+        <div class="settings-section-title">🔗 分享連結 <span style="font-size:11px;color:var(--text-light);font-weight:400">（複製給對應角色的人）</span></div>
+        <div class="form-group">
+          <label>活動代碼</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="text" id="shareActivityCode" readonly style="font-family:monospace;background:#f7fafd"/>
+            <button class="btn btn-ghost btn-sm" onclick="copyShareLink('shareActivityCode')">📋 複製</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>🎮 玩家連結（分享給參加者，掃碼或點連結直接進入闖關）</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="text" id="sharePlayerLink" readonly style="font-family:monospace;font-size:12px;background:#f7fafd"/>
+            <button class="btn btn-ghost btn-sm" onclick="copyShareLink('sharePlayerLink')">📋 複製</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>🙋 協助管理者連結（給現場工作人員，開啟後自動選好角色，輸入密碼即可登入）</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="text" id="shareStaffLink" readonly style="font-family:monospace;font-size:12px;background:#f7fafd"/>
+            <button class="btn btn-ghost btn-sm" onclick="copyShareLink('shareStaffLink')">📋 複製</button>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>🔑 關主連結（給各關負責人，開啟後輸入活動代碼＋該關密碼即可登入，只看得到自己那關）</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="text" id="shareStageMasterLink" readonly style="font-family:monospace;font-size:12px;background:#f7fafd"/>
+            <button class="btn btn-ghost btn-sm" onclick="copyShareLink('shareStageMasterLink')">📋 複製</button>
+          </div>
+        </div>
+        <div class="gps-hint">専案管理者／超級管理者本身用 Google 帳號登入，不需要連結，直接開 admin.html 用 Google 登入即可。</div>
+      </div>
+      <div class="card">
         <div class="settings-section-title">🎯 活動資訊</div>
         <div class="form-row">
           <div class="form-group"><label>活動名稱（中文）</label><input type="text" id="settingActivityName" placeholder="例：夏日市集實境解謎"/></div>
@@ -673,7 +705,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
           <input type="text" id="settingWatermark" placeholder="例：官方題目 禁止截圖 © 活動主辦單位"/>
           </div>
           <div class="form-group">
-            <label>🙋 協助管理者密碼 <span style="font-size:11px;color:var(--text-light);font-weight:400">（現場協助人員共用密碼，監控+現場協助，無編輯權；密碼以雜湊方式儲存，編輯時留空＝不修改；已設定過的活動想取消密碼登入，請輸入一個不會用到的怪密碼取代，暫不支援直接清空恢復未設定狀態）</span></label>
+            <label>🙋 協助管理者密碼 <span style="font-size:11px;color:var(--text-light);font-weight:400">（現場協助人員共用密碼，監控+現場協助，無編輯權；留空＝不修改）</span></label>
             <input type="text" id="settingViewerPass" placeholder="留空＝不修改密碼（首次設定請直接輸入）" autocomplete="off"/>
           </div>
           <div style="display:none"><!-- placeholder for closing form-group -->
@@ -1449,7 +1481,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
       </div>
       <div id="overlayConfirmSection" class="hidden">
         <div class="form-group">
-          <label>🔑 總關主密碼（可選）</label>
+          <label>🔑 關主密碼（可選）</label>
           <input type="text" id="fOverlayMasterPass" placeholder="留空則不需要密碼"/>
         </div>
       </div>
@@ -1487,7 +1519,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
   <div class="confirm-box">
     <h3 id="confirmTitle">確認操作</h3>
     <p id="confirmMsg">確定要執行此操作嗎？</p>
-    <input type="text" class="confirm-input hidden" id="confirmInput" placeholder=""/>
+    <input type="text" class="confirm-input hidden" id="confirmInput" placeholder="" onkeydown="if(event.key==='Enter')executeConfirm()"/>
     <div class="confirm-btns">
       <button class="btn btn-ghost" style="flex:1;justify-content:center" onclick="closeConfirm()">取消</button>
       <button class="btn btn-danger" style="flex:1;justify-content:center" id="confirmOkBtn" onclick="executeConfirm()">確認</button>
@@ -1532,6 +1564,18 @@ function aStorageRef(path){
 }
 function gRef(path){return ref(db,path);} // 全域(跨活動)路徑，不經過 activityId 命名空間
 function getURLActivityParam(){try{return new URLSearchParams(location.search).get('a')||'';}catch(e){return '';}}
+// 網址帶入活動代碼＋角色（給専案管理者分享連結用，例：admin.html?a=活動代碼&role=staff）
+(function applyURLActivityParam(){
+  try{
+    const code=getURLActivityParam();
+    if(code){
+      const inp=document.getElementById('activityCodeInput');
+      if(inp)inp.value=code;
+    }
+    const role=new URLSearchParams(location.search).get('role');
+    if(role==='staff'||role==='viewer')selectLoginRole('viewer');
+  }catch(e){}
+})();
 
 let currentUser=null,currentRole=null;
 let editingStageKey=null,modalImgFile=null,modalImgUrl=null;
@@ -1643,7 +1687,7 @@ async function signInWithStageMasterPass(){
     smState = {stageKey:foundKey, stageIdx:foundIdx, stageName:found.title||`第${foundIdx+1}關`, stagePass:pass, passSalt:foundSalt};
     document.getElementById('stageMasterPage').style.display='block';
     document.getElementById('loginPage').style.display='none';
-    document.getElementById('smTitle').textContent='🔑 總關主頁面';
+    document.getElementById('smTitle').textContent='🔑 關主頁面';
     document.getElementById('smStageInfo').textContent=`負責：${smState.stageName}（第${foundIdx+1}關）`;
     smRefresh();
     // 開放式擺攤現場排隊變動快，縮短為 8 秒自動刷新，讓關主能即時看到新加入等待佇列的人
@@ -1656,7 +1700,7 @@ async function signInWithStageMasterPass(){
 
 window.signInWithStageMasterPass=signInWithStageMasterPass;
 
-let _loginRole = 'stagemaster'; // 預設為總關主
+let _loginRole = 'stagemaster'; // 預設為關主（密碼登入）
 
 function selectLoginRole(role){
   _loginRole = role;
@@ -1667,8 +1711,8 @@ function selectLoginRole(role){
   if(role === 'stagemaster'){
     if(smBtn){smBtn.style.background='#eaf7ee';smBtn.style.borderColor='#3db87a';smBtn.style.color='#1a7a40';}
     if(vwBtn){vwBtn.style.background='white';vwBtn.style.borderColor='#e0e0e0';vwBtn.style.color='#888';}
-    if(passInput)passInput.placeholder='輸入總關主密碼';
-    if(loginBtn){loginBtn.textContent='🔑 總關主密碼登入';loginBtn.style.background='linear-gradient(90deg,#1a7a40,#3db87a)';}
+    if(passInput)passInput.placeholder='輸入關主密碼';
+    if(loginBtn){loginBtn.textContent='🔑 關主密碼登入';loginBtn.style.background='linear-gradient(90deg,#1a7a40,#3db87a)';}
   } else {
     if(vwBtn){vwBtn.style.background='#e8f4ff';vwBtn.style.borderColor='#1a6fa3';vwBtn.style.color='#1a6fa3';}
     if(smBtn){smBtn.style.background='white';smBtn.style.borderColor='#e0e0e0';smBtn.style.color='#888';}
@@ -2316,7 +2360,7 @@ async function proceedToAdmin(){
   document.getElementById('adminPage').style.display='block';
   const displayName=currentUser.displayName||currentUser.email;
   document.getElementById('userName').textContent=displayName;
-  const roleLabels={super:'👑 超級管理者',host:'🎯 専案管理者',stagemaster:'🔑 總關主',staff:'🙋 協助管理者'};
+  const roleLabels={super:'👑 超級管理者',host:'🎯 専案管理者',stagemaster:'🔑 關主（舊版Google登入）',staff:'🙋 協助管理者'};
   document.getElementById('userRoleLabel').textContent=roleLabels[currentRole]||currentRole;
   // 超級管理者可跨活動切換
   const switchBtn=document.getElementById('btnSwitchActivity');
@@ -2420,7 +2464,7 @@ function applyRolePermissions(role){
   const roleDesc={
     super:'👑 超級管理者・可跨活動管理',
     host:'🎯 専案管理者・管理本活動設定',
-    stagemaster:'🔑 總關主（舊版）・監控+驗證過關',
+    stagemaster:'🔑 關主（舊版Google登入）・監控+驗證過關',
     staff:'🙋 協助管理者・監控+現場協助，無編輯權',
     viewer:'👁️ 協助管理者（唯讀）・無編輯權'
   };
@@ -3199,6 +3243,32 @@ function refreshStageTypeButtonVisibility(){
     selectStageType('quiz');
   }
 }
+function populateShareLinks(){
+  const codeEl=document.getElementById('shareActivityCode');
+  const playerEl=document.getElementById('sharePlayerLink');
+  const staffEl=document.getElementById('shareStaffLink');
+  const smEl=document.getElementById('shareStageMasterLink');
+  if(!codeEl)return;
+  // 從目前網址推算出部署的根目錄，換掉檔名即可組出其他頁面的連結，不管實際部署在哪個路徑下都能正確運作
+  const base=location.href.split('?')[0].split('#')[0].replace(/admin\.html$/,'');
+  codeEl.value=ACTIVITY_ID||'';
+  if(playerEl)playerEl.value=base+'player.html?a='+encodeURIComponent(ACTIVITY_ID||'');
+  if(staffEl)staffEl.value=base+'admin.html?a='+encodeURIComponent(ACTIVITY_ID||'')+'&role=staff';
+  if(smEl)smEl.value=base+'admin.html?a='+encodeURIComponent(ACTIVITY_ID||'');
+}
+async function copyShareLink(inputId){
+  const el=document.getElementById(inputId);
+  if(!el||!el.value)return;
+  try{
+    await navigator.clipboard.writeText(el.value);
+    toast('✅ 已複製到剪貼簿');
+  }catch(e){
+    // 部分瀏覽器/非HTTPS環境 clipboard API 可能失敗，退回選取文字讓使用者自己複製
+    el.select();el.setSelectionRange(0,99999);
+    toast('⚠️ 自動複製失敗，已幫你選取文字，請自行按 Ctrl+C / Cmd+C');
+  }
+}
+window.copyShareLink=copyShareLink;
 function toggleLocationVerifyMode(){
   const mode=document.getElementById('fLocationVerifyMode').value;
   const gpsGroup=document.getElementById('gpsFieldsGroup');
@@ -3701,6 +3771,7 @@ function removeStoryImg(){storyImgFile=null;storyImgUrl=null;document.getElement
 async function loadSettings(){
   const snap=await get(aRef('config/settings'));settingsData=snap.val()||{};
   const s=settingsData;
+  populateShareLinks();
   if(s.activityName){document.getElementById('settingActivityName').value=s.activityName;document.getElementById('sidebarTitle').textContent='🐚 '+s.activityName;}
   if(s.subtitle)document.getElementById('settingSubtitle').value=s.subtitle;
   if(s.welcome)document.getElementById('settingWelcome').value=s.welcome;
@@ -3974,7 +4045,7 @@ async function loadUsers(){
     const snap=await get(aRef('config/users'));const users=snap.val()||{};
     if(!Object.keys(users).length){list.innerHTML='<div class="text-muted text-sm">尚無人員</div>';return;}
     list.innerHTML='';
-    const roleLabels={super:'👑 超級管理者',host:'🎯 専案管理者',stagemaster:'🔑 總關主（舊版）',staff:'🙋 協助管理者'};
+    const roleLabels={super:'👑 超級管理者',host:'🎯 専案管理者',stagemaster:'🔑 關主（舊版Google登入，已停用新增）',staff:'🙋 協助管理者'};
     const roleClass={super:'super',host:'host',stagemaster:'stagemaster',staff:'staff'};
     Object.entries(users).forEach(([uid,u])=>{
       const isSelf=currentUser&&uid===currentUser.uid;const isSuper=u.role==='super';
