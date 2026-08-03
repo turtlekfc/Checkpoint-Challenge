@@ -523,6 +523,11 @@ body {
     </div>
     <div class="login-welcome hidden" id="loginWelcome"></div>
     <div class="loading-hint" id="loadingHint">⏳ 載入活動資訊中...</div>
+    <!-- 活動代碼輸入區：網址沒帶代碼或代碼錯誤時顯示，讓玩家可以自己輸入代碼跳轉 -->
+    <div id="activityCodeEntryArea" class="hidden" style="margin:10px 0">
+      <input type="text" id="playerActivityCodeInput" placeholder="輸入活動代碼" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:12px;font-size:14px;outline:none;margin-bottom:10px;box-sizing:border-box" onkeydown="if(event.key==='Enter')goToActivityByCode()"/>
+      <button class="btn-login" onclick="goToActivityByCode()" style="background:linear-gradient(90deg,var(--primary-dark),var(--primary))">➡️ 前往這個活動</button>
+    </div>
 
     <!-- 個人登入選擇區：LINE 登入為主，免登入為備援 -->
     <div id="loginChoiceArea">
@@ -535,6 +540,16 @@ body {
         <div style="flex:1;height:1px;background:#e0e0e0"></div>
       </div>
       <button class="btn-login" id="guestEntryBtn" onclick="showGuestForm()" style="background:var(--primary-pale,#e8f4f8);color:var(--primary,#1a6fa3)" disabled>🙋 免登入，直接開始</button>
+    </div>
+
+    <!-- 帳號登入表單（活動設定為「帳號登入」或「帳號＋密碼登入」時使用，取代LINE/Google/免登入）-->
+    <div id="accountLoginArea" class="hidden">
+      <div class="field-label">帳號</div>
+      <input type="text" id="acctLoginUsername" placeholder="請輸入你的帳號" maxlength="40" onkeydown="if(event.key==='Enter')doAccountLogin()"/>
+      <div class="field-label" id="acctLoginPassLabel">密碼</div>
+      <input type="password" id="acctLoginPassword" placeholder="請輸入密碼" maxlength="40" onkeydown="if(event.key==='Enter')doAccountLogin()"/>
+      <div class="error-msg" id="acctLoginError"></div>
+      <button class="btn-login" id="acctLoginBtn" onclick="doAccountLogin()">🐚 開始闖關！</button>
     </div>
 
     <!-- 免登入表單（暱稱必填、手機選填）-->
@@ -791,6 +806,14 @@ function aStorageRef(path){
 }
 function gRef(path){return ref(db,path);}
 function getURLActivityParam(){try{return new URLSearchParams(location.search).get('a')||'';}catch(e){return '';}}
+function goToActivityByCode(){
+  const inp=document.getElementById('playerActivityCodeInput');
+  const code=(inp&&inp.value||'').trim();
+  if(!code){if(inp)inp.focus();return;}
+  const base=location.href.split('?')[0].split('#')[0];
+  location.href=base+'?a='+encodeURIComponent(code);
+}
+window.goToActivityByCode=goToActivityByCode;
 // 本機記住「上次用哪個身分登入這個活動」的 key，依活動代碼區隔，換活動不會互相干擾
 function playerLoginKey(){return 'playerLogin_'+ACTIVITY_ID;}
 // 驗證並設定 ACTIVITY_ID；失敗時回傳 false，呼叫端要中止後續初始化並顯示錯誤
@@ -849,8 +872,10 @@ withTimeout(signInAnonymously(auth),15000,Object.assign(new Error('登入逾時'
   if(!activityOk){
     const hintEl=document.getElementById('loadingHint');
     const loginBtn=document.getElementById('loginBtn');
-    if(hintEl){hintEl.style.color='var(--coral)';hintEl.textContent='⚠️ 找不到活動，請確認掃描的QR Code或連結是否正確（缺少或錯誤的活動代碼）';}
+    if(hintEl){hintEl.style.color='var(--coral)';hintEl.textContent='⚠️ 找不到活動，請確認掃描的QR Code或連結是否正確（缺少或錯誤的活動代碼），或直接在下方輸入活動代碼：';}
     if(loginBtn)loginBtn.style.display='none';
+    const entryArea=document.getElementById('activityCodeEntryArea');
+    if(entryArea)entryArea.classList.remove('hidden');
     return;
   }
   // ACTIVITY_ID 確定解析成功，這裡才能安全註冊需要用到它的監聽器
@@ -1357,6 +1382,19 @@ async function initLiff(){
 }
 
 async function setupLoginChoices(){
+  const cfgEarly=state.settings||{};
+  // 帳號登入模式：整個活動改用帳號（＋密碼）登入，取代LINE/Google/免登入畫面
+  if(cfgEarly.loginMode==='account'||cfgEarly.loginMode==='account_password'){
+    document.getElementById('loginChoiceArea').classList.add('hidden');
+    const acctArea=document.getElementById('accountLoginArea');
+    if(acctArea)acctArea.classList.remove('hidden');
+    const passLabel=document.getElementById('acctLoginPassLabel');
+    const passInput=document.getElementById('acctLoginPassword');
+    const needsPassword=(cfgEarly.loginMode==='account_password');
+    if(passLabel)passLabel.style.display=needsPassword?'':'none';
+    if(passInput)passInput.style.display=needsPassword?'':'none';
+    return;
+  }
   const loginBtn=document.getElementById('loginBtn');
   const guestBtn=document.getElementById('guestEntryBtn');
   const googleBtn=document.getElementById('googleLoginBtn');
@@ -1455,6 +1493,39 @@ async function doGuestLogin(){
 }
 window.doGuestLogin=doGuestLogin;
 
+function sanitizeAcctKey(username){
+  return username.trim().toLowerCase().replace(/[.#$\[\]\/\s]/g,'_').substring(0,120);
+}
+async function doAccountLogin(){
+  const username=(document.getElementById('acctLoginUsername').value||'').trim();
+  const password=(document.getElementById('acctLoginPassword').value||'').trim();
+  const errEl=document.getElementById('acctLoginError');
+  const btn=document.getElementById('acctLoginBtn');
+  errEl.textContent='';
+  if(!username){errEl.textContent='請輸入帳號';return;}
+  btn.disabled=true;btn.textContent='驗證中...';
+  try{
+    const key=sanitizeAcctKey(username);
+    if(!key){errEl.textContent='帳號格式不正確';btn.disabled=false;btn.textContent='🐚 開始闖關！';return;}
+    // 只查詢這一筆帳號，不會讀到整份名單（資料庫規則限制，保護其他人的帳號資料）
+    const snap=await get(aRef('accountRoster/'+key));
+    if(!snap.exists()){errEl.textContent='❌ 查無此帳號，請確認輸入正確或洽主辦單位';btn.disabled=false;btn.textContent='🐚 開始闖關！';return;}
+    const rec=snap.val();
+    const needsPassword=(state.settings.loginMode==='account_password')&&!!rec.passwordHash;
+    if(needsPassword){
+      const inputHash=await sha256(`${ACTIVITY_ID}_acct_${key}_${password}`);
+      if(inputHash!==rec.passwordHash){errEl.textContent='❌ 密碼錯誤';btn.disabled=false;btn.textContent='🐚 開始闖關！';return;}
+    }
+    try{ localStorage.setItem('acctProfile_'+ACTIVITY_ID,JSON.stringify({username:rec.username})); }catch(e){}
+    await resumeOrStartWithIdentity('acct_'+key,rec.username,null,'account');
+  }catch(e){
+    console.warn('帳號登入失敗:',e);
+    errEl.textContent='登入失敗：'+(e.message||e.code||'請稍後再試');
+    btn.disabled=false;btn.textContent='🐚 開始闖關！';
+  }
+}
+window.doAccountLogin=doAccountLogin;
+
 // 個人闖關核心：不管是LINE或免登入，統一走這裡判斷「恢復進行中/已完成過(視設定擋下)/全新開始」
 async function resumeOrStartWithIdentity(identityKey,displayName,phone,source){
   const errEl=document.getElementById('loginError');
@@ -1477,10 +1548,12 @@ async function resumeOrStartWithIdentity(identityKey,displayName,phone,source){
 
     const sessSnap=await get(aRef('sessions'));
     let playingSession=null,playingKey=null,finishedSession=null,latestFinishedAt=0;
+    const seenIdentities=new Set();
     if(sessSnap.exists()){
       Object.entries(sessSnap.val()).forEach(([k,s])=>{
         const sameIdentity=s.teamKey===identityKey;
         const sameDevice=!!(deviceId&&s.deviceId&&s.deviceId===deviceId);
+        if(s.teamKey)seenIdentities.add(s.teamKey);
         if(s.status==='playing'){
           // 恢復「進行中」的關卡只認同一身分，不看裝置——避免同一台裝置換人登入時，
           // 誤把畫面接到別人還在玩的進度（例如朋友輪流用同一支手機，各自用自己的帳號登入）
@@ -1538,6 +1611,18 @@ async function resumeOrStartWithIdentity(identityKey,displayName,phone,source){
       // 冷卻期已過，允許開始全新一輪挑戰（走下面的全新登入流程）
     }
 
+    // ── 闖關人數上限（超級管理者設定，未設定或0＝不限制）：只擋全新身分，已經玩過/正在玩的人不受影響 ──
+    const maxPlayers=parseInt(state.settings.maxPlayers)||0;
+    if(maxPlayers>0&&!seenIdentities.has(identityKey)&&seenIdentities.size>=maxPlayers){
+      hideLoading();
+      showScreen('loginScreen');
+      document.getElementById('loginChoiceArea').classList.add('hidden');
+      document.getElementById('guestFormArea').classList.add('hidden');
+      document.getElementById('alreadyDoneArea').classList.remove('hidden');
+      document.getElementById('alreadyDoneScore').textContent='';
+      document.getElementById('alreadyDoneNote').textContent='⚠️ 很抱歉，本活動報名人數已達上限，請洽主辦單位';
+      return;
+    }
     // ── 全新登入：讀取關卡、決定路線、進入等待頁面 ──
     const snap=await get(aRef('stages'));
     if(!snap.exists()){hideLoading();if(errEl)errEl.textContent='尚未建立關卡！';return;}

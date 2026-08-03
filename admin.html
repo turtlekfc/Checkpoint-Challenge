@@ -774,6 +774,11 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
             <label for="settingEnableQRLocation" style="margin:0;cursor:pointer">📱 QR打卡進入</label>
           </div>
         </div>
+        <div class="form-group" style="margin-top:10px;margin-bottom:0">
+          <label>👥 闖關人數上限 <span style="font-size:11px;color:var(--text-light);font-weight:400">（依收費方案限制報名人數，留空或填0＝不限制；只擋全新報名者，已經玩過/正在玩的人不受影響）</span></label>
+          <input type="number" id="settingMaxPlayers" min="0" placeholder="留空＝不限制" style="max-width:200px"/>
+          <div id="currentPlayerCountHint" style="font-size:12px;color:var(--text-light);margin-top:4px"></div>
+        </div>
       </div>
       <div class="card">
         <div class="settings-section-title">🏪 市集版路線設定 <span style="font-size:11px;color:var(--text-light);font-weight:400">（前N關/後N關固定，中段可打亂或隨機抽選部分關卡；都留0表示比照上面的「路線模式」）</span></div>
@@ -834,6 +839,34 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
           </div>
         </div>
         <div class="gps-hint">未填 LIFF ID、也沒勾選 Google／Facebook 時，玩家端只會顯示「免登入」選項。Google／Facebook 登入是否「能用」是整個 Firebase 專案共用的設定（需超級管理者到 Firebase Console 的 Authentication 頁面各啟用一次），這裡的勾選只決定這個活動「要不要顯示」該按鈕。結束畫面的排行榜範圍/顯示前幾名，在「排行榜設定」分頁調整。</div>
+      </div>
+      <div class="card">
+        <div class="settings-section-title">🪪 玩家登入方式</div>
+        <div class="form-group">
+          <label>這個活動要用哪種方式登入？</label>
+          <select id="settingLoginMode" onchange="toggleLoginModeUI()">
+            <option value="default">目前預設（LINE／Google／Facebook／免登入，上面設定的那些）</option>
+            <option value="account">帳號登入（免密碼，從匯入的名單裡輸入帳號即可）</option>
+            <option value="account_password">帳號＋密碼登入（需對上名單裡設定的密碼）</option>
+          </select>
+        </div>
+        <div id="accountRosterArea" class="hidden">
+          <div class="form-group">
+            <label>匯入名單 <span style="font-size:11px;color:var(--text-light);font-weight:400">（一行一筆，格式：帳號,密碼——密碼可留空；匯入會整份覆蓋現有名單）</span></label>
+            <textarea id="accountRosterImportText" rows="6" placeholder="A0001,1234&#10;A0002,&#10;A0003,abcd"></textarea>
+            <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+              <button type="button" class="btn btn-primary btn-sm" onclick="importAccountRoster()">📥 匯入貼上的文字（覆蓋現有名單）</button>
+              <label class="btn btn-ghost btn-sm" style="cursor:pointer;margin:0">📄 上傳CSV檔<input type="file" id="accountRosterCSVFile" accept=".csv,text/csv" style="display:none" onchange="importAccountRosterFromCSVFile(this)"/></label>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="exportAccountRoster()">📤 匯出目前名單</button>
+              <button type="button" class="btn btn-danger btn-sm" onclick="clearAccountRoster()">🗑️ 清空名單</button>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>目前名單（<span id="rosterCount">0</span> 筆）</label>
+            <div id="accountRosterList" style="max-height:220px;overflow-y:auto;border:1.5px solid var(--border);border-radius:10px;padding:6px"></div>
+          </div>
+        </div>
+        <div class="gps-hint">「帳號登入」「帳號＋密碼登入」兩種模式底下，玩家端登入畫面會改成輸入帳號（＋密碼），取代原本的LINE/Google/免登入選項。CSV格式：一行一筆，「帳號,密碼」，密碼欄位留空代表這個帳號免密碼（即使在「帳號＋密碼」模式下也一樣，適合混合名單）。第一行如果是「帳號,密碼」這種標題列，系統會自動偵測並略過，不會被誤當成一筆帳號。CSV檔案用Excel/Numbers/Google試算表存成「CSV UTF-8」格式最不容易出現亂碼；貼上文字跟上傳檔案兩種方式都會整份覆蓋現有名單。密碼以雜湊方式儲存，匯出名單只會看到帳號，密碼欄位會是空白（無法還原明文，重新匯入才能改密碼）。名單已加強保護：只有超級管理者／専案管理者能看到完整名單，玩家登入時系統只會查詢他輸入的那一筆帳號，沒辦法把整份名單讀走。</div>
       </div>
       <div class="card">
         <div class="settings-section-title">🕒 報到時間排程 <span style="font-size:11px;color:var(--text-light);font-weight:400">（選填，留空則完全用手動的「開放/暫停/停止報到」按鈕控制）</span></div>
@@ -1595,7 +1628,7 @@ const THEMES=[
   {name:'深灰',c1:'#2c3e50',c2:'#1a252f',c3:'#34495e'},
 ];
 
-const DEFAULT_SETTINGS={activityName:'實境解謎',subtitle:'ADVENTURE',welcome:'',finishMsg:'恭喜完成所有挑戰！感謝參與！',stuckMinutes:10,helperName:'活動小幫手',helpMaxTimes:2,helpCooldown:5,hintAfter:2,routeMode:'random',gpsFail:'block',liffId:'',enableGoogleLogin:false,enableFacebookLogin:false,allowRetry:true,retryMode:'unlimited',retryCooldownDays:1,rankingScope:'cumulative',rankingTopN:10,checkinStartTime:null,checkinEndTime:null,fixedStartCount:0,fixedEndCount:0,middleMode:'shuffle-all',middleSubsetCount:null,minStagesRequired:null,minScoreRequired:null,enableGPS:true,enableStorySystem:true,enableQRLocation:false,allowSkipAI:false,aiSkipSystemFailAfter:2,aiSkipContentFailAfter:3,aiSkipContentFailPenalty:20,openaiKey:''};
+const DEFAULT_SETTINGS={activityName:'實境解謎',subtitle:'ADVENTURE',welcome:'',finishMsg:'恭喜完成所有挑戰！感謝參與！',stuckMinutes:10,helperName:'活動小幫手',helpMaxTimes:2,helpCooldown:5,hintAfter:2,routeMode:'random',gpsFail:'block',liffId:'',enableGoogleLogin:false,enableFacebookLogin:false,allowRetry:true,retryMode:'unlimited',retryCooldownDays:1,rankingScope:'cumulative',rankingTopN:10,checkinStartTime:null,checkinEndTime:null,fixedStartCount:0,fixedEndCount:0,middleMode:'shuffle-all',middleSubsetCount:null,minStagesRequired:null,minScoreRequired:null,enableGPS:true,enableStorySystem:true,enableQRLocation:false,allowSkipAI:false,aiSkipSystemFailAfter:2,aiSkipContentFailAfter:3,aiSkipContentFailPenalty:20,openaiKey:'',maxPlayers:null,loginMode:'default'};
 const DEFAULT_SCORING={baseScore:100,timeBonus:50,completionBonus:200,wrongPenalty:10,hintPenalty:5,helpPenalty:30,skipPhotoPenalty:20,skipGPSPenalty:20};
 
 // 全域函數
@@ -1665,7 +1698,7 @@ async function signInWithStageMasterPass(){
     return;
   }
 
-  // ── 總關主路徑 ──
+  // ── 關主路徑（密碼登入，每關各自密碼）──
   try{
     const snap = await get(aRef('stages'));
     if(!snap.exists()){errEl.textContent='⚠️ 尚未建立關卡';return;}
@@ -2451,7 +2484,7 @@ function applyRolePermissions(role){
       });
     },500);
   } else {
-    // stagemaster（舊版 Google 登入總關主，相容用）：只顯示監控類
+    // stagemaster（舊版 Google 登入關主角色，已停用新增，僅相容既有帳號）：只顯示監控類
     showEl(monitorItems);hideEl(manageItems);hideEl(adminItems);
     showEl(mMonitor);hideEl(mManage);hideEl(mAdmin);
     hideEl(['nav-export','mnav-export','nav-preview','mnav-preview']);
@@ -3673,6 +3706,7 @@ async function saveStage(){
         }
       }
       await set(aRef(`stages/${editingStageKey}`),data);toast('✅ 關卡已更新！');
+      stagesData[editingStageKey]={...(stagesData[editingStageKey]||{}),...data};
     } else {
       // 新增：先 push 取得 Firebase key，再計算 hash
       const r=push(aRef('stages'));
@@ -3695,8 +3729,17 @@ async function saveStage(){
         if(qrPass)data.qrMasterPassHash=await sha256(`${r.key}_qr_${qrPass.toLowerCase()}`);
       }
       await set(r,data);toast('✅ 關卡已新增！');
+      editingStageKey=r.key;// 新增的關卡存檔後，後續操作（尤其QR碼）都要認得這一關
+      stagesData[editingStageKey]=data;
+      document.getElementById('modalTitle').textContent='編輯關卡';
     }
-    closeStageModal();loadStages();
+    if(locationVerifyMode==='qr'){
+      // QR打卡模式：不關掉編輯視窗，留在原地並立刻顯示QR碼，不用手動關閉再重新打開
+      renderQRLocationPreview();
+      loadStages();
+    } else {
+      closeStageModal();loadStages();
+    }
   }catch(e){toast('❌ 儲存失敗：'+e.message);console.error(e);}
   finally{btn.disabled=false;btn.textContent='💾 儲存關卡';}
 }
@@ -3787,6 +3830,9 @@ async function loadSettings(){
   const sMinScore=document.getElementById('settingMinScoreRequired');if(sMinScore)sMinScore.value=s.minScoreRequired||'';
   toggleMiddleSubsetInput();
   const sLiff=document.getElementById('settingLiffId');if(sLiff)sLiff.value=s.liffId||'';
+  const sLoginMode=document.getElementById('settingLoginMode');if(sLoginMode)sLoginMode.value=s.loginMode||'default';
+  toggleLoginModeUI();
+  loadAccountRoster();
   const sGoogle=document.getElementById('settingEnableGoogle');if(sGoogle)sGoogle.checked=!!s.enableGoogleLogin;
   const sFb=document.getElementById('settingEnableFacebook');if(sFb)sFb.checked=!!s.enableFacebookLogin;
   // 相容舊資料：舊版只有布林值 allowRetry，換算成新的三選一 retryMode
@@ -3805,10 +3851,20 @@ async function loadSettings(){
   }
   // 功能總開關與AI API設定卡片：僅超級管理者可見
   const featCard=document.getElementById('superFeatureTogglesCard');if(featCard)featCard.style.display=(currentRole==='super')?'':'none';
+  if(currentRole==='super'){
+    get(aRef('sessions')).then(sSnap=>{
+      const hint=document.getElementById('currentPlayerCountHint');if(!hint)return;
+      if(!sSnap.exists()){hint.textContent='目前已報名：0 人';return;}
+      const ids=new Set();
+      Object.values(sSnap.val()).forEach(sv=>{if(sv&&sv.teamKey)ids.add(sv.teamKey);});
+      hint.textContent=`目前已報名：${ids.size} 人`;
+    }).catch(()=>{});
+  }
   const apiCard=document.getElementById('aiApiKeyCard');if(apiCard)apiCard.style.display=(currentRole==='super')?'':'none';
   const egEl=document.getElementById('settingEnableGPS');if(egEl)egEl.checked=(s.enableGPS!==false);
   const esEl=document.getElementById('settingEnableStorySystem');if(esEl)esEl.checked=(s.enableStorySystem!==false);
   const eqEl=document.getElementById('settingEnableQRLocation');if(eqEl)eqEl.checked=(s.enableQRLocation===true);
+  const mpEl=document.getElementById('settingMaxPlayers');if(mpEl)mpEl.value=s.maxPlayers||'';
   const askEl=document.getElementById('settingAllowSkipAI');if(askEl)askEl.checked=(s.allowSkipAI===true);
   const asfEl=document.getElementById('settingAiSkipSystemFailAfter');if(asfEl)asfEl.value=s.aiSkipSystemFailAfter||2;
   const acfEl=document.getElementById('settingAiSkipContentFailAfter');if(acfEl)acfEl.value=s.aiSkipContentFailAfter||3;
@@ -3833,6 +3889,135 @@ function toggleRetryCooldownInput(){
   if(mode&&group)group.style.display=(mode.value==='cooldown')?'':'none';
 }
 window.toggleRetryCooldownInput=toggleRetryCooldownInput;
+
+// ── 帳號登入名單 ──
+// 名單改成用「帳號本身」當Firebase的key（不是亂數key），這樣才能搭配資料庫規則做到：
+// 玩家登入時只能查詢「自己輸入的那一筆帳號」，沒辦法把整份名單讀走；只有super/host能整包讀取列表管理。
+let accountRosterData={};
+function sanitizeAcctKey(username){
+  // Firebase key不能有 . # $ [ ] / 或空白，且忽略大小寫，統一轉成合法key
+  return username.trim().toLowerCase().replace(/[.#$\[\]\/\s]/g,'_').substring(0,120);
+}
+function toggleLoginModeUI(){
+  const mode=document.getElementById('settingLoginMode');
+  const area=document.getElementById('accountRosterArea');
+  if(mode&&area)area.classList.toggle('hidden',mode.value==='default');
+}
+window.toggleLoginModeUI=toggleLoginModeUI;
+function renderAccountRosterList(){
+  const listEl=document.getElementById('accountRosterList');
+  const countEl=document.getElementById('rosterCount');
+  if(!listEl)return;
+  const entries=Object.entries(accountRosterData);
+  if(countEl)countEl.textContent=entries.length;
+  if(!entries.length){listEl.innerHTML='<div style="font-size:12px;color:var(--text-light);padding:6px">尚未匯入任何名單</div>';return;}
+  listEl.innerHTML='';
+  entries.sort(([,a],[,b])=>(a.username||'').localeCompare(b.username||'')).forEach(([key,rec])=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:5px 6px;border-bottom:1px solid #f0f0f0;font-size:12.5px';
+    const left=document.createElement('div');left.textContent=rec.username+(rec.passwordHash?'　🔒有密碼':'　（無密碼）');
+    const delBtn=document.createElement('button');delBtn.className='btn btn-danger btn-sm';delBtn.textContent='移除';delBtn.onclick=()=>removeAccountRosterEntry(key);
+    row.appendChild(left);row.appendChild(delBtn);
+    listEl.appendChild(row);
+  });
+}
+async function loadAccountRoster(){
+  // 只有super/host能整包讀取（依資料庫規則），staff/viewer會被擋下來，這裡吞掉錯誤顯示空清單即可
+  try{
+    const snap=await get(aRef('accountRoster'));
+    accountRosterData=snap.val()||{};
+  }catch(e){accountRosterData={};}
+  renderAccountRosterList();
+}
+// 判斷第一行是不是標題列（例如「帳號,密碼」「username,password」），是的話匯入時自動跳過
+function looksLikeHeaderRow(line){
+  const first=(line.split(',')[0]||'').trim().toLowerCase();
+  return ['帳號','帳戶','account','username','user','id','編號'].includes(first);
+}
+async function parseAndImportRoster(text){
+  const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  if(!lines.length){toast('沒有可匯入的資料');return;}
+  if(looksLikeHeaderRow(lines[0]))lines.shift();// 自動略過標題列
+  if(!lines.length){toast('沒有可匯入的資料（只有標題列）');return;}
+  if(!confirm(`確定要匯入 ${lines.length} 筆資料嗎？\n這會整份覆蓋現有名單（不是新增合併）！`))return;
+  toast('📥 匯入中，請稍候...');
+  const newRoster={};
+  let dupCount=0,invalidCount=0;
+  for(const line of lines){
+    const parts=line.split(',');
+    const username=(parts[0]||'').trim();
+    const password=(parts[1]||'').trim();
+    if(!username)continue;
+    const key=sanitizeAcctKey(username);
+    if(!key){invalidCount++;continue;}
+    if(newRoster[key]){dupCount++;continue;}// 同一批次帳號重複（或sanitize後撞key），只保留第一筆
+    const rec={username};
+    if(password)rec.passwordHash=await sha256(`${ACTIVITY_ID}_acct_${key}_${password}`);
+    newRoster[key]=rec;
+  }
+  try{
+    await set(aRef('accountRoster'),newRoster);
+    accountRosterData=newRoster;
+    renderAccountRosterList();
+    document.getElementById('accountRosterImportText').value='';
+    const csvFileInput=document.getElementById('accountRosterCSVFile');if(csvFileInput)csvFileInput.value='';
+    let msg=`✅ 已匯入 ${Object.keys(newRoster).length} 筆`;
+    if(dupCount)msg+=`（略過 ${dupCount} 筆重複帳號）`;
+    if(invalidCount)msg+=`（${invalidCount} 筆帳號格式無效已略過）`;
+    toast(msg);
+  }catch(e){toast('❌ 匯入失敗：'+e.message);}
+}
+async function importAccountRoster(){
+  if(currentRole==='viewer'||currentRole==='staff'){toast('⛔ 協助管理者無法操作');return;}
+  const text=(document.getElementById('accountRosterImportText').value||'').trim();
+  if(!text){toast('請先貼上要匯入的名單，或用下面的按鈕上傳CSV檔');return;}
+  await parseAndImportRoster(text);
+}
+window.importAccountRoster=importAccountRoster;
+function importAccountRosterFromCSVFile(fileInput){
+  if(currentRole==='viewer'||currentRole==='staff'){toast('⛔ 協助管理者無法操作');return;}
+  const file=fileInput.files&&fileInput.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async(e)=>{
+    let text=e.target.result||'';
+    if(text.charCodeAt(0)===0xFEFF)text=text.slice(1);// 去除UTF-8 BOM（Excel匯出常見）
+    await parseAndImportRoster(text);
+  };
+  reader.onerror=()=>toast('❌ 讀取檔案失敗，請確認檔案格式');
+  reader.readAsText(file,'UTF-8');
+}
+window.importAccountRosterFromCSVFile=importAccountRosterFromCSVFile;
+function exportAccountRoster(){
+  const entries=Object.values(accountRosterData);
+  if(!entries.length){toast('目前沒有名單可以匯出');return;}
+  const csv='帳號,密碼\n'+entries.map(r=>r.username+',').join('\n');// 密碼是雜湊值，無法還原明文，匯出留空
+  downloadFile(`帳號名單_${ACTIVITY_ID}_${new Date().toLocaleDateString('zh-TW')}.csv`,csv,'text/csv');
+  toast('✅ 已匯出（密碼欄位無法還原，留空）');
+}
+window.exportAccountRoster=exportAccountRoster;
+async function removeAccountRosterEntry(key){
+  if(currentRole==='viewer'||currentRole==='staff'){toast('⛔ 協助管理者無法操作');return;}
+  if(!confirm('確定要移除這個帳號嗎？'))return;
+  try{
+    await remove(aRef(`accountRoster/${key}`));
+    delete accountRosterData[key];
+    renderAccountRosterList();
+    toast('✅ 已移除');
+  }catch(e){toast('❌ 移除失敗：'+e.message);}
+}
+window.removeAccountRosterEntry=removeAccountRosterEntry;
+async function clearAccountRoster(){
+  if(currentRole==='viewer'||currentRole==='staff'){toast('⛔ 協助管理者無法操作');return;}
+  if(!confirm('確定要清空整份名單嗎？此操作無法復原！'))return;
+  try{
+    await set(aRef('accountRoster'),null);
+    accountRosterData={};
+    renderAccountRosterList();
+    toast('✅ 名單已清空');
+  }catch(e){toast('❌ 清空失敗：'+e.message);}
+}
+window.clearAccountRoster=clearAccountRoster;
 
 function toggleMiddleSubsetInput(){
   const mode=document.getElementById('settingMiddleMode');
@@ -3882,6 +4067,7 @@ async function saveSettings(){
     minScoreRequired:(()=>{const v=parseInt((document.getElementById('settingMinScoreRequired')?document.getElementById('settingMinScoreRequired').value:''));return isNaN(v)?null:v;})(),
     gpsFail:safeRead('settingGpsFail')||'block',
     liffId:safeRead('settingLiffId')||'',
+    loginMode:safeRead('settingLoginMode')||'default',
     enableGoogleLogin:(document.getElementById('settingEnableGoogle')&&document.getElementById('settingEnableGoogle').checked)||false,
     enableFacebookLogin:(document.getElementById('settingEnableFacebook')&&document.getElementById('settingEnableFacebook').checked)||false,
     retryMode:safeRead('settingRetryMode')||'unlimited',
@@ -3900,6 +4086,7 @@ async function saveSettings(){
     enableGPS:(currentRole==='super')?(()=>{const el=document.getElementById('settingEnableGPS');return el?el.checked:(settingsData.enableGPS!==false);})():(settingsData.enableGPS!==false),
     enableStorySystem:(currentRole==='super')?(()=>{const el=document.getElementById('settingEnableStorySystem');return el?el.checked:(settingsData.enableStorySystem!==false);})():(settingsData.enableStorySystem!==false),
     enableQRLocation:(currentRole==='super')?(()=>{const el=document.getElementById('settingEnableQRLocation');return el?el.checked:(settingsData.enableQRLocation===true);})():(settingsData.enableQRLocation===true),
+    maxPlayers:(currentRole==='super')?(()=>{const el=document.getElementById('settingMaxPlayers');const v=el?parseInt(el.value):NaN;return isNaN(v)?null:v;})():(settingsData.maxPlayers!=null?settingsData.maxPlayers:null),
     allowSkipAI:(()=>{const el=document.getElementById('settingAllowSkipAI');return el?el.checked:(settingsData.allowSkipAI===true);})(),
     aiSkipSystemFailAfter:parseInt((document.getElementById('settingAiSkipSystemFailAfter')?document.getElementById('settingAiSkipSystemFailAfter').value:''))||2,
     aiSkipContentFailAfter:parseInt((document.getElementById('settingAiSkipContentFailAfter')?document.getElementById('settingAiSkipContentFailAfter').value:''))||3,
