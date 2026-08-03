@@ -760,18 +760,21 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
       </div>
       <div class="card" id="superFeatureTogglesCard" style="display:none">
         <div class="settings-section-title">🔓 功能總開關 <span style="font-size:11px;color:var(--text-light);font-weight:400">（僅超級管理者可見，關閉後其他角色完全看不到對應功能）</span></div>
+        <div class="form-group" style="margin-bottom:10px">
+          <label>🚩 進入關卡方式 <span style="font-size:11px;color:var(--text-light);font-weight:400">（整個活動統一一種，専案管理者建立關卡時不會再看到這個選項，畫面會自動對應）</span></label>
+          <select id="settingEntryMethod" onchange="toggleEntryMethodUI()">
+            <option value="self">🚶 自己找關卡（攤位，可選配GPS驗證）</option>
+            <option value="qr">📱 QR打卡進入（現場貼QR碼掃描解鎖，免關主，可加GPS雙重驗證防偽造）</option>
+          </select>
+        </div>
         <div class="form-row-3">
           <div class="form-group flex gap-8 items-center" style="margin-bottom:0">
             <input type="checkbox" id="settingEnableGPS" style="width:auto;padding:0"/>
-            <label for="settingEnableGPS" style="margin:0;cursor:pointer">📍 GPS 定位驗證</label>
+            <label for="settingEnableGPS" style="margin:0;cursor:pointer">📍 開放GPS輔助驗證</label>
           </div>
           <div class="form-group flex gap-8 items-center" style="margin-bottom:0">
             <input type="checkbox" id="settingEnableStorySystem" style="width:auto;padding:0"/>
             <label for="settingEnableStorySystem" style="margin:0;cursor:pointer">📖 故事系統</label>
-          </div>
-          <div class="form-group flex gap-8 items-center" style="margin-bottom:0">
-            <input type="checkbox" id="settingEnableQRLocation" style="width:auto;padding:0"/>
-            <label for="settingEnableQRLocation" style="margin:0;cursor:pointer">📱 QR打卡進入</label>
           </div>
         </div>
         <div class="form-group" style="margin-top:10px;margin-bottom:0">
@@ -790,7 +793,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
               <option value="shuffle-all">全部打亂（都要跑）</option>
               <option value="random-subset">從中段隨機抽選部分關卡</option>
               <option value="fixed-order">維持原本順序</option>
-              <option value="free-roam">🗺️ 隨意跑（全部關卡自選，不排順序）</option>
+              <option value="free-roam" id="freeRoamOption">🗺️ 隨意跑（全部關卡自選，不排順序，僅QR打卡進入活動可選）</option>
             </select>
           </div>
         </div>
@@ -1272,18 +1275,25 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
       </div>
     </div>
 
-    <!-- 進入關卡方式（所有類型共用，僅超級管理者可設定）-->
+    <!-- 進入關卡方式：整個活動統一由超級管理者在「活動設定」設定，這裡只依設定自動呈現對應欄位 -->
     <hr class="divider"/>
-    <div class="form-group">
-      <label>🚩 進入關卡方式 <span id="entryMethodSuperOnlyTag" style="font-size:11px;color:var(--coral);font-weight:400">（僅超級管理者可設定）</span></label>
-      <select id="fEntryMethod" onchange="toggleEntryMethod()">
-        <option value="self">🚶 自己找關卡（攤位）</option>
-        <option value="qr">📱 QR 打卡進入（現場張貼QR碼，玩家掃描解鎖，免關主）</option>
-      </select>
+    <div class="form-group" id="entryMethodInfoBox" style="background:#f0f6ff;border-radius:8px;padding:8px 10px;font-size:12px;color:#1a6fa3"></div>
+    <div id="qrLocationFieldsGroup" class="hidden">
+      <div class="form-group">
+        <label>📱 現場QR打卡說明（顯示在玩家掃描前，告訴玩家這是打卡點）</label>
+        <input type="text" id="fLocationHintQR" placeholder="例：地景藝術品《海之心》旁"/>
+      </div>
+      <div class="form-group" style="text-align:center;background:#f7fafd;border-radius:10px;padding:14px">
+        <div id="qrLocationPreviewWrap">
+          <div id="qrLocationPreview" style="display:inline-block;margin:8px auto"></div>
+          <div style="font-size:11px;color:var(--text-light)">列印張貼在現場，玩家用手機掃描即可解鎖此關（存檔後才會真正生效，記得存檔）</div>
+          <button type="button" class="btn btn-ghost btn-sm mt-8" id="regenerateQRBtn" onclick="regenerateQRLocationCode()">🔄 重新產生QR碼（舊QR碼會失效，需重新列印）</button>
+        </div>
+      </div>
     </div>
-    <div id="selfEntrySubOption" class="form-group" style="display:flex;align-items:center;gap:8px;margin-top:-6px">
+    <div class="form-group" style="display:flex;align-items:center;gap:8px">
       <input type="checkbox" id="fUseGPS" onchange="toggleGPSSubOption()" style="width:auto;padding:0"/>
-      <label for="fUseGPS" style="margin:0;cursor:pointer">📍 加上GPS定位驗證（自動核對玩家是否人在現場，不加就是純粹靠玩家自己找）</label>
+      <label for="fUseGPS" id="fUseGPSLabel" style="margin:0;cursor:pointer">📍 加上GPS定位驗證</label>
     </div>
     <div id="gpsFieldsGroup" class="hidden">
       <div class="form-group">
@@ -1296,19 +1306,6 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
       <div class="form-row">
         <div class="form-group"><label>誤差範圍（公尺）</label><input type="number" id="fRadius" value="80"/></div>
         <div class="form-group"><label>📍 GPS 到達說明（顯示在 GPS 驗證畫面，告訴玩家走到哪個具體位置）</label><input type="text" id="fLocationHintGPS" placeholder="例：站在活動入口旁的大石頭前方"/></div>
-      </div>
-    </div>
-    <div id="qrLocationFieldsGroup" class="hidden">
-      <div class="form-group">
-        <label>📱 現場QR打卡說明（顯示在玩家掃描前，告訴玩家這是打卡點）</label>
-        <input type="text" id="fLocationHintQR" placeholder="例：地景藝術品《海之心》旁"/>
-      </div>
-      <div class="form-group" style="text-align:center;background:#f7fafd;border-radius:10px;padding:14px">
-        <div id="qrLocationPreviewWrap">
-          <div id="qrLocationPreview" style="display:inline-block;margin:8px auto"></div>
-          <div style="font-size:11px;color:var(--text-light)">列印張貼在現場，玩家用手機掃描即可解鎖此關（存檔後才會真正生效，記得存檔）</div>
-          <button type="button" class="btn btn-ghost btn-sm mt-8" id="regenerateQRBtn" onclick="regenerateQRLocationCode()">🔄 重新產生QR碼（舊QR碼會失效，需重新列印）</button>
-        </div>
       </div>
     </div>
     <div class="form-group">
@@ -1630,7 +1627,7 @@ const THEMES=[
   {name:'深灰',c1:'#2c3e50',c2:'#1a252f',c3:'#34495e'},
 ];
 
-const DEFAULT_SETTINGS={activityName:'實境解謎',subtitle:'ADVENTURE',welcome:'',finishMsg:'恭喜完成所有挑戰！感謝參與！',stuckMinutes:10,helperName:'活動小幫手',helpMaxTimes:2,helpCooldown:5,hintAfter:2,routeMode:'random',gpsFail:'block',liffId:'',enableGoogleLogin:false,enableFacebookLogin:false,allowRetry:true,retryMode:'unlimited',retryCooldownDays:1,rankingScope:'cumulative',rankingTopN:10,checkinStartTime:null,checkinEndTime:null,fixedStartCount:0,fixedEndCount:0,middleMode:'shuffle-all',middleSubsetCount:null,minStagesRequired:null,minScoreRequired:null,enableGPS:true,enableStorySystem:true,enableQRLocation:false,allowSkipAI:false,aiSkipSystemFailAfter:2,aiSkipContentFailAfter:3,aiSkipContentFailPenalty:20,openaiKey:'',maxPlayers:null,loginMode:'default'};
+const DEFAULT_SETTINGS={activityName:'實境解謎',subtitle:'ADVENTURE',welcome:'',finishMsg:'恭喜完成所有挑戰！感謝參與！',stuckMinutes:10,helperName:'活動小幫手',helpMaxTimes:2,helpCooldown:5,hintAfter:2,routeMode:'random',gpsFail:'block',liffId:'',enableGoogleLogin:false,enableFacebookLogin:false,allowRetry:true,retryMode:'unlimited',retryCooldownDays:1,rankingScope:'cumulative',rankingTopN:10,checkinStartTime:null,checkinEndTime:null,fixedStartCount:0,fixedEndCount:0,middleMode:'shuffle-all',middleSubsetCount:null,minStagesRequired:null,minScoreRequired:null,enableGPS:true,enableStorySystem:true,entryMethod:'self',allowSkipAI:false,aiSkipSystemFailAfter:2,aiSkipContentFailAfter:3,aiSkipContentFailPenalty:20,openaiKey:'',maxPlayers:null,loginMode:'default'};
 const DEFAULT_SCORING={baseScore:100,timeBonus:50,completionBonus:200,wrongPenalty:10,hintPenalty:5,helpPenalty:30,skipPhotoPenalty:20,skipGPSPenalty:20};
 
 // 全域函數
@@ -3267,8 +3264,7 @@ function selectStageType(type){
   });
 }
 function refreshStageTypeButtonVisibility(){
-  const verifyMode=(document.getElementById('fEntryMethod')?getLocationVerifyMode():'none');
-  const isQR=verifyMode==='qr';
+  const isQR=(settingsData.entryMethod==='qr');
   STAFF_REQUIRED_TYPES.forEach(t=>{
     const tb=document.getElementById(`typeBtn-${t}`);
     if(tb)tb.style.display=isQR?'none':'';
@@ -3304,55 +3300,34 @@ async function copyShareLink(inputId){
   }
 }
 window.copyShareLink=copyShareLink;
-function getLocationVerifyMode(){
-  const method=(document.getElementById('fEntryMethod')||{}).value||'self';
-  if(method==='qr')return 'qr';
-  const useGPS=(document.getElementById('fUseGPS')||{}).checked;
-  return useGPS?'gps':'none';
-}
-function toggleEntryMethod(){
-  const method=document.getElementById('fEntryMethod').value;
-  const subOption=document.getElementById('selfEntrySubOption');
-  const gpsGroup=document.getElementById('gpsFieldsGroup');
+function applyEntryMethodStageUI(){
+  // 依活動整體「進入關卡方式」自動呈現對應欄位，専案管理者建立關卡時不需要自己選
+  const isQR=(settingsData.entryMethod==='qr');
   const qrGroup=document.getElementById('qrLocationFieldsGroup');
-  if(subOption)subOption.classList.toggle('hidden',method!=='self');
-  if(qrGroup)qrGroup.classList.toggle('hidden',method!=='qr');
-  if(method==='self'){
-    toggleGPSSubOption();
-  } else {
-    if(gpsGroup)gpsGroup.classList.add('hidden');
+  const infoBox=document.getElementById('entryMethodInfoBox');
+  const gpsLabel=document.getElementById('fUseGPSLabel');
+  if(qrGroup)qrGroup.classList.toggle('hidden',!isQR);
+  if(infoBox){
+    infoBox.textContent=isQR
+      ?'📱 這個活動整體是「QR打卡進入」模式：每一關都會自動產生專屬QR碼，玩家掃描即可解鎖，不需要關主。'
+      :'🚶 這個活動整體是「自己找關卡」模式：玩家依路線規則自行前往，可視需要加上GPS驗證。';
   }
+  if(gpsLabel)gpsLabel.textContent=isQR
+    ?'📍 同時加上GPS雙重驗證（防止QR碼被拍照/轉傳給不在現場的人代打）'
+    :'📍 加上GPS定位驗證（自動核對玩家是否人在現場，不加就是純粹靠玩家自己找）';
+  const enableGPS=(settingsData.enableGPS!==false);
+  const gpsCheckbox=document.getElementById('fUseGPS');
+  if(gpsCheckbox)gpsCheckbox.disabled=!enableGPS;
   refreshStageTypeButtonVisibility();
-  if(method==='qr')renderQRLocationPreview();
+  if(isQR)renderQRLocationPreview();
 }
-window.toggleEntryMethod=toggleEntryMethod;
+window.applyEntryMethodStageUI=applyEntryMethodStageUI;
 function toggleGPSSubOption(){
   const useGPS=document.getElementById('fUseGPS').checked;
   const gpsGroup=document.getElementById('gpsFieldsGroup');
   if(gpsGroup)gpsGroup.classList.toggle('hidden',!useGPS);
-  refreshStageTypeButtonVisibility();
 }
 window.toggleGPSSubOption=toggleGPSSubOption;
-function applyLocationVerifyModeOptions(){
-  const sel=document.getElementById('fEntryMethod');if(!sel)return;
-  const qrOpt=sel.querySelector('option[value="qr"]');
-  const enableGPS=(settingsData.enableGPS!==false);
-  const enableQR=(settingsData.enableQRLocation===true);
-  if(qrOpt)qrOpt.disabled=!enableQR;
-  const gpsCheckbox=document.getElementById('fUseGPS');
-  const gpsLabel=gpsCheckbox?gpsCheckbox.closest('#selfEntrySubOption'):null;
-  if(gpsCheckbox){
-    gpsCheckbox.disabled=!enableGPS||currentRole!=='super';
-    if(gpsLabel)gpsLabel.style.opacity=enableGPS?'':'0.5';
-  }
-  // 「進入關卡方式」這整組（含GPS子選項）只有超級管理者能設定，専案管理者只能看不能改
-  const isSuper=(currentRole==='super');
-  ['fEntryMethod','fUseGPS','fLat','fLng','fRadius','fLocationHintGPS','fLocationHintQR','regenerateQRBtn'].forEach(id=>{
-    const el=document.getElementById(id);if(el)el.disabled=!isSuper;
-  });
-  const tag=document.getElementById('entryMethodSuperOnlyTag');
-  if(tag)tag.style.display=isSuper?'none':'';
-}
 function toggleStorySectionVisibility(){
   const show=(settingsData.enableStorySystem!==false);
   const card=document.getElementById('storySectionCard');
@@ -3413,10 +3388,9 @@ function openStageModal(){
   const qReq=document.getElementById('fQRRequirePhoto');if(qReq)qReq.checked=false;
   ['fLat','fLng'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('fRadius').value='80';
-  document.getElementById('fEntryMethod').value='self';
   document.getElementById('fUseGPS').checked=false;
-  applyLocationVerifyModeOptions();
-  toggleEntryMethod();
+  document.getElementById('gpsFieldsGroup').classList.add('hidden');
+  applyEntryMethodStageUI();
   ['fOpt0','fOpt1','fOpt2','fOpt3'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('fAnswer').value='0';
   document.getElementById('fPhotoStrictness').value='standard';
@@ -3434,13 +3408,12 @@ function editStage(key){
   document.getElementById('modalTitle').textContent='編輯關卡';
   document.getElementById('fOrder').value=s.order||1;document.getElementById('fTitle').value=s.title||'';document.getElementById('fDesc').value=s.description||'';
   document.getElementById('fLat').value=s.lat||'';document.getElementById('fLng').value=s.lng||'';document.getElementById('fRadius').value=s.radius||80;
-  const verifyMode=s.qrLocationCode?'qr':((s.lat&&s.lng)?'gps':'none');
-  document.getElementById('fEntryMethod').value=(verifyMode==='qr')?'qr':'self';
-  document.getElementById('fUseGPS').checked=(verifyMode==='gps');
+  const hasGPS=!!(s.lat&&s.lng);
+  document.getElementById('fUseGPS').checked=hasGPS;
+  document.getElementById('gpsFieldsGroup').classList.toggle('hidden',!hasGPS);
   document.getElementById('fLocationHintGPS').value=s.locationHint||'';
   document.getElementById('fLocationHintQR').value=s.locationHint||'';
-  applyLocationVerifyModeOptions();
-  toggleEntryMethod();
+  applyEntryMethodStageUI();
   toggleStorySectionVisibility();
   document.getElementById('fHint1').value=(s.hints&&s.hints.h1)||'';document.getElementById('fHint2').value=(s.hints&&s.hints.h2)||'';
   // 故事欄位
@@ -3630,22 +3603,21 @@ async function saveStage(){
   try{
     let imageUrl=modalImgUrl||'';
     if(modalImgFile){const path=`stage-images/${Date.now()}_${modalImgFile.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;const snap=await uploadBytes(aStorageRef(path),modalImgFile);imageUrl=await getDownloadURL(snap.ref);}
-    // 「進入關卡方式」（自己找/GPS/QR打卡）只有超級管理者能真正變更；
-    // 専案管理者即使用開發者工具移除disabled屬性硬改，這裡還是會強制沿用原本已存的設定，不會生效
-    const existingMode=editingStageKey&&stagesData[editingStageKey]?
-      (stagesData[editingStageKey].qrLocationCode?'qr':((stagesData[editingStageKey].lat&&stagesData[editingStageKey].lng)?'gps':'none')):'none';
-    const locationVerifyMode=(currentRole==='super')?getLocationVerifyMode():existingMode;
+    // 「進入關卡方式」是活動整體設定（entryMethod），専案管理者不能單一關卡覆蓋；
+    // GPS則是每一關都可以自由選配的加強驗證，専案管理者可以自己決定要不要加
+    const useQR=(settingsData.entryMethod==='qr');
+    const useGPS=(document.getElementById('fUseGPS')?document.getElementById('fUseGPS').checked:false);
     // 基本資料（所有類型共用）
     const data={
       stageType,
       order:parseInt(document.getElementById('fOrder').value)||1,
       title,description:document.getElementById('fDesc').value.trim(),imageUrl,
-      lat:locationVerifyMode==='gps'?(parseFloat(document.getElementById('fLat').value)||null):null,
-      lng:locationVerifyMode==='gps'?(parseFloat(document.getElementById('fLng').value)||null):null,
+      lat:useGPS?(parseFloat(document.getElementById('fLat').value)||null):null,
+      lng:useGPS?(parseFloat(document.getElementById('fLng').value)||null):null,
       radius:parseInt(document.getElementById('fRadius').value)||80,
-      locationHint:locationVerifyMode==='qr'?document.getElementById('fLocationHintQR').value.trim():document.getElementById('fLocationHintGPS').value.trim(),
-      // QR打卡碼：選了QR模式時，若既有關卡已經有code就沿用（不要因為存檔就換碼，現場QR碼會失效），沒有的話才新產生；非QR模式則清空
-      qrLocationCode:locationVerifyMode==='qr'?((editingStageKey&&stagesData[editingStageKey]&&stagesData[editingStageKey].qrLocationCode)||pendingQRLocationCode||generateQRLocationCode()):null,
+      locationHint:(useQR?document.getElementById('fLocationHintQR').value.trim():'')||document.getElementById('fLocationHintGPS').value.trim(),
+      // QR打卡碼：活動是QR模式時，若既有關卡已經有code就沿用（不要因為存檔就換碼，現場QR碼會失效），沒有的話才新產生；非QR模式則清空
+      qrLocationCode:useQR?((editingStageKey&&stagesData[editingStageKey]&&stagesData[editingStageKey].qrLocationCode)||pendingQRLocationCode||generateQRLocationCode()):null,
       hints:{h1:document.getElementById('fHint1').value.trim(),h2:document.getElementById('fHint2').value.trim()},
       storyIntro:((document.getElementById('fStoryIntro')?document.getElementById('fStoryIntro').value:'')||'').trim(),
       storyOutro:((document.getElementById('fStoryOutro')?document.getElementById('fStoryOutro').value:'')||'').trim(),
@@ -3777,7 +3749,7 @@ async function saveStage(){
       stagesData[editingStageKey]=data;
       document.getElementById('modalTitle').textContent='編輯關卡';
     }
-    if(locationVerifyMode==='qr'){
+    if(useQR){
       // QR打卡模式：不關掉編輯視窗，留在原地並立刻顯示QR碼，不用手動關閉再重新打開
       pendingQRLocationCode=null;// 已經正式存進資料庫，改用stagesData裡的正式值
       renderQRLocationPreview();
@@ -3908,7 +3880,8 @@ async function loadSettings(){
   const apiCard=document.getElementById('aiApiKeyCard');if(apiCard)apiCard.style.display=(currentRole==='super')?'':'none';
   const egEl=document.getElementById('settingEnableGPS');if(egEl)egEl.checked=(s.enableGPS!==false);
   const esEl=document.getElementById('settingEnableStorySystem');if(esEl)esEl.checked=(s.enableStorySystem!==false);
-  const eqEl=document.getElementById('settingEnableQRLocation');if(eqEl)eqEl.checked=(s.enableQRLocation===true);
+  const eqEl=document.getElementById('settingEntryMethod');if(eqEl)eqEl.value=(s.entryMethod==='qr')?'qr':'self';
+  toggleEntryMethodUI();
   const mpEl=document.getElementById('settingMaxPlayers');if(mpEl)mpEl.value=s.maxPlayers||'';
   const askEl=document.getElementById('settingAllowSkipAI');if(askEl)askEl.checked=(s.allowSkipAI===true);
   const asfEl=document.getElementById('settingAiSkipSystemFailAfter');if(asfEl)asfEl.value=s.aiSkipSystemFailAfter||2;
@@ -3943,6 +3916,18 @@ function sanitizeAcctKey(username){
   // Firebase key不能有 . # $ [ ] / 或空白，且忽略大小寫，統一轉成合法key
   return username.trim().toLowerCase().replace(/[.#$\[\]\/\s]/g,'_').substring(0,120);
 }
+function toggleEntryMethodUI(){
+  const method=(document.getElementById('settingEntryMethod')||{}).value||'self';
+  const freeRoamOpt=document.getElementById('freeRoamOption');
+  if(freeRoamOpt)freeRoamOpt.disabled=(method==='self');
+  const midModeSel=document.getElementById('settingMiddleMode');
+  if(method==='self'&&midModeSel&&midModeSel.value==='free-roam'){
+    midModeSel.value='shuffle-all';
+    toggleMiddleSubsetInput();
+    toast('⚠️「自己找關卡」不支援隨意跑，路線模式已自動改回「全部打亂」');
+  }
+}
+window.toggleEntryMethodUI=toggleEntryMethodUI;
 function toggleLoginModeUI(){
   const mode=document.getElementById('settingLoginMode');
   const area=document.getElementById('accountRosterArea');
@@ -4095,6 +4080,7 @@ async function saveSettings(){
   const newGeminiKey2=(currentRole==='super')?safeRead('settingGeminiKey2'):'';
   const newOpenaiKey=(currentRole==='super')?safeRead('settingOpenaiKey'):'';
   const newViewerPass=safeRead('settingViewerPass');
+  const entryMethodVal=(currentRole==='super')?(()=>{const el=document.getElementById('settingEntryMethod');const v=el?el.value:'';return(v==='qr')?'qr':'self';})():(settingsData.entryMethod==='qr'?'qr':'self');
   const viewerPassHash=newViewerPass?await sha256(`${ACTIVITY_ID}_viewer_${newViewerPass.toLowerCase()}`):(settingsData.viewerPassHash||'');
   const settings={
     activityName:safeRead('settingActivityName')||'實境解謎',
@@ -4106,7 +4092,7 @@ async function saveSettings(){
     routeMode:safeRead('settingRouteMode')||'random',
     fixedStartCount:parseInt((document.getElementById('settingFixedStartCount')?document.getElementById('settingFixedStartCount').value:''))||0,
     fixedEndCount:parseInt((document.getElementById('settingFixedEndCount')?document.getElementById('settingFixedEndCount').value:''))||0,
-    middleMode:safeRead('settingMiddleMode')||'shuffle-all',
+    middleMode:(()=>{const m=safeRead('settingMiddleMode')||'shuffle-all';return(entryMethodVal==='self'&&m==='free-roam')?'shuffle-all':m;})(),
     middleSubsetCount:(()=>{const v=parseInt((document.getElementById('settingMiddleSubsetCount')?document.getElementById('settingMiddleSubsetCount').value:''));return isNaN(v)?null:v;})(),
     minStagesRequired:(()=>{const v=parseInt((document.getElementById('settingMinStagesRequired')?document.getElementById('settingMinStagesRequired').value:''));return isNaN(v)?null:v;})(),
     minScoreRequired:(()=>{const v=parseInt((document.getElementById('settingMinScoreRequired')?document.getElementById('settingMinScoreRequired').value:''));return isNaN(v)?null:v;})(),
@@ -4130,7 +4116,7 @@ async function saveSettings(){
     // 功能總開關：僅超級管理者能真正變更；host即使用開發者工具竄改隱藏欄位也不會生效，一律保留settingsData原值
     enableGPS:(currentRole==='super')?(()=>{const el=document.getElementById('settingEnableGPS');return el?el.checked:(settingsData.enableGPS!==false);})():(settingsData.enableGPS!==false),
     enableStorySystem:(currentRole==='super')?(()=>{const el=document.getElementById('settingEnableStorySystem');return el?el.checked:(settingsData.enableStorySystem!==false);})():(settingsData.enableStorySystem!==false),
-    enableQRLocation:(currentRole==='super')?(()=>{const el=document.getElementById('settingEnableQRLocation');return el?el.checked:(settingsData.enableQRLocation===true);})():(settingsData.enableQRLocation===true),
+    entryMethod:entryMethodVal,
     maxPlayers:(currentRole==='super')?(()=>{const el=document.getElementById('settingMaxPlayers');const v=el?parseInt(el.value):NaN;return isNaN(v)?null:v;})():(settingsData.maxPlayers!=null?settingsData.maxPlayers:null),
     allowSkipAI:(()=>{const el=document.getElementById('settingAllowSkipAI');return el?el.checked:(settingsData.allowSkipAI===true);})(),
     aiSkipSystemFailAfter:parseInt((document.getElementById('settingAiSkipSystemFailAfter')?document.getElementById('settingAiSkipSystemFailAfter').value:''))||2,

@@ -1964,6 +1964,7 @@ function renderStage(){
   const hasGPS=!!(stage.lat&&stage.lng);
   const hasQRLocation=!!(stage.qrLocationCode);
   const hasLocation=!!(stage.locationHint);
+  state._gpsVerified=false;state._qrVerified=false;// 每進一關重置雙重驗證狀態
   // 一進這關就在背景開始持續定位（不用等玩家按按鈕才冷啟動抓GPS，先爭取時間）
   stopWatchGPS();
   stopQRLocationScan();
@@ -2203,6 +2204,7 @@ function renderStage(){
   const content=document.getElementById('gameContent');
   content.innerHTML=`
     ${hasLocation?`<div class="location-card"><div class="loc-title">📍 前往地點</div><div class="loc-text" id="locText"></div></div>`:''}
+    ${(hasGPS&&hasQRLocation)?`<div class="location-card" id="dualVerifyNotice" style="background:#fff8e8;border-color:#e8c468">🔒 這一關需要「GPS定位」跟「掃QR碼」<b>兩項都通過</b>才能進入，兩項可以任意順序完成</div>`:''}
     ${hasGPS?`<div class="state-card gps-card" id="gpsCard">
       <div class="gps-icon">📍</div>
       <div class="gps-title">抵達後驗證位置</div>
@@ -2305,16 +2307,8 @@ async function skipGPSVerify(){
   // 記錄跳過GPS
   set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/gpsSkipped`),true);
   set(aRef(`sessions/${state.sessionKey}/stageLogs/${state.currentIdx}/arrivedAt`),serverTimestamp());
-  // 直接進入關卡（與 arriveAtStage 相同流程）
-  const gpsCard=document.getElementById('gpsCard');
-  const qCard=document.getElementById('questionCard');
-  if(gpsCard)gpsCard.style.display='none';
-  const stage=state.stages[state.currentIdx];
-  if(stage&&stage.storyIntro){
-    showStoryIntro(stage,()=>{if(qCard)qCard.style.display='';});
-  } else {
-    if(qCard)qCard.style.display='';
-  }
+  state._gpsVerified=true;// 只標記GPS這一項過關，若同時還要求QR，交給tryArriveIfAllVerified判斷是否要真的進關卡
+  tryArriveIfAllVerified();
 }
 window.skipGPSVerify=skipGPSVerify;
 
@@ -2349,7 +2343,7 @@ function handleGPSCoords(lat,lng){
   recordGPSLog(lat,lng,dist,passed,state.currentIdx);
   if(passed){
     statusEl.textContent='✅ 位置驗證成功！';
-    setTimeout(arriveAtStage,800);
+    setTimeout(()=>{state._gpsVerified=true;tryArriveIfAllVerified();},800);
   } else {
     statusEl.innerHTML=`⚠️ 距離目標還有約 <b>${Math.round(dist)} 公尺</b>，請再靠近！<br><span style="font-size:11px;color:var(--text-light)">如果無法靠近，可使用下方「🆘 求救」按鈕</span>`;
     btn.disabled=false;
@@ -2361,7 +2355,7 @@ function handleGPSError(err){
   const msgs={1:'⚠️ 請允許位置權限後重試',2:'⚠️ GPS訊號不佳，請到空曠處',3:'⚠️ 定位逾時，請重試'};
   statusEl.textContent=(err&&msgs[err.code])||'⚠️ 定位失敗';
   recordGPSLog(null,null,null,false,state.currentIdx);
-  if((state.settings.gpsFail||'block')==='allow'){setTimeout(()=>{statusEl.textContent+=' (已自動跳過)';setTimeout(arriveAtStage,1000);},1500);}
+  if((state.settings.gpsFail||'block')==='allow'){setTimeout(()=>{statusEl.textContent+=' (已自動跳過)';setTimeout(()=>{state._gpsVerified=true;tryArriveIfAllVerified();},1000);},1500);}
   else btn.disabled=false;
 }
 let _qrLocationScanner=null;
@@ -2387,7 +2381,8 @@ function startQRLocationScan(){
       if(decodedText===expectedCode){
         if(statusEl)statusEl.textContent='✅ 驗證成功！';
         stopQRLocationScan();
-        arriveAtStage();
+        state._qrVerified=true;
+        tryArriveIfAllVerified();
       } else {
         if(statusEl)statusEl.textContent='❌ 這不是本關的QR碼，請確認掃到正確地點';
       }
@@ -2413,7 +2408,7 @@ function checkGPS(){
   btn.disabled=true;statusEl.textContent='📡 正在取得GPS位置...';
   playBGM('gps');// GPS驗證中音效
   if(!navigator.geolocation){
-    if((state.settings.gpsFail||'block')==='allow'){statusEl.textContent='⚠️ 不支援GPS，直接進入';setTimeout(arriveAtStage,800);}
+    if((state.settings.gpsFail||'block')==='allow'){statusEl.textContent='⚠️ 不支援GPS，直接進入';setTimeout(()=>{state._gpsVerified=true;tryArriveIfAllVerified();},800);}
     else{statusEl.textContent='⚠️ 不支援GPS，請聯絡工作人員';btn.disabled=false;}
     return;
   }
@@ -2431,6 +2426,25 @@ function checkGPS(){
   );
 }
 function calcDist(lat1,lng1,lat2,lng2){const R=6371000,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
+function tryArriveIfAllVerified(){
+  const stage=state.stages[state.currentIdx];
+  if(!stage)return;
+  const needGPS=!!(stage.lat&&stage.lng);
+  const needQR=!!stage.qrLocationCode;
+  const gpsOk=!needGPS||state._gpsVerified;
+  const qrOk=!needQR||state._qrVerified;
+  if(gpsOk&&qrOk){
+    arriveAtStage();
+    return;
+  }
+  // 只完成其中一項，另一項還沒過：把已完成的卡片收起來，保留還沒完成的那張繼續等
+  if(state._gpsVerified){
+    const g=document.getElementById('gpsCard');if(g)g.style.display='none';
+  }
+  if(state._qrVerified){
+    const qr=document.getElementById('qrLocationCard');if(qr)qr.style.display='none';
+  }
+}
 function arriveAtStage(){
   stopWatchGPS();// 已到達，背景定位可以停了，省電
   stopQRLocationScan();// 已到達，QR掃描器可以停了
