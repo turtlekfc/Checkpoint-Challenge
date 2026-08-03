@@ -661,38 +661,6 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
         </div>
       </div>
       <div class="card">
-        <div class="settings-section-title">🔗 分享連結 <span style="font-size:11px;color:var(--text-light);font-weight:400">（複製給對應角色的人）</span></div>
-        <div class="form-group">
-          <label>活動代碼</label>
-          <div style="display:flex;gap:6px;align-items:center">
-            <input type="text" id="shareActivityCode" readonly style="font-family:monospace;background:#f7fafd"/>
-            <button class="btn btn-ghost btn-sm" onclick="copyShareLink('shareActivityCode')">📋 複製</button>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>🎮 玩家連結（分享給參加者，掃碼或點連結直接進入闖關）</label>
-          <div style="display:flex;gap:6px;align-items:center">
-            <input type="text" id="sharePlayerLink" readonly style="font-family:monospace;font-size:12px;background:#f7fafd"/>
-            <button class="btn btn-ghost btn-sm" onclick="copyShareLink('sharePlayerLink')">📋 複製</button>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>🙋 協助管理者連結（給現場工作人員，開啟後自動選好角色，輸入密碼即可登入）</label>
-          <div style="display:flex;gap:6px;align-items:center">
-            <input type="text" id="shareStaffLink" readonly style="font-family:monospace;font-size:12px;background:#f7fafd"/>
-            <button class="btn btn-ghost btn-sm" onclick="copyShareLink('shareStaffLink')">📋 複製</button>
-          </div>
-        </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label>🔑 關主連結（給各關負責人，開啟後輸入活動代碼＋該關密碼即可登入，只看得到自己那關）</label>
-          <div style="display:flex;gap:6px;align-items:center">
-            <input type="text" id="shareStageMasterLink" readonly style="font-family:monospace;font-size:12px;background:#f7fafd"/>
-            <button class="btn btn-ghost btn-sm" onclick="copyShareLink('shareStageMasterLink')">📋 複製</button>
-          </div>
-        </div>
-        <div class="gps-hint">専案管理者／超級管理者本身用 Google 帳號登入，不需要連結，直接開 admin.html 用 Google 登入即可。</div>
-      </div>
-      <div class="card">
         <div class="settings-section-title">🎯 活動資訊</div>
         <div class="form-row">
           <div class="form-group"><label>活動名稱（中文）</label><input type="text" id="settingActivityName" placeholder="例：夏日市集實境解謎"/></div>
@@ -712,7 +680,9 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
           <div style="font-size:11px;color:var(--text-light);margin-top:4px">上傳關卡圖片時自動疊加在圖片上，防止玩家截圖作弊</div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>活動結束時間（到時自動結束）</label><input type="datetime-local" id="settingEndTime"/></div>
+          <div class="form-group"><label>遊戲強制結束時間 <span style="font-size:11px;color:var(--text-light);font-weight:400">（選填，留空＝不限制）</span></label><input type="datetime-local" id="settingEndTime"/>
+            <div style="font-size:11px;color:var(--text-light);margin-top:3px">時間到，正在闖關中的玩家會直接被送到完賽畫面（不論闖到第幾關）。跟下面「報到時間排程」是不同的東西——報到時間只影響「能不能開始」，不會中斷正在玩的人；這個欄位才是真正會中斷遊戲的整體時限。</div>
+          </div>
           <div class="form-group"><label>卡關警報（超過幾分鐘）</label><input type="number" id="settingStuckMinutes" value="10" min="1" max="60"/></div>
         </div>
       </div>
@@ -750,13 +720,32 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
           <div class="form-group"><label>提示次數（次/關）</label>
             <select id="settingHintAfter"><option value="0">不提供</option><option value="1">1次/關</option><option value="2" selected>2次/關</option><option value="3">3次/關</option></select>
           </div>
-          <div class="form-group"><label>路線模式</label>
-            <select id="settingRouteMode"><option value="random">隨機</option><option value="fixed">固定順序</option></select>
-          </div>
           <div class="form-group"><label>GPS失敗處理</label>
             <select id="settingGpsFail"><option value="block">阻擋</option><option value="allow">允許跳過</option></select>
           </div>
         </div>
+      </div>
+      <div class="card">
+        <div class="settings-section-title">⏭️ AI 驗證跳過設定 <span style="font-size:11px;color:var(--text-light);font-weight:400">（套圖拍照關卡AI辨識失敗時的處理方式）</span></div>
+        <div class="form-group flex gap-8 items-center">
+          <input type="checkbox" id="settingAllowSkipAI" style="width:auto;padding:0"/>
+          <label for="settingAllowSkipAI" style="margin:0;cursor:pointer">允許AI驗證失敗後跳過此關</label>
+        </div>
+        <div class="form-row-3">
+          <div class="form-group">
+            <label>系統錯誤（API超限/網路異常）幾次後可跳過 <span style="font-size:11px;color:var(--text-light);font-weight:400">（不扣分）</span></label>
+            <input type="number" id="settingAiSkipSystemFailAfter" value="2" min="1"/>
+          </div>
+          <div class="form-group">
+            <label>AI判定不符合幾次後可跳過 <span style="font-size:11px;color:var(--text-light);font-weight:400">（扣分）</span></label>
+            <input type="number" id="settingAiSkipContentFailAfter" value="3" min="1"/>
+          </div>
+          <div class="form-group">
+            <label>跳過扣分</label>
+            <input type="number" id="settingAiSkipContentFailPenalty" value="20" min="0"/>
+          </div>
+        </div>
+        <div class="gps-hint">兩種情境分開計次：AI服務本身出錯（例如額度用完、網路連線失敗）不是玩家的問題，達到次數後可免費跳過並顯示說明；AI服務正常運作但判定照片不符合任務要求，達到次數後可跳過但會扣分（扣分金額可設定）。</div>
       </div>
       <div class="card" id="superFeatureTogglesCard" style="display:none">
         <div class="settings-section-title">🔓 功能總開關 <span style="font-size:11px;color:var(--text-light);font-weight:400">（僅超級管理者可見，關閉後其他角色完全看不到對應功能）</span></div>
@@ -821,8 +810,8 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
             <label>LINE Login LIFF ID <span style="font-size:11px;color:var(--text-light);font-weight:400">（選填）</span></label>
             <input type="text" id="settingLiffId" placeholder="到 LINE Developers Console 建立LIFF頻道後貼上"/>
           </div>
-          <div class="form-group">
-            <label>其他登入方式 <span style="font-size:11px;color:var(--text-light);font-weight:400">（需超級管理者先在 Firebase 專案啟用一次）</span></label>
+          <div class="form-group" id="googleFacebookLoginGroup" style="display:none">
+            <label>其他登入方式 <span style="font-size:11px;color:var(--text-light);font-weight:400">（僅超級管理者可見；需先在 Firebase 專案啟用一次）</span></label>
             <div style="display:flex;gap:14px;margin-top:6px">
               <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="settingEnableGoogle" style="width:auto;padding:0"/> 啟用 Google 登入</label>
               <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="settingEnableFacebook" style="width:auto;padding:0"/> 啟用 Facebook 登入</label>
@@ -841,7 +830,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
             <div style="font-size:11px;color:var(--text-light);margin-top:3px">填 1＝當天完賽後不能再玩，隔天起可以；填 3＝需等 3 天後才能再玩</div>
           </div>
         </div>
-        <div class="gps-hint">未填 LIFF ID、也沒勾選 Google／Facebook 時，玩家端只會顯示「免登入」選項。Google／Facebook 登入是否「能用」是整個 Firebase 專案共用的設定（需超級管理者到 Firebase Console 的 Authentication 頁面各啟用一次），這裡的勾選只決定這個活動「要不要顯示」該按鈕。結束畫面的排行榜範圍/顯示前幾名，在「排行榜設定」分頁調整。</div>
+        <div class="gps-hint" id="personalGameSettingsHint" style="display:none">未填 LIFF ID、也沒勾選 Google／Facebook 時，玩家端只會顯示「免登入」選項。Google／Facebook 登入是否「能用」是整個 Firebase 專案共用的設定（需超級管理者到 Firebase Console 的 Authentication 頁面各啟用一次），這裡的勾選只決定這個活動「要不要顯示」該按鈕。結束畫面的排行榜範圍/顯示前幾名，在「排行榜設定」分頁調整。</div>
       </div>
       <div class="card">
         <div class="settings-section-title">🪪 玩家登入方式</div>
@@ -879,6 +868,38 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
         </div>
         <div class="gps-hint">設定後，時間到系統會自動開放/停止報到，不用專人在現場按按鈕；已經在闖關的人不受影響，可以繼續玩到完成。手動按鈕仍可隨時覆蓋（例如臨時提前收攤）。</div>
       </div>
+      <div class="card">
+        <div class="settings-section-title">🔗 分享連結 <span style="font-size:11px;color:var(--text-light);font-weight:400">（複製給對應角色的人）</span></div>
+        <div class="form-group">
+          <label>活動代碼</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="text" id="shareActivityCode" readonly style="font-family:monospace;background:#f7fafd"/>
+            <button class="btn btn-ghost btn-sm" onclick="copyShareLink('shareActivityCode')">📋 複製</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>🎮 玩家連結（分享給參加者，掃碼或點連結直接進入闖關）</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="text" id="sharePlayerLink" readonly style="font-family:monospace;font-size:12px;background:#f7fafd"/>
+            <button class="btn btn-ghost btn-sm" onclick="copyShareLink('sharePlayerLink')">📋 複製</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>🙋 協助管理者連結（給現場工作人員，開啟後自動選好角色，輸入密碼即可登入）</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="text" id="shareStaffLink" readonly style="font-family:monospace;font-size:12px;background:#f7fafd"/>
+            <button class="btn btn-ghost btn-sm" onclick="copyShareLink('shareStaffLink')">📋 複製</button>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>🔑 關主連結（給各關負責人，開啟後輸入活動代碼＋該關密碼即可登入，只看得到自己那關）</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="text" id="shareStageMasterLink" readonly style="font-family:monospace;font-size:12px;background:#f7fafd"/>
+            <button class="btn btn-ghost btn-sm" onclick="copyShareLink('shareStageMasterLink')">📋 複製</button>
+          </div>
+        </div>
+        <div class="gps-hint">専案管理者／超級管理者本身用 Google 帳號登入，不需要連結，直接開 admin.html 用 Google 登入即可。</div>
+      </div>
       <div class="card" id="aiApiKeyCard" style="display:none">
         <div class="settings-section-title">🤖 AI 照片辨識 - API設定 <span style="font-size:11px;color:var(--text-light);font-weight:400">（僅超級管理者可見）</span></div>
         <div class="form-row">
@@ -903,31 +924,9 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
         <div class="gps-hint">申請免費 Gemini Key：<a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--primary)">https://aistudio.google.com/apikey</a>；申請 OpenAI Key：<a href="https://platform.openai.com/api-keys" target="_blank" style="color:var(--primary)">https://platform.openai.com/api-keys</a><br>失敗順序：Gemini Key1 → Gemini Key2 → ChatGPT。兩組 Gemini Key 超過免費額度時自動切換，每天各有 1500 次免費用量；ChatGPT使用 gpt-4o-mini 模型，屬於付費（用量小費用極低）。</div>
         <button class="btn btn-ghost btn-sm mt-8" onclick="testGeminiKeys()">🔍 測試 API Key</button>
       </div>
-      <div class="card">
-        <div class="settings-section-title">⏭️ AI 驗證跳過設定 <span style="font-size:11px;color:var(--text-light);font-weight:400">（套圖拍照關卡AI辨識失敗時的處理方式）</span></div>
-        <div class="form-group flex gap-8 items-center">
-          <input type="checkbox" id="settingAllowSkipAI" style="width:auto;padding:0"/>
-          <label for="settingAllowSkipAI" style="margin:0;cursor:pointer">允許AI驗證失敗後跳過此關</label>
-        </div>
-        <div class="form-row-3">
-          <div class="form-group">
-            <label>系統錯誤（API超限/網路異常）幾次後可跳過 <span style="font-size:11px;color:var(--text-light);font-weight:400">（不扣分）</span></label>
-            <input type="number" id="settingAiSkipSystemFailAfter" value="2" min="1"/>
-          </div>
-          <div class="form-group">
-            <label>AI判定不符合幾次後可跳過 <span style="font-size:11px;color:var(--text-light);font-weight:400">（扣分）</span></label>
-            <input type="number" id="settingAiSkipContentFailAfter" value="3" min="1"/>
-          </div>
-          <div class="form-group">
-            <label>跳過扣分</label>
-            <input type="number" id="settingAiSkipContentFailPenalty" value="20" min="0"/>
-          </div>
-        </div>
-        <div class="gps-hint">兩種情境分開計次：AI服務本身出錯（例如額度用完、網路連線失敗）不是玩家的問題，達到次數後可免費跳過並顯示說明；AI服務正常運作但判定照片不符合任務要求，達到次數後可跳過但會扣分（扣分金額可設定）。</div>
-      </div>
 
       <!-- 危險區域 -->
-      <div class="danger-zone">
+      <div class="danger-zone" id="dangerZoneSection" style="display:none">
         <div class="danger-zone-title">⚠️ 危險區域</div>
         <div class="danger-action" id="dangerClearDataAction">
           <div class="danger-action-info">
@@ -2004,6 +2003,7 @@ function confirmClearAll(){
 }
 
 function confirmResetAll(){
+  if(currentRole!=='super'){toast('⛔ 只有超級管理者能恢復預設值');return;}
   showConfirm(
     '↺ 恢復所有設定為預設值',
     '此操作將重置活動設定和分數設定，但不影響關卡內容和帳號設定。\n\n確定要恢復預設值嗎？',
@@ -3837,7 +3837,6 @@ async function loadSettings(){
   if(s.welcome)document.getElementById('settingWelcome').value=s.welcome;
   if(s.finishMsg)document.getElementById('settingFinishMsg').value=s.finishMsg;
   if(s.hintAfter!=null)document.getElementById('settingHintAfter').value=s.hintAfter;
-  if(s.routeMode)document.getElementById('settingRouteMode').value=s.routeMode;
   if(s.gpsFail)document.getElementById('settingGpsFail').value=s.gpsFail;
   const sFixStart=document.getElementById('settingFixedStartCount');if(sFixStart)sFixStart.value=s.fixedStartCount||0;
   const sFixEnd=document.getElementById('settingFixedEndCount');if(sFixEnd)sFixEnd.value=s.fixedEndCount||0;
@@ -3878,6 +3877,9 @@ async function loadSettings(){
     }).catch(()=>{});
   }
   const apiCard=document.getElementById('aiApiKeyCard');if(apiCard)apiCard.style.display=(currentRole==='super')?'':'none';
+  const gfGroup=document.getElementById('googleFacebookLoginGroup');if(gfGroup)gfGroup.style.display=(currentRole==='super')?'':'none';
+  const pgHint=document.getElementById('personalGameSettingsHint');if(pgHint)pgHint.style.display=(currentRole==='super')?'':'none';
+  const dangerZone=document.getElementById('dangerZoneSection');if(dangerZone)dangerZone.style.display=(currentRole==='super')?'':'none';
   const egEl=document.getElementById('settingEnableGPS');if(egEl)egEl.checked=(s.enableGPS!==false);
   const esEl=document.getElementById('settingEnableStorySystem');if(esEl)esEl.checked=(s.enableStorySystem!==false);
   const eqEl=document.getElementById('settingEntryMethod');if(eqEl)eqEl.value=(s.entryMethod==='qr')?'qr':'self';
@@ -4089,7 +4091,7 @@ async function saveSettings(){
     finishMsg:safeRead('settingFinishMsg'),
     logoUrl:finalLogoUrl,bannerUrl:finalBannerUrl,
     hintAfter:parseInt((document.getElementById('settingHintAfter')?document.getElementById('settingHintAfter').value:''))||2,
-    routeMode:safeRead('settingRouteMode')||'random',
+    routeMode:'random',// 欄位保留供極舊版活動的player.html相容用，UI已移除，實際路線邏輯由下方middleMode決定
     fixedStartCount:parseInt((document.getElementById('settingFixedStartCount')?document.getElementById('settingFixedStartCount').value:''))||0,
     fixedEndCount:parseInt((document.getElementById('settingFixedEndCount')?document.getElementById('settingFixedEndCount').value:''))||0,
     middleMode:(()=>{const m=safeRead('settingMiddleMode')||'shuffle-all';return(entryMethodVal==='self'&&m==='free-roam')?'shuffle-all':m;})(),
