@@ -671,20 +671,13 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
         <div class="form-group">
           <label>🔒 關卡圖片浮水印文字（留空則不加）</label>
           <input type="text" id="settingWatermark" placeholder="例：官方題目 禁止截圖 © 活動主辦單位"/>
-          </div>
-          <div class="form-group">
-            <label>🙋 協助管理者密碼 <span style="font-size:11px;color:var(--text-light);font-weight:400">（現場協助人員共用密碼，監控+現場協助，無編輯權；留空＝不修改）</span></label>
-            <input type="text" id="settingViewerPass" placeholder="留空＝不修改密碼（首次設定請直接輸入）" autocomplete="off"/>
-          </div>
-          <div style="display:none"><!-- placeholder for closing form-group -->
           <div style="font-size:11px;color:var(--text-light);margin-top:4px">上傳關卡圖片時自動疊加在圖片上，防止玩家截圖作弊</div>
         </div>
-        <div class="form-row">
-          <div class="form-group"><label>遊戲強制結束時間 <span style="font-size:11px;color:var(--text-light);font-weight:400">（選填，留空＝不限制）</span></label><input type="datetime-local" id="settingEndTime"/>
-            <div style="font-size:11px;color:var(--text-light);margin-top:3px">時間到，正在闖關中的玩家會直接被送到完賽畫面（不論闖到第幾關）。跟下面「報到時間排程」是不同的東西——報到時間只影響「能不能開始」，不會中斷正在玩的人；這個欄位才是真正會中斷遊戲的整體時限。</div>
-          </div>
-          <div class="form-group"><label>卡關警報（超過幾分鐘）</label><input type="number" id="settingStuckMinutes" value="10" min="1" max="60"/></div>
+        <div class="form-group">
+          <label>🙋 協助管理者密碼 <span style="font-size:11px;color:var(--text-light);font-weight:400">（現場協助人員共用密碼，監控+現場協助，無編輯權；留空＝不修改）</span></label>
+          <input type="text" id="settingViewerPass" placeholder="留空＝不修改密碼（首次設定請直接輸入）" autocomplete="off"/>
         </div>
+        <div class="form-group" style="margin-bottom:0"><label>卡關警報（超過幾分鐘）</label><input type="number" id="settingStuckMinutes" value="10" min="1" max="60"/></div>
       </div>
       <div class="card">
         <div class="settings-section-title">🖼️ 活動 LOGO <span style="font-size:11px;font-weight:400;color:var(--text-light)">建議 300×200px 以內</span></div>
@@ -707,45 +700,16 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
         <button class="btn btn-danger btn-sm mt-8" id="removeBannerBtn" onclick="removeMedia('banner')" style="display:none">🗑️ 移除Banner</button>
       </div>
       <div class="card">
-        <div class="settings-section-title">🆘 求救設定</div>
-        <div class="form-row-3">
-          <div class="form-group"><label>求救員名稱</label><input type="text" id="settingHelperName" value="活動小幫手"/></div>
-          <div class="form-group"><label>求救次數上限</label><input type="number" id="settingHelpMaxTimes" value="2" min="0" max="10"/></div>
-          <div class="form-group"><label>冷卻時間（分鐘）</label><input type="number" id="settingHelpCooldown" value="5" min="0" max="30"/></div>
+        <div class="settings-section-title">🕒 報到時程 <span style="font-size:11px;color:var(--text-light);font-weight:400">（報到排程選填，留空則完全用手動的「開放/暫停/停止報到」按鈕控制）</span></div>
+        <div class="form-row">
+          <div class="form-group"><label>自動開放報到時間</label><input type="datetime-local" id="settingCheckinStart"/></div>
+          <div class="form-group"><label>自動停止報到時間</label><input type="datetime-local" id="settingCheckinEnd"/></div>
         </div>
-      </div>
-      <div class="card">
-        <div class="settings-section-title">🎮 遊戲規則</div>
-        <div class="form-row-3">
-          <div class="form-group"><label>提示次數（次/關）</label>
-            <select id="settingHintAfter"><option value="0">不提供</option><option value="1">1次/關</option><option value="2" selected>2次/關</option><option value="3">3次/關</option></select>
-          </div>
-          <div class="form-group"><label>GPS失敗處理</label>
-            <select id="settingGpsFail"><option value="block">阻擋</option><option value="allow">允許跳過</option></select>
-          </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>遊戲強制結束時間 <span style="font-size:11px;color:var(--text-light);font-weight:400">（選填，留空＝不限制）</span></label>
+          <input type="datetime-local" id="settingEndTime"/>
         </div>
-      </div>
-      <div class="card">
-        <div class="settings-section-title">⏭️ AI 驗證跳過設定 <span style="font-size:11px;color:var(--text-light);font-weight:400">（套圖拍照關卡AI辨識失敗時的處理方式）</span></div>
-        <div class="form-group flex gap-8 items-center">
-          <input type="checkbox" id="settingAllowSkipAI" style="width:auto;padding:0"/>
-          <label for="settingAllowSkipAI" style="margin:0;cursor:pointer">允許AI驗證失敗後跳過此關</label>
-        </div>
-        <div class="form-row-3">
-          <div class="form-group">
-            <label>系統錯誤（API超限/網路異常）幾次後可跳過 <span style="font-size:11px;color:var(--text-light);font-weight:400">（不扣分）</span></label>
-            <input type="number" id="settingAiSkipSystemFailAfter" value="2" min="1"/>
-          </div>
-          <div class="form-group">
-            <label>AI判定不符合幾次後可跳過 <span style="font-size:11px;color:var(--text-light);font-weight:400">（扣分）</span></label>
-            <input type="number" id="settingAiSkipContentFailAfter" value="3" min="1"/>
-          </div>
-          <div class="form-group">
-            <label>跳過扣分</label>
-            <input type="number" id="settingAiSkipContentFailPenalty" value="20" min="0"/>
-          </div>
-        </div>
-        <div class="gps-hint">兩種情境分開計次：AI服務本身出錯（例如額度用完、網路連線失敗）不是玩家的問題，達到次數後可免費跳過並顯示說明；AI服務正常運作但判定照片不符合任務要求，達到次數後可跳過但會扣分（扣分金額可設定）。</div>
+        <div class="gps-hint">報到時間到了系統會自動開放/停止報到，不用專人在現場按按鈕；已經在闖關的人不受影響，可以繼續玩到完成，手動按鈕仍可隨時覆蓋（例如臨時提前收攤）。「遊戲強制結束時間」是不同的東西——時間一到，正在闖關中的玩家會直接被送到完賽畫面（不論闖到第幾關），這是真正會中斷遊戲的整體時限，跟報到時間互不影響。</div>
       </div>
       <div class="card" id="superFeatureTogglesCard" style="display:none">
         <div class="settings-section-title">🔓 功能總開關 <span style="font-size:11px;color:var(--text-light);font-weight:400">（僅超級管理者可見，關閉後其他角色完全看不到對應功能）</span></div>
@@ -773,7 +737,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
         </div>
       </div>
       <div class="card">
-        <div class="settings-section-title">🏪 市集版路線設定 <span style="font-size:11px;color:var(--text-light);font-weight:400">（前N關/後N關固定，中段可打亂或隨機抽選部分關卡；都留0表示比照上面的「路線模式」）</span></div>
+        <div class="settings-section-title">🏪 路線設定 <span style="font-size:11px;color:var(--text-light);font-weight:400">（前N關/後N關固定，中段可打亂或隨機抽選部分關卡，都留0表示全部打亂）</span></div>
         <div class="form-row-3">
           <div class="form-group"><label>前幾關固定順序</label><input type="number" id="settingFixedStartCount" value="0" min="0"/></div>
           <div class="form-group"><label>後幾關固定順序</label><input type="number" id="settingFixedEndCount" value="0" min="0"/></div>
@@ -802,6 +766,43 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
             <div style="font-size:11px;color:var(--text-light);margin-top:3px">隨意跑模式下，全部關卡一開始就開放自選，累積分數達門檻會出現「立即結算」按鈕，也可以繼續玩累積更高分</div>
           </div>
         </div>
+        <hr class="divider"/>
+        <div class="form-row-3">
+          <div class="form-group" style="margin-bottom:0"><label>提示次數（次/關）</label>
+            <select id="settingHintAfter"><option value="0">不提供</option><option value="1">1次/關</option><option value="2" selected>2次/關</option><option value="3">3次/關</option></select>
+          </div>
+          <div class="form-group" style="margin-bottom:0"><label>GPS失敗處理</label>
+            <select id="settingGpsFail"><option value="block">阻擋</option><option value="allow">允許跳過</option></select>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="settings-section-title">🪪 玩家登入方式</div>
+        <div class="form-group">
+          <label>這個活動要用哪種方式登入？</label>
+          <select id="settingLoginMode" onchange="toggleLoginModeUI()">
+            <option value="default">目前預設（LINE／Google／Facebook／免登入，上面設定的那些）</option>
+            <option value="account">帳號登入（免密碼，從匯入的名單裡輸入帳號即可）</option>
+            <option value="account_password">帳號＋密碼登入（需對上名單裡設定的密碼）</option>
+          </select>
+        </div>
+        <div id="accountRosterArea" class="hidden">
+          <div class="form-group">
+            <label>匯入名單 <span style="font-size:11px;color:var(--text-light);font-weight:400">（一行一筆，格式：帳號,密碼——密碼可留空；匯入會整份覆蓋現有名單）</span></label>
+            <textarea id="accountRosterImportText" rows="6" placeholder="A0001,1234&#10;A0002,&#10;A0003,abcd"></textarea>
+            <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+              <button type="button" class="btn btn-primary btn-sm" onclick="importAccountRoster()">📥 匯入貼上的文字（覆蓋現有名單）</button>
+              <label class="btn btn-ghost btn-sm" style="cursor:pointer;margin:0">📄 上傳CSV檔<input type="file" id="accountRosterCSVFile" accept=".csv,text/csv" style="display:none" onchange="importAccountRosterFromCSVFile(this)"/></label>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="exportAccountRoster()">📤 匯出目前名單</button>
+              <button type="button" class="btn btn-danger btn-sm" onclick="clearAccountRoster()">🗑️ 清空名單</button>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>目前名單（<span id="rosterCount">0</span> 筆）</label>
+            <div id="accountRosterList" style="max-height:220px;overflow-y:auto;border:1.5px solid var(--border);border-radius:10px;padding:6px"></div>
+          </div>
+        </div>
+        <div class="gps-hint">「帳號登入」「帳號＋密碼登入」兩種模式底下，玩家端登入畫面會改成輸入帳號（＋密碼），取代原本的LINE/Google/免登入選項。CSV格式：一行一筆，「帳號,密碼」，密碼欄位留空代表這個帳號免密碼（即使在「帳號＋密碼」模式下也一樣，適合混合名單）。第一行如果是「帳號,密碼」這種標題列，系統會自動偵測並略過，不會被誤當成一筆帳號。CSV檔案用Excel/Numbers/Google試算表存成「CSV UTF-8」格式最不容易出現亂碼；貼上文字跟上傳檔案兩種方式都會整份覆蓋現有名單。密碼以雜湊方式儲存，匯出名單只會看到帳號，密碼欄位會是空白（無法還原明文，重新匯入才能改密碼）。名單已加強保護：只有超級管理者／専案管理者能看到完整名單，玩家登入時系統只會查詢他輸入的那一筆帳號，沒辦法把整份名單讀走。</div>
       </div>
       <div class="card">
         <div class="settings-section-title">🙋 個人開放式闖關設定</div>
@@ -833,40 +834,33 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
         <div class="gps-hint" id="personalGameSettingsHint" style="display:none">未填 LIFF ID、也沒勾選 Google／Facebook 時，玩家端只會顯示「免登入」選項。Google／Facebook 登入是否「能用」是整個 Firebase 專案共用的設定（需超級管理者到 Firebase Console 的 Authentication 頁面各啟用一次），這裡的勾選只決定這個活動「要不要顯示」該按鈕。結束畫面的排行榜範圍/顯示前幾名，在「排行榜設定」分頁調整。</div>
       </div>
       <div class="card">
-        <div class="settings-section-title">🪪 玩家登入方式</div>
-        <div class="form-group">
-          <label>這個活動要用哪種方式登入？</label>
-          <select id="settingLoginMode" onchange="toggleLoginModeUI()">
-            <option value="default">目前預設（LINE／Google／Facebook／免登入，上面設定的那些）</option>
-            <option value="account">帳號登入（免密碼，從匯入的名單裡輸入帳號即可）</option>
-            <option value="account_password">帳號＋密碼登入（需對上名單裡設定的密碼）</option>
-          </select>
+        <div class="settings-section-title">🆘 求救設定</div>
+        <div class="form-row-3">
+          <div class="form-group"><label>求救員名稱</label><input type="text" id="settingHelperName" value="活動小幫手"/></div>
+          <div class="form-group"><label>求救次數上限</label><input type="number" id="settingHelpMaxTimes" value="2" min="0" max="10"/></div>
+          <div class="form-group"><label>冷卻時間（分鐘）</label><input type="number" id="settingHelpCooldown" value="5" min="0" max="30"/></div>
         </div>
-        <div id="accountRosterArea" class="hidden">
+        <hr class="divider"/>
+        <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:10px">⏭️ AI 驗證跳過設定 <span style="font-size:11px;color:var(--text-light);font-weight:400">（套圖拍照關卡AI辨識失敗時的處理方式）</span></div>
+        <div class="form-group flex gap-8 items-center">
+          <input type="checkbox" id="settingAllowSkipAI" style="width:auto;padding:0"/>
+          <label for="settingAllowSkipAI" style="margin:0;cursor:pointer">允許AI驗證失敗後跳過此關</label>
+        </div>
+        <div class="form-row-3">
           <div class="form-group">
-            <label>匯入名單 <span style="font-size:11px;color:var(--text-light);font-weight:400">（一行一筆，格式：帳號,密碼——密碼可留空；匯入會整份覆蓋現有名單）</span></label>
-            <textarea id="accountRosterImportText" rows="6" placeholder="A0001,1234&#10;A0002,&#10;A0003,abcd"></textarea>
-            <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
-              <button type="button" class="btn btn-primary btn-sm" onclick="importAccountRoster()">📥 匯入貼上的文字（覆蓋現有名單）</button>
-              <label class="btn btn-ghost btn-sm" style="cursor:pointer;margin:0">📄 上傳CSV檔<input type="file" id="accountRosterCSVFile" accept=".csv,text/csv" style="display:none" onchange="importAccountRosterFromCSVFile(this)"/></label>
-              <button type="button" class="btn btn-ghost btn-sm" onclick="exportAccountRoster()">📤 匯出目前名單</button>
-              <button type="button" class="btn btn-danger btn-sm" onclick="clearAccountRoster()">🗑️ 清空名單</button>
-            </div>
+            <label>系統錯誤（API超限/網路異常）幾次後可跳過 <span style="font-size:11px;color:var(--text-light);font-weight:400">（不扣分）</span></label>
+            <input type="number" id="settingAiSkipSystemFailAfter" value="2" min="1"/>
           </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label>目前名單（<span id="rosterCount">0</span> 筆）</label>
-            <div id="accountRosterList" style="max-height:220px;overflow-y:auto;border:1.5px solid var(--border);border-radius:10px;padding:6px"></div>
+          <div class="form-group">
+            <label>AI判定不符合幾次後可跳過 <span style="font-size:11px;color:var(--text-light);font-weight:400">（扣分）</span></label>
+            <input type="number" id="settingAiSkipContentFailAfter" value="3" min="1"/>
+          </div>
+          <div class="form-group">
+            <label>跳過扣分</label>
+            <input type="number" id="settingAiSkipContentFailPenalty" value="20" min="0"/>
           </div>
         </div>
-        <div class="gps-hint">「帳號登入」「帳號＋密碼登入」兩種模式底下，玩家端登入畫面會改成輸入帳號（＋密碼），取代原本的LINE/Google/免登入選項。CSV格式：一行一筆，「帳號,密碼」，密碼欄位留空代表這個帳號免密碼（即使在「帳號＋密碼」模式下也一樣，適合混合名單）。第一行如果是「帳號,密碼」這種標題列，系統會自動偵測並略過，不會被誤當成一筆帳號。CSV檔案用Excel/Numbers/Google試算表存成「CSV UTF-8」格式最不容易出現亂碼；貼上文字跟上傳檔案兩種方式都會整份覆蓋現有名單。密碼以雜湊方式儲存，匯出名單只會看到帳號，密碼欄位會是空白（無法還原明文，重新匯入才能改密碼）。名單已加強保護：只有超級管理者／専案管理者能看到完整名單，玩家登入時系統只會查詢他輸入的那一筆帳號，沒辦法把整份名單讀走。</div>
-      </div>
-      <div class="card">
-        <div class="settings-section-title">🕒 報到時間排程 <span style="font-size:11px;color:var(--text-light);font-weight:400">（選填，留空則完全用手動的「開放/暫停/停止報到」按鈕控制）</span></div>
-        <div class="form-row">
-          <div class="form-group"><label>自動開放報到時間</label><input type="datetime-local" id="settingCheckinStart"/></div>
-          <div class="form-group"><label>自動停止報到時間</label><input type="datetime-local" id="settingCheckinEnd"/></div>
-        </div>
-        <div class="gps-hint">設定後，時間到系統會自動開放/停止報到，不用專人在現場按按鈕；已經在闖關的人不受影響，可以繼續玩到完成。手動按鈕仍可隨時覆蓋（例如臨時提前收攤）。</div>
+        <div class="gps-hint">兩種情境分開計次：AI服務本身出錯（例如額度用完、網路連線失敗）不是玩家的問題，達到次數後可免費跳過並顯示說明；AI服務正常運作但判定照片不符合任務要求，達到次數後可跳過但會扣分（扣分金額可設定）。</div>
       </div>
       <div class="card">
         <div class="settings-section-title">🔗 分享連結 <span style="font-size:11px;color:var(--text-light);font-weight:400">（複製給對應角色的人）</span></div>
