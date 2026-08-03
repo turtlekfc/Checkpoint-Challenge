@@ -1272,17 +1272,20 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
       </div>
     </div>
 
-    <!-- 位置驗證方式（所有類型共用）-->
+    <!-- 進入關卡方式（所有類型共用，僅超級管理者可設定）-->
     <hr class="divider"/>
     <div class="form-group">
-      <label>📍 位置驗證方式</label>
-      <select id="fLocationVerifyMode" onchange="toggleLocationVerifyMode()">
-        <option value="none">不驗證位置</option>
-        <option value="gps">GPS 定位</option>
-        <option value="qr">QR 打卡進入（現場張貼QR碼，玩家掃描解鎖，免關主）</option>
+      <label>🚩 進入關卡方式 <span id="entryMethodSuperOnlyTag" style="font-size:11px;color:var(--coral);font-weight:400">（僅超級管理者可設定）</span></label>
+      <select id="fEntryMethod" onchange="toggleEntryMethod()">
+        <option value="self">🚶 自己找關卡（攤位）</option>
+        <option value="qr">📱 QR 打卡進入（現場張貼QR碼，玩家掃描解鎖，免關主）</option>
       </select>
     </div>
-    <div id="gpsFieldsGroup">
+    <div id="selfEntrySubOption" class="form-group" style="display:flex;align-items:center;gap:8px;margin-top:-6px">
+      <input type="checkbox" id="fUseGPS" onchange="toggleGPSSubOption()" style="width:auto;padding:0"/>
+      <label for="fUseGPS" style="margin:0;cursor:pointer">📍 加上GPS定位驗證（自動核對玩家是否人在現場，不加就是純粹靠玩家自己找）</label>
+    </div>
+    <div id="gpsFieldsGroup" class="hidden">
       <div class="form-group">
         <label>📍 GPS 座標</label>
         <div class="form-row">
@@ -1301,11 +1304,10 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
         <input type="text" id="fLocationHintQR" placeholder="例：地景藝術品《海之心》旁"/>
       </div>
       <div class="form-group" style="text-align:center;background:#f7fafd;border-radius:10px;padding:14px">
-        <div id="qrLocationNotSaved" style="font-size:12px;color:var(--text-light)">💾 請先儲存一次關卡，儲存後再打開編輯即可看到這一關專屬的QR碼</div>
-        <div id="qrLocationPreviewWrap" class="hidden">
+        <div id="qrLocationPreviewWrap">
           <div id="qrLocationPreview" style="display:inline-block;margin:8px auto"></div>
-          <div style="font-size:11px;color:var(--text-light)">列印張貼在現場，玩家用手機掃描即可解鎖此關</div>
-          <button type="button" class="btn btn-ghost btn-sm mt-8" onclick="regenerateQRLocationCode()">🔄 重新產生QR碼（舊QR碼會失效，需重新列印）</button>
+          <div style="font-size:11px;color:var(--text-light)">列印張貼在現場，玩家用手機掃描即可解鎖此關（存檔後才會真正生效，記得存檔）</div>
+          <button type="button" class="btn btn-ghost btn-sm mt-8" id="regenerateQRBtn" onclick="regenerateQRLocationCode()">🔄 重新產生QR碼（舊QR碼會失效，需重新列印）</button>
         </div>
       </div>
     </div>
@@ -1611,7 +1613,7 @@ function getURLActivityParam(){try{return new URLSearchParams(location.search).g
 })();
 
 let currentUser=null,currentRole=null;
-let editingStageKey=null,modalImgFile=null,modalImgUrl=null;
+let editingStageKey=null,modalImgFile=null,modalImgUrl=null,pendingQRLocationCode=null;
 let logoFile=null,logoUrl=null,bannerFile=null,bannerUrl=null;
 let storyImgFile=null,storyImgUrl=null;
 let sessions={},stagesData={},settingsData={};
@@ -3265,7 +3267,7 @@ function selectStageType(type){
   });
 }
 function refreshStageTypeButtonVisibility(){
-  const verifyMode=(document.getElementById('fLocationVerifyMode')||{}).value||'none';
+  const verifyMode=(document.getElementById('fEntryMethod')?getLocationVerifyMode():'none');
   const isQR=verifyMode==='qr';
   STAFF_REQUIRED_TYPES.forEach(t=>{
     const tb=document.getElementById(`typeBtn-${t}`);
@@ -3302,24 +3304,54 @@ async function copyShareLink(inputId){
   }
 }
 window.copyShareLink=copyShareLink;
-function toggleLocationVerifyMode(){
-  const mode=document.getElementById('fLocationVerifyMode').value;
+function getLocationVerifyMode(){
+  const method=(document.getElementById('fEntryMethod')||{}).value||'self';
+  if(method==='qr')return 'qr';
+  const useGPS=(document.getElementById('fUseGPS')||{}).checked;
+  return useGPS?'gps':'none';
+}
+function toggleEntryMethod(){
+  const method=document.getElementById('fEntryMethod').value;
+  const subOption=document.getElementById('selfEntrySubOption');
   const gpsGroup=document.getElementById('gpsFieldsGroup');
   const qrGroup=document.getElementById('qrLocationFieldsGroup');
-  if(gpsGroup)gpsGroup.classList.toggle('hidden',mode!=='gps');
-  if(qrGroup)qrGroup.classList.toggle('hidden',mode!=='qr');
+  if(subOption)subOption.classList.toggle('hidden',method!=='self');
+  if(qrGroup)qrGroup.classList.toggle('hidden',method!=='qr');
+  if(method==='self'){
+    toggleGPSSubOption();
+  } else {
+    if(gpsGroup)gpsGroup.classList.add('hidden');
+  }
   refreshStageTypeButtonVisibility();
-  if(mode==='qr')renderQRLocationPreview();
+  if(method==='qr')renderQRLocationPreview();
 }
-window.toggleLocationVerifyMode=toggleLocationVerifyMode;
+window.toggleEntryMethod=toggleEntryMethod;
+function toggleGPSSubOption(){
+  const useGPS=document.getElementById('fUseGPS').checked;
+  const gpsGroup=document.getElementById('gpsFieldsGroup');
+  if(gpsGroup)gpsGroup.classList.toggle('hidden',!useGPS);
+  refreshStageTypeButtonVisibility();
+}
+window.toggleGPSSubOption=toggleGPSSubOption;
 function applyLocationVerifyModeOptions(){
-  const sel=document.getElementById('fLocationVerifyMode');if(!sel)return;
-  const gpsOpt=sel.querySelector('option[value="gps"]');
+  const sel=document.getElementById('fEntryMethod');if(!sel)return;
   const qrOpt=sel.querySelector('option[value="qr"]');
   const enableGPS=(settingsData.enableGPS!==false);
   const enableQR=(settingsData.enableQRLocation===true);
-  if(gpsOpt)gpsOpt.disabled=!enableGPS;
   if(qrOpt)qrOpt.disabled=!enableQR;
+  const gpsCheckbox=document.getElementById('fUseGPS');
+  const gpsLabel=gpsCheckbox?gpsCheckbox.closest('#selfEntrySubOption'):null;
+  if(gpsCheckbox){
+    gpsCheckbox.disabled=!enableGPS||currentRole!=='super';
+    if(gpsLabel)gpsLabel.style.opacity=enableGPS?'':'0.5';
+  }
+  // 「進入關卡方式」這整組（含GPS子選項）只有超級管理者能設定，専案管理者只能看不能改
+  const isSuper=(currentRole==='super');
+  ['fEntryMethod','fUseGPS','fLat','fLng','fRadius','fLocationHintGPS','fLocationHintQR','regenerateQRBtn'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.disabled=!isSuper;
+  });
+  const tag=document.getElementById('entryMethodSuperOnlyTag');
+  if(tag)tag.style.display=isSuper?'none':'';
 }
 function toggleStorySectionVisibility(){
   const show=(settingsData.enableStorySystem!==false);
@@ -3329,16 +3361,13 @@ function toggleStorySectionVisibility(){
   if(div)div.style.display=show?'':'none';
 }
 function renderQRLocationPreview(){
-  const notSaved=document.getElementById('qrLocationNotSaved');
-  const wrap=document.getElementById('qrLocationPreviewWrap');
-  const code=editingStageKey&&stagesData[editingStageKey]&&stagesData[editingStageKey].qrLocationCode;
-  if(!editingStageKey||!code){
-    if(notSaved)notSaved.style.display='';
-    if(wrap)wrap.classList.add('hidden');
-    return;
+  // 已存檔的關卡用資料庫裡的code；還沒存檔的新關卡（或還沒產生過code）用瀏覽器暫存的pendingQRLocationCode，
+  // 選了QR模式當下就先產生一組、立刻顯示，不用逼使用者先存檔一次才看得到QR碼
+  let code=editingStageKey&&stagesData[editingStageKey]&&stagesData[editingStageKey].qrLocationCode;
+  if(!code){
+    if(!pendingQRLocationCode)pendingQRLocationCode=generateQRLocationCode();
+    code=pendingQRLocationCode;
   }
-  if(notSaved)notSaved.style.display='none';
-  if(wrap)wrap.classList.remove('hidden');
   const container=document.getElementById('qrLocationPreview');
   if(!container)return;
   container.innerHTML='';
@@ -3346,10 +3375,19 @@ function renderQRLocationPreview(){
     new QRCode(container,{text:code,width:140,height:140,correctLevel:QRCode.CorrectLevel.M});
   }catch(e){container.textContent='QRCode套件載入失敗，請重新整理頁面';}
 }
+function generateQRLocationCode(){
+  return Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,6);
+}
 async function regenerateQRLocationCode(){
-  if(!editingStageKey){toast('請先儲存關卡');return;}
   if(!confirm('確定要重新產生QR碼嗎？\n舊的QR碼會立刻失效，現場已經列印的QR碼需要重新列印張貼！'))return;
-  const newCode=Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,6);
+  const newCode=generateQRLocationCode();
+  // 還沒存檔的新關卡：只更新暫存值，等實際存檔時才會寫進資料庫
+  if(!editingStageKey||!stagesData[editingStageKey]||!stagesData[editingStageKey].qrLocationCode){
+    pendingQRLocationCode=newCode;
+    renderQRLocationPreview();
+    toast('✅ 已重新產生QR碼（記得存檔後才會正式生效）');
+    return;
+  }
   try{
     await set(aRef(`stages/${editingStageKey}/qrLocationCode`),newCode);
     stagesData[editingStageKey].qrLocationCode=newCode;
@@ -3361,7 +3399,7 @@ window.regenerateQRLocationCode=regenerateQRLocationCode;
 
 function openStageModal(){
   if(currentRole==='viewer'||currentRole==='staff'){toast('⛔ 協助管理者無法新增關卡');return;}
-  editingStageKey=null;modalImgFile=null;modalImgUrl=null;
+  editingStageKey=null;modalImgFile=null;modalImgUrl=null;pendingQRLocationCode=null;
   document.getElementById('modalTitle').textContent='新增關卡';
   document.getElementById('fOrder').value=Object.keys(stagesData).length+1;
   // 重置是非題
@@ -3375,9 +3413,10 @@ function openStageModal(){
   const qReq=document.getElementById('fQRRequirePhoto');if(qReq)qReq.checked=false;
   ['fLat','fLng'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('fRadius').value='80';
-  document.getElementById('fLocationVerifyMode').value='none';
+  document.getElementById('fEntryMethod').value='self';
+  document.getElementById('fUseGPS').checked=false;
   applyLocationVerifyModeOptions();
-  toggleLocationVerifyMode();
+  toggleEntryMethod();
   ['fOpt0','fOpt1','fOpt2','fOpt3'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('fAnswer').value='0';
   document.getElementById('fPhotoStrictness').value='standard';
@@ -3391,16 +3430,17 @@ function openStageModal(){
 }
 function editStage(key){
   if(currentRole==='viewer'||currentRole==='staff'){toast('⛔ 協助管理者無法編輯關卡');return;}
-  const s=stagesData[key];editingStageKey=key;modalImgFile=null;modalImgUrl=s.imageUrl||null;
+  const s=stagesData[key];editingStageKey=key;modalImgFile=null;modalImgUrl=s.imageUrl||null;pendingQRLocationCode=null;
   document.getElementById('modalTitle').textContent='編輯關卡';
   document.getElementById('fOrder').value=s.order||1;document.getElementById('fTitle').value=s.title||'';document.getElementById('fDesc').value=s.description||'';
   document.getElementById('fLat').value=s.lat||'';document.getElementById('fLng').value=s.lng||'';document.getElementById('fRadius').value=s.radius||80;
   const verifyMode=s.qrLocationCode?'qr':((s.lat&&s.lng)?'gps':'none');
-  document.getElementById('fLocationVerifyMode').value=verifyMode;
+  document.getElementById('fEntryMethod').value=(verifyMode==='qr')?'qr':'self';
+  document.getElementById('fUseGPS').checked=(verifyMode==='gps');
   document.getElementById('fLocationHintGPS').value=s.locationHint||'';
   document.getElementById('fLocationHintQR').value=s.locationHint||'';
   applyLocationVerifyModeOptions();
-  toggleLocationVerifyMode();
+  toggleEntryMethod();
   toggleStorySectionVisibility();
   document.getElementById('fHint1').value=(s.hints&&s.hints.h1)||'';document.getElementById('fHint2').value=(s.hints&&s.hints.h2)||'';
   // 故事欄位
@@ -3590,7 +3630,11 @@ async function saveStage(){
   try{
     let imageUrl=modalImgUrl||'';
     if(modalImgFile){const path=`stage-images/${Date.now()}_${modalImgFile.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;const snap=await uploadBytes(aStorageRef(path),modalImgFile);imageUrl=await getDownloadURL(snap.ref);}
-    const locationVerifyMode=(document.getElementById('fLocationVerifyMode')?document.getElementById('fLocationVerifyMode').value:'none');
+    // 「進入關卡方式」（自己找/GPS/QR打卡）只有超級管理者能真正變更；
+    // 専案管理者即使用開發者工具移除disabled屬性硬改，這裡還是會強制沿用原本已存的設定，不會生效
+    const existingMode=editingStageKey&&stagesData[editingStageKey]?
+      (stagesData[editingStageKey].qrLocationCode?'qr':((stagesData[editingStageKey].lat&&stagesData[editingStageKey].lng)?'gps':'none')):'none';
+    const locationVerifyMode=(currentRole==='super')?getLocationVerifyMode():existingMode;
     // 基本資料（所有類型共用）
     const data={
       stageType,
@@ -3601,7 +3645,7 @@ async function saveStage(){
       radius:parseInt(document.getElementById('fRadius').value)||80,
       locationHint:locationVerifyMode==='qr'?document.getElementById('fLocationHintQR').value.trim():document.getElementById('fLocationHintGPS').value.trim(),
       // QR打卡碼：選了QR模式時，若既有關卡已經有code就沿用（不要因為存檔就換碼，現場QR碼會失效），沒有的話才新產生；非QR模式則清空
-      qrLocationCode:locationVerifyMode==='qr'?((editingStageKey&&stagesData[editingStageKey]&&stagesData[editingStageKey].qrLocationCode)||(Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,6))):null,
+      qrLocationCode:locationVerifyMode==='qr'?((editingStageKey&&stagesData[editingStageKey]&&stagesData[editingStageKey].qrLocationCode)||pendingQRLocationCode||generateQRLocationCode()):null,
       hints:{h1:document.getElementById('fHint1').value.trim(),h2:document.getElementById('fHint2').value.trim()},
       storyIntro:((document.getElementById('fStoryIntro')?document.getElementById('fStoryIntro').value:'')||'').trim(),
       storyOutro:((document.getElementById('fStoryOutro')?document.getElementById('fStoryOutro').value:'')||'').trim(),
@@ -3735,6 +3779,7 @@ async function saveStage(){
     }
     if(locationVerifyMode==='qr'){
       // QR打卡模式：不關掉編輯視窗，留在原地並立刻顯示QR碼，不用手動關閉再重新打開
+      pendingQRLocationCode=null;// 已經正式存進資料庫，改用stagesData裡的正式值
       renderQRLocationPreview();
       loadStages();
     } else {
