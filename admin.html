@@ -449,7 +449,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
       <div style="color:white;font-size:20px;font-weight:700">🐚 選擇活動</div>
       <button onclick="doLogout()" style="background:rgba(255,255,255,0.15);border:none;color:rgba(255,255,255,0.85);padding:7px 14px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'Noto Sans TC',sans-serif">登出</button>
     </div>
-    <div style="background:white;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 4px 20px rgba(0,0,0,0.2)">
+    <div style="background:white;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 4px 20px rgba(0,0,0,0.2)" id="createActivitySection">
       <div style="font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">➕ 建立新活動</div>
       <input type="text" id="newActivityName" placeholder="活動名稱，例如：夏日市集實境解謎" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:12px;font-size:14px;outline:none;margin-bottom:10px"/>
       <select id="newActivityTemplate" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:12px;font-size:14px;outline:none;margin-bottom:10px">
@@ -463,7 +463,7 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
       <div id="templateListContainer"><div style="text-align:center;color:#999;font-size:12px;padding:8px">尚無範本，可從下方活動「另存為範本」建立</div></div>
     </div>
     <div style="background:white;border-radius:16px;padding:16px;box-shadow:0 4px 20px rgba(0,0,0,0.2)">
-      <div style="font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">📋 現有活動（Dashboard）</div>
+      <div style="font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px" id="existingActivitiesTitle">📋 現有活動（Dashboard）</div>
       <div id="activityListContainer"><div style="text-align:center;color:#999;font-size:13px;padding:16px">載入中...</div></div>
     </div>
   </div>
@@ -1603,6 +1603,7 @@ function getURLActivityParam(){try{return new URLSearchParams(location.search).g
 })();
 
 let currentUser=null,currentRole=null;
+let HOST_MEMBERSHIPS=null;// 専案管理者所屬的多個活動 {activityId:{role,activityName}}，只有多於1筆時才會用到選擇畫面
 let editingStageKey=null,modalImgFile=null,modalImgUrl=null,pendingQRLocationCode=null;
 let logoFile=null,logoUrl=null,bannerFile=null,bannerUrl=null;
 let storyImgFile=null,storyImgUrl=null;
@@ -2073,6 +2074,9 @@ onAuthStateChanged(auth,async user=>{
     if(role==='super'){
       // 超級管理者不綁定單一活動：先選擇/建立活動，選定後才進入後台
       showActivityPicker();
+    }else if(role==='multi'){
+      // 専案管理者同時屬於多個活動：顯示他自己的活動清單讓他選（不是super那種全部活動的管理畫面）
+      showHostActivityPicker();
     }else{
       proceedToAdmin();
     }
@@ -2091,37 +2095,51 @@ async function getUserRole(user){
 
   const emailLower=user.email.toLowerCase();
   const emailHash=await sha256(emailLower);
+  let memberships={},name=user.displayName||emailLower;
 
   try{
-    // 層1：globalUsers/{uid}（已登入過，最快，內含 activityId）
+    // 層1：globalUsers/{uid}（已登入過的快取）
     const s1=await get(gRef(`globalUsers/${user.uid}`));
-    if(s1.exists()&&s1.val().role&&s1.val().activityId){
-      ACTIVITY_ID=s1.val().activityId;
-      return s1.val().role;
+    if(s1.exists()){
+      const d=s1.val();
+      name=d.name||name;
+      if(d.memberships)Object.assign(memberships,d.memberships);
+      else if(d.role&&d.activityId)memberships[d.activityId]={role:d.role};// 舊版單一activityId格式相容
     }
   }catch(e){console.warn('層1查詢失敗:',e);}
 
   try{
-    // 層2：globalEmailWhitelist（専案管理者/超級管理者新增人員時寫入，第一次登入用）
+    // 層2：globalEmailWhitelist（新增人員時寫入）——每次都合併查一次，
+    // 這樣「已經登入過的人，之後又被加進第二個活動」也能在下次登入時正確被抓到，不會被層1的舊快取擋住
     const s2=await get(gRef(`globalEmailWhitelist/${emailHash}`));
-    if(s2.exists()&&s2.val().role&&s2.val().activityId){
+    if(s2.exists()){
       const wl=s2.val();
-      ACTIVITY_ID=wl.activityId;
-      // 背景升級到 UID key（失敗不影響登入）
-      set(gRef(`globalUsers/${user.uid}`),{
-        email:emailLower,name:wl.name||user.displayName||emailLower,
-        role:wl.role,activityId:wl.activityId,photoURL:user.photoURL||'',uid:user.uid,
-      }).catch(()=>{});
-      // 同步寫入該活動內的人員名單（供「帳號管理」頁顯示）
-      set(aRef(`config/users/${user.uid}`),{
-        email:emailLower,name:wl.name||user.displayName||emailLower,
-        role:wl.role,photoURL:user.photoURL||'',uid:user.uid,pending:false,
-      }).catch(()=>{});
-      return wl.role;
+      name=wl.name||name;
+      if(wl.memberships)Object.assign(memberships,wl.memberships);
+      else if(wl.role&&wl.activityId)memberships[wl.activityId]=memberships[wl.activityId]||{role:wl.role};// 舊版相容
     }
   }catch(e){console.warn('層2查詢失敗:',e);}
 
-  return null;
+  if(!Object.keys(memberships).length)return null;
+
+  // 背景升級/同步到 globalUsers 新格式（失敗不影響登入）
+  set(gRef(`globalUsers/${user.uid}`),{
+    email:emailLower,name,photoURL:user.photoURL||'',uid:user.uid,memberships,
+  }).catch(()=>{});
+
+  const ids=Object.keys(memberships);
+  HOST_MEMBERSHIPS=memberships;
+  if(ids.length===1){
+    ACTIVITY_ID=ids[0];
+    const role=memberships[ids[0]].role;
+    // 同步寫入該活動內的人員名單（供「帳號管理」頁顯示）
+    set(aRef(`config/users/${user.uid}`),{
+      email:emailLower,name,role,photoURL:user.photoURL||'',uid:user.uid,pending:false,
+    }).catch(()=>{});
+    return role;
+  }
+  // 屬於多個活動：不自動選定，交給 showHostActivityPicker() 顯示清單讓他自己選
+  return 'multi';
 }
 
 // ══ 超級管理者：活動選擇/建立 ══
@@ -2129,9 +2147,25 @@ function showActivityPicker(){
   document.getElementById('loginPage').style.display='none';
   document.getElementById('adminPage').style.display='none';
   document.getElementById('activityPickerPage').style.display='block';
+  const createSec=document.getElementById('createActivitySection');if(createSec)createSec.style.display='';
+  const tplSec=document.getElementById('templateSection');if(tplSec)tplSec.style.display='';
+  const titleEl=document.getElementById('existingActivitiesTitle');if(titleEl)titleEl.textContent='📋 現有活動（Dashboard）';
   loadActivityList();
 }
 window.showActivityPicker=showActivityPicker;
+
+// 専案管理者專屬的活動選擇畫面：只列出他自己所屬的活動，沒有建立新活動/範本庫，
+// 也沒有複製/刪除等超級管理者專屬的管理功能，避免看到或動到其他客戶的活動
+function showHostActivityPicker(){
+  document.getElementById('loginPage').style.display='none';
+  document.getElementById('adminPage').style.display='none';
+  document.getElementById('activityPickerPage').style.display='block';
+  const createSec=document.getElementById('createActivitySection');if(createSec)createSec.style.display='none';
+  const tplSec=document.getElementById('templateSection');if(tplSec)tplSec.style.display='none';
+  const titleEl=document.getElementById('existingActivitiesTitle');if(titleEl)titleEl.textContent='📋 我管理的活動';
+  loadActivityList();
+}
+window.showHostActivityPicker=showHostActivityPicker;
 
 // 活動狀態小標籤：依 config/activityStatus 顯示報到狀態（Dashboard用，單一小欄位讀取，不會拉整包sessions，流量很小）
 function activityStatusBadgeHtml(status){
@@ -2145,62 +2179,69 @@ async function loadActivityList(){
   const tplBox=document.getElementById('templateListContainer');
   const tplSelect=document.getElementById('newActivityTemplate');
   box.innerHTML='<div class="spinner"></div>';
+  // 専案管理者模式：只看得到自己所屬的活動，不是super的全域管理清單
+  const isHostMode=!!(HOST_MEMBERSHIPS&&currentRole!=='super');
   try{
     const snap=await get(gRef('activitiesIndex'));
     const list=snap.val()||{};
     const allIds=Object.keys(list);
-    const tplIds=allIds.filter(id=>list[id].isTemplate);
-    const actIds=allIds.filter(id=>!list[id].isTemplate);
+    const tplIds=isHostMode?[]:allIds.filter(id=>list[id].isTemplate);
+    let actIds=isHostMode?Object.keys(HOST_MEMBERSHIPS).filter(id=>list[id]):allIds.filter(id=>!list[id].isTemplate);
 
-    // 範本庫
-    if(!tplIds.length){
-      tplBox.innerHTML='<div style="text-align:center;color:#999;font-size:12px;padding:8px">尚無範本，可從下方活動「另存為範本」建立</div>';
-    }else{
-      tplBox.innerHTML='';
-      tplIds.sort((a,b)=>(list[b].createdAt||0)-(list[a].createdAt||0)).forEach(id=>{
-        const a=list[id];
-        const row=document.createElement('div');
-        row.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1.5px solid #f0e8ff;background:#faf7ff;border-radius:12px;margin-bottom:8px';
-        row.innerHTML=`<div style="min-width:0"><div class="activity-row-name" style="font-weight:700;font-size:13px"></div><div style="font-size:10px;color:#999">範本代碼：${escHtml(id)}</div></div>
-          <div style="display:flex;gap:5px;flex-shrink:0">
-            <button class="btn btn-ghost btn-sm" onclick="enterActivity('${id}')" title="編輯此範本內容">✏️</button>
-            <button class="btn btn-primary btn-sm" onclick="duplicateActivity('${id}','${escHtml(a.name||id).replace(/'/g,"\\'")}')" title="從此範本建立新活動">📄 建活動</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteActivity('${id}','${escHtml(a.name||id).replace(/'/g,"\\'")}')" title="刪除此範本">🗑️</button>
-          </div>`;
-        row.querySelector('.activity-row-name').textContent='📁 '+(a.name||id);
-        tplBox.appendChild(row);
-      });
-    }
-    // 建立新活動的範本下拉選單
-    if(tplSelect){
-      tplSelect.innerHTML='<option value="">（不套用範本，建立空白活動）</option>';
-      tplIds.forEach(id=>{
-        const opt=document.createElement('option');opt.value=id;opt.textContent='📁 '+(list[id].name||id);
-        tplSelect.appendChild(opt);
-      });
+    if(!isHostMode){
+      // 範本庫（僅超級管理者）
+      if(!tplIds.length){
+        tplBox.innerHTML='<div style="text-align:center;color:#999;font-size:12px;padding:8px">尚無範本，可從下方活動「另存為範本」建立</div>';
+      }else{
+        tplBox.innerHTML='';
+        tplIds.sort((a,b)=>(list[b].createdAt||0)-(list[a].createdAt||0)).forEach(id=>{
+          const a=list[id];
+          const row=document.createElement('div');
+          row.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1.5px solid #f0e8ff;background:#faf7ff;border-radius:12px;margin-bottom:8px';
+          row.innerHTML=`<div style="min-width:0"><div class="activity-row-name" style="font-weight:700;font-size:13px"></div><div style="font-size:10px;color:#999">範本代碼：${escHtml(id)}</div></div>
+            <div style="display:flex;gap:5px;flex-shrink:0">
+              <button class="btn btn-ghost btn-sm" onclick="enterActivity('${id}')" title="編輯此範本內容">✏️</button>
+              <button class="btn btn-primary btn-sm" onclick="duplicateActivity('${id}','${escHtml(a.name||id).replace(/'/g,"\\'")}')" title="從此範本建立新活動">📄 建活動</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteActivity('${id}','${escHtml(a.name||id).replace(/'/g,"\\'")}')" title="刪除此範本">🗑️</button>
+            </div>`;
+          row.querySelector('.activity-row-name').textContent='📁 '+(a.name||id);
+          tplBox.appendChild(row);
+        });
+      }
+      // 建立新活動的範本下拉選單
+      if(tplSelect){
+        tplSelect.innerHTML='<option value="">（不套用範本，建立空白活動）</option>';
+        tplIds.forEach(id=>{
+          const opt=document.createElement('option');opt.value=id;opt.textContent='📁 '+(list[id].name||id);
+          tplSelect.appendChild(opt);
+        });
+      }
     }
 
     // 現有活動 Dashboard
-    if(!actIds.length){box.innerHTML='<div style="text-align:center;color:#999;font-size:13px;padding:16px">尚無任何活動，請先建立一個</div>';return;}
+    if(!actIds.length){box.innerHTML=`<div style="text-align:center;color:#999;font-size:13px;padding:16px">${isHostMode?'尚未被加入任何活動，請洽超級管理者':'尚無任何活動，請先建立一個'}</div>`;return;}
     box.innerHTML='';
     const sortedActIds=actIds.sort((a,b)=>(list[b].createdAt||0)-(list[a].createdAt||0));
     // 逐一補上報到狀態小標籤（各只讀一個小欄位，不會拉整包資料）
     const statusEntries=await Promise.all(sortedActIds.map(id=>get(ref(db,`activities/${id}/config/activityStatus`)).then(s=>[id,s.exists()?s.val():null]).catch(()=>[id,null])));
     const statusMap=Object.fromEntries(statusEntries);
+    const roleLabelsShort={host:'🎯 専案管理者',staff:'🙋 協助管理者',super:'👑 超級管理者'};
     sortedActIds.forEach(id=>{
       const a=list[id];
       const row=document.createElement('div');
       row.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:12px;border:1.5px solid #eee;border-radius:12px;margin-bottom:8px;flex-wrap:wrap;gap:6px';
       const createdStr=a.createdAt?new Date(a.createdAt).toLocaleDateString('zh-TW'):'';
+      const myRole=isHostMode?(HOST_MEMBERSHIPS[id]&&HOST_MEMBERSHIPS[id].role):null;
+      const roleBadge=myRole?`<span style="font-size:10px;padding:2px 8px;border-radius:20px;background:#eef4ff;color:#1a6fa3;font-weight:700;white-space:nowrap">${roleLabelsShort[myRole]||myRole}</span>`:'';
       row.innerHTML=`<div style="min-width:0;flex:1">
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><div class="activity-row-name" style="font-weight:700;font-size:14px"></div>${activityStatusBadgeHtml(statusMap[id])}</div>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><div class="activity-row-name" style="font-weight:700;font-size:14px"></div>${activityStatusBadgeHtml(statusMap[id])}${roleBadge}</div>
           <div style="font-size:11px;color:#999">代碼：${escHtml(id)}　建立於：${createdStr}</div>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap">
-          <button class="btn btn-primary btn-sm" onclick="enterActivity('${id}')">進入管理</button>
-          <button class="btn btn-ghost btn-sm" onclick="duplicateActivity('${id}','${escHtml(a.name||id).replace(/'/g,"\\'")}')" title="複製整場活動(關卡+設定)">📄 複製</button>
+          <button class="btn btn-primary btn-sm" onclick="${isHostMode?`enterHostActivity('${id}')`:`enterActivity('${id}')`}">進入管理</button>
+          ${isHostMode?'':`<button class="btn btn-ghost btn-sm" onclick="duplicateActivity('${id}','${escHtml(a.name||id).replace(/'/g,"\\'")}')" title="複製整場活動(關卡+設定)">📄 複製</button>
           <button class="btn btn-ghost btn-sm" onclick="saveAsTemplate('${id}','${escHtml(a.name||id).replace(/'/g,"\\'")}')" title="另存為範本，供日後快速建立類似活動">⭐ 範本</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteActivity('${id}','${escHtml(a.name||id).replace(/'/g,"\\'")}')" title="刪除此活動的所有資料">🗑️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteActivity('${id}','${escHtml(a.name||id).replace(/'/g,"\\'")}')" title="刪除此活動的所有資料">🗑️</button>`}
         </div>`;
       row.querySelector('.activity-row-name').textContent=a.name||id;
       box.appendChild(row);
@@ -2287,6 +2328,18 @@ async function createActivity(){
 }
 window.createActivity=createActivity;
 
+async function enterHostActivity(id){
+  if(!HOST_MEMBERSHIPS||!HOST_MEMBERSHIPS[id]){toast('❌ 找不到此活動的權限資料');return;}
+  try{
+    const snap=await get(gRef(`activitiesIndex/${id}`));
+    if(!snap.exists()){toast('❌ 找不到此活動');return;}
+    ACTIVITY_ID=id;
+    ACTIVITY_META=snap.val();
+    currentRole=HOST_MEMBERSHIPS[id].role||'host';
+    proceedToAdmin();
+  }catch(e){toast('❌ 進入失敗：'+e.message);}
+}
+window.enterHostActivity=enterHostActivity;
 async function enterActivity(id){
   try{
     const snap=await get(gRef(`activitiesIndex/${id}`));
@@ -2300,8 +2353,9 @@ window.enterActivity=enterActivity;
 
 function switchActivity(){
   document.getElementById('adminPage').style.display='none';
+  const wasSuper=(currentRole==='super');
   ACTIVITY_ID=null;ACTIVITY_META=null;
-  showActivityPicker();
+  if(wasSuper){showActivityPicker();}else{showHostActivityPicker();}
 }
 window.switchActivity=switchActivity;
 
@@ -2388,9 +2442,10 @@ async function proceedToAdmin(){
   document.getElementById('userName').textContent=displayName;
   const roleLabels={super:'👑 超級管理者',host:'🎯 専案管理者',stagemaster:'🔑 關主（舊版Google登入）',staff:'🙋 協助管理者'};
   document.getElementById('userRoleLabel').textContent=roleLabels[currentRole]||currentRole;
-  // 超級管理者可跨活動切換
+  // 超級管理者永遠可跨活動切換；専案管理者只有同時屬於多個活動時才需要這顆按鈕
   const switchBtn=document.getElementById('btnSwitchActivity');
-  if(switchBtn)switchBtn.style.display=(currentRole==='super')?'':'none';
+  const canSwitch=(currentRole==='super')||(HOST_MEMBERSHIPS&&Object.keys(HOST_MEMBERSHIPS).length>1);
+  if(switchBtn)switchBtn.style.display=canSwitch?'':'none';
   const sidebarTitleEl=document.getElementById('sidebarTitle');
   if(sidebarTitleEl)sidebarTitleEl.textContent='🐚 '+((ACTIVITY_META&&ACTIVITY_META.name)||'解謎後台');
   // 手機頂部bar
@@ -4293,10 +4348,14 @@ async function addUser(){
   if(email===SUPER_ADMIN_EMAIL){toast('⛔ 不可修改超級管理者');return;}
   const emailHash=await sha256(email);
   // 寫入三個地方：本活動的 emailWhitelist / config/users（相容、給人員列表顯示用），
-  // 以及全域 globalEmailWhitelist（讓對方第一次登入時，不用先知道活動代碼就能查到自己屬於哪個活動）
+  // 以及全域 globalEmailWhitelist（讓對方第一次登入時，不用先知道活動代碼就能查到自己屬於哪些活動）。
+  // 全域這邊用「新增/合併單一活動的membership」而不是整包覆蓋，這樣同一個人被加入第二個活動時，
+  // 不會把他在第一個活動的權限洗掉——這是専案管理者可能同時管理多個活動的關鍵。
   await set(aRef(`config/emailWhitelist/${emailHash}`),{email,name,role});
   await set(aRef(`config/users/${emailHash}`),{email,name,role,photoURL:'',addedBy:currentUser.email,addedAt:serverTimestamp(),pending:true});
-  await set(gRef(`globalEmailWhitelist/${emailHash}`),{email,name,role,activityId:ACTIVITY_ID});
+  await set(gRef(`globalEmailWhitelist/${emailHash}/email`),email);
+  await set(gRef(`globalEmailWhitelist/${emailHash}/name`),name);
+  await set(gRef(`globalEmailWhitelist/${emailHash}/memberships/${ACTIVITY_ID}`),{role});
   document.getElementById('newUserName').value='';
   document.getElementById('newUserEmail').value='';
   toast('✅ 已新增！對方用 Chrome 或 Safari 開啟後台登入即可使用');
@@ -4308,30 +4367,48 @@ async function removeUser(uid){
   const checkSnap=await get(aRef(`config/users/${uid}`));
   const targetRole=checkSnap.exists()?checkSnap.val().role:'';
   if(targetRole==='super'){toast('⛔ 無法移除超級管理者');return;}
-  if(!confirm('確定要移除此人員嗎？'))return;
+  if(!confirm('確定要移除此人員嗎？（只會移除他在「這個活動」的權限，如果他還管理其他活動不受影響）'))return;
   const snap=await get(aRef(`config/users/${uid}`));
   if(snap.exists()){
     const u=snap.val();
     if(u.email){
       const emailHash=await sha256(u.email.toLowerCase());
       try{await remove(aRef(`config/emailWhitelist/${emailHash}`));}catch(e){}
-      try{await remove(gRef(`globalEmailWhitelist/${emailHash}`));}catch(e){}
+      // 只移除「這個活動」的membership，不動到他在其他活動的權限
+      try{await remove(gRef(`globalEmailWhitelist/${emailHash}/memberships/${ACTIVITY_ID}`));}catch(e){}
+      try{await remove(gRef(`globalUsers/${uid}/memberships/${ACTIVITY_ID}`));}catch(e){}
+      // 相容清除：如果這筆資料是這次多活動改版「之前」建立的舊格式（單一 role+activityId 欄位，
+      // 不是存在 memberships 底下），且剛好就是這個活動，也要一併清掉，
+      // 否則舊格式的相容讀取邏輯還是撿得到殘留欄位，導致「移除後其實還能登入」。
+      try{
+        const [wlSnap,guSnap]=await Promise.all([
+          get(gRef(`globalEmailWhitelist/${emailHash}`)),
+          get(gRef(`globalUsers/${uid}`)),
+        ]);
+        if(wlSnap.exists()&&wlSnap.val().activityId===ACTIVITY_ID){
+          await remove(gRef(`globalEmailWhitelist/${emailHash}/role`));
+          await remove(gRef(`globalEmailWhitelist/${emailHash}/activityId`));
+        }
+        if(guSnap.exists()&&guSnap.val().activityId===ACTIVITY_ID){
+          await remove(gRef(`globalUsers/${uid}/role`));
+          await remove(gRef(`globalUsers/${uid}/activityId`));
+        }
+      }catch(e){}
     }
   }
   await remove(aRef(`config/users/${uid}`));
-  try{await remove(gRef(`globalUsers/${uid}`));}catch(e){}
   toast('🗑️ 已移除');
   loadUsers();
 }
 async function updateUserRole(uid,role){
   if(currentRole!=='super'){toast('⛔ 只有超級管理者能修改權限');return;}
   await set(aRef(`config/users/${uid}/role`),role);
-  try{await set(gRef(`globalUsers/${uid}/role`),role);}catch(e){}
+  try{await set(gRef(`globalUsers/${uid}/memberships/${ACTIVITY_ID}/role`),role);}catch(e){}
   const snap=await get(aRef(`config/users/${uid}`));
   if(snap.exists()&&snap.val().email){
     const emailHash=await sha256(snap.val().email.toLowerCase());
     try{await set(aRef(`config/emailWhitelist/${emailHash}/role`),role);}catch(e){}
-    try{await set(gRef(`globalEmailWhitelist/${emailHash}/role`),role);}catch(e){}
+    try{await set(gRef(`globalEmailWhitelist/${emailHash}/memberships/${ACTIVITY_ID}/role`),role);}catch(e){}
   }
   toast('✅ 權限已更新');
 }
