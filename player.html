@@ -1400,13 +1400,15 @@ async function setupLoginChoices(){
   const googleBtn=document.getElementById('googleLoginBtn');
   const fbBtn=document.getElementById('fbLoginBtn');
   const cfg=state.settings||{};
+  const guestAllowed=(cfg.enableGuestLogin!==false);
+  if(guestBtn)guestBtn.classList.toggle('hidden',!guestAllowed);
   // Google／Facebook 登入是否顯示，由専案管理者在活動設定裡各自開關決定（Firebase 專案本身要先啟用該登入方式一次，詳見設定頁說明）
   if(googleBtn){googleBtn.classList.toggle('hidden',!cfg.enableGoogleLogin);googleBtn.disabled=false;}
   if(fbBtn){fbBtn.classList.toggle('hidden',!cfg.enableFacebookLogin);fbBtn.disabled=false;}
   const ok=await initLiff();
   if(ok){
     loginBtn.disabled=false;loginBtn.textContent='💬 用 LINE 登入';
-    guestBtn.disabled=false;
+    if(guestAllowed)guestBtn.disabled=false;
     if(liff.isLoggedIn()){
       try{
         const profile=await liff.getProfile();
@@ -1416,7 +1418,7 @@ async function setupLoginChoices(){
     }
   } else {
     loginBtn.style.display='none';// 尚未設定 LIFF_ID：隱藏LINE登入，只留免登入(或Google/Facebook)
-    guestBtn.disabled=false;
+    if(guestAllowed)guestBtn.disabled=false;
   }
 }
 

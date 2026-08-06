@@ -812,11 +812,13 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
             <input type="text" id="settingLiffId" placeholder="到 LINE Developers Console 建立LIFF頻道後貼上"/>
           </div>
           <div class="form-group" id="googleFacebookLoginGroup" style="display:none">
-            <label>其他登入方式 <span style="font-size:11px;color:var(--text-light);font-weight:400">（僅超級管理者可見；需先在 Firebase 專案啟用一次）</span></label>
-            <div style="display:flex;gap:14px;margin-top:6px">
+            <label>其他登入方式 <span style="font-size:11px;color:var(--text-light);font-weight:400">（僅超級管理者可見；Google／Facebook需先在 Firebase 專案啟用一次）</span></label>
+            <div style="display:flex;gap:14px;margin-top:6px;flex-wrap:wrap">
               <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="settingEnableGoogle" style="width:auto;padding:0"/> 啟用 Google 登入</label>
               <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="settingEnableFacebook" style="width:auto;padding:0"/> 啟用 Facebook 登入</label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="settingEnableGuest" style="width:auto;padding:0"/> 啟用無帳號登入</label>
             </div>
+            <div style="font-size:11px;color:var(--text-light);margin-top:4px">沒勾選「啟用無帳號登入」，玩家端就不會出現「免登入」選項；請確保 LINE／Google／Facebook 至少有一種可用，否則玩家會完全無法登入。</div>
           </div>
           <div class="form-group"><label>同一身分可否重複闖關</label>
             <select id="settingRetryMode" onchange="toggleRetryCooldownInput()">
@@ -1621,7 +1623,7 @@ const THEMES=[
   {name:'深灰',c1:'#2c3e50',c2:'#1a252f',c3:'#34495e'},
 ];
 
-const DEFAULT_SETTINGS={activityName:'實境解謎',subtitle:'ADVENTURE',welcome:'',finishMsg:'恭喜完成所有挑戰！感謝參與！',stuckMinutes:10,helperName:'活動小幫手',helpMaxTimes:2,helpCooldown:5,hintAfter:2,routeMode:'random',gpsFail:'block',liffId:'',enableGoogleLogin:false,enableFacebookLogin:false,allowRetry:true,retryMode:'unlimited',retryCooldownDays:1,rankingScope:'cumulative',rankingTopN:10,checkinStartTime:null,checkinEndTime:null,fixedStartCount:0,fixedEndCount:0,middleMode:'shuffle-all',middleSubsetCount:null,minStagesRequired:null,minScoreRequired:null,enableGPS:true,enableStorySystem:true,entryMethod:'self',allowSkipAI:false,aiSkipSystemFailAfter:2,aiSkipContentFailAfter:3,aiSkipContentFailPenalty:20,openaiKey:'',maxPlayers:null,loginMode:'default'};
+const DEFAULT_SETTINGS={activityName:'實境解謎',subtitle:'ADVENTURE',welcome:'',finishMsg:'恭喜完成所有挑戰！感謝參與！',stuckMinutes:10,helperName:'活動小幫手',helpMaxTimes:2,helpCooldown:5,hintAfter:2,routeMode:'random',gpsFail:'block',liffId:'',enableGoogleLogin:false,enableFacebookLogin:false,enableGuestLogin:true,allowRetry:true,retryMode:'unlimited',retryCooldownDays:1,rankingScope:'cumulative',rankingTopN:10,checkinStartTime:null,checkinEndTime:null,fixedStartCount:0,fixedEndCount:0,middleMode:'shuffle-all',middleSubsetCount:null,minStagesRequired:null,minScoreRequired:null,enableGPS:true,enableStorySystem:true,entryMethod:'self',allowSkipAI:false,aiSkipSystemFailAfter:2,aiSkipContentFailAfter:3,aiSkipContentFailPenalty:20,openaiKey:'',maxPlayers:null,loginMode:'default'};
 const DEFAULT_SCORING={baseScore:100,timeBonus:50,completionBonus:200,wrongPenalty:10,hintPenalty:5,helpPenalty:30,skipPhotoPenalty:20,skipGPSPenalty:20};
 
 // 全域函數
@@ -3900,6 +3902,7 @@ async function loadSettings(){
   loadAccountRoster();
   const sGoogle=document.getElementById('settingEnableGoogle');if(sGoogle)sGoogle.checked=!!s.enableGoogleLogin;
   const sFb=document.getElementById('settingEnableFacebook');if(sFb)sFb.checked=!!s.enableFacebookLogin;
+  const sGuest=document.getElementById('settingEnableGuest');if(sGuest)sGuest.checked=(s.enableGuestLogin!==false);
   // 相容舊資料：舊版只有布林值 allowRetry，換算成新的三選一 retryMode
   const legacyMode=s.allowRetry===false?'once':'unlimited';
   const sRetryMode=document.getElementById('settingRetryMode');if(sRetryMode)sRetryMode.value=s.retryMode||legacyMode;
@@ -4152,6 +4155,7 @@ async function saveSettings(){
     loginMode:safeRead('settingLoginMode')||'default',
     enableGoogleLogin:(document.getElementById('settingEnableGoogle')&&document.getElementById('settingEnableGoogle').checked)||false,
     enableFacebookLogin:(document.getElementById('settingEnableFacebook')&&document.getElementById('settingEnableFacebook').checked)||false,
+    enableGuestLogin:(()=>{const el=document.getElementById('settingEnableGuest');return el?el.checked:(settingsData.enableGuestLogin!==false);})(),
     retryMode:safeRead('settingRetryMode')||'unlimited',
     retryCooldownDays:parseInt((document.getElementById('settingRetryCooldownDays')?document.getElementById('settingRetryCooldownDays').value:''))||1,
     // 保留舊欄位供尚未更新的其他頁面相容讀取（新邏輯一律看 retryMode）
