@@ -677,6 +677,13 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
           <label>🙋 協助管理者密碼 <span style="font-size:11px;color:var(--text-light);font-weight:400">（現場協助人員共用密碼，監控+現場協助，無編輯權；留空＝不修改）</span></label>
           <input type="text" id="settingViewerPass" placeholder="留空＝不修改密碼（首次設定請直接輸入）" autocomplete="off"/>
         </div>
+        <div class="form-row">
+          <div class="form-group"><label>服務條款連結</label><input type="text" id="settingTermsUrl" placeholder="https://..."/></div>
+          <div class="form-group"><label>隱私權政策連結</label><input type="text" id="settingPrivacyUrl" placeholder="https://..."/></div>
+        </div>
+        <div class="form-group" style="margin-top:-8px">
+          <div style="font-size:11px;color:var(--text-light)">玩家登入頁下方會顯示「登入即代表您同意本站服務條款與隱私權政策」，這兩個連結決定點下去會開哪個網址；留空的話該項文字不會變成連結。</div>
+        </div>
         <div class="form-group" style="margin-bottom:0"><label>卡關警報（超過幾分鐘）</label><input type="number" id="settingStuckMinutes" value="10" min="1" max="60"/></div>
       </div>
       <div class="card">
@@ -930,6 +937,13 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
             <div class="desc">刪除所有隊伍紀錄、GPS資料、玩家照片（Storage）。僅超級管理者可操作，建議先匯出備份！</div>
           </div>
           <button class="btn btn-danger btn-sm" onclick="quickClearAll()">🗑️ 清除所有資料</button>
+        </div>
+        <div class="danger-action">
+          <div class="danger-action-info">
+            <div class="name">🧹 清除孤兒照片</div>
+            <div class="desc">掃描 Storage 裡沒有對應闖關紀錄的照片資料夾並刪除（例如被重置過的玩家留下的舊照片）。不影響目前還在使用的紀錄。</div>
+          </div>
+          <button class="btn btn-danger-outline btn-sm" onclick="cleanOrphanPhotos()">🧹 掃描並清除</button>
         </div>
         <div class="danger-action">
           <div class="danger-action-info">
@@ -1623,7 +1637,7 @@ const THEMES=[
   {name:'深灰',c1:'#2c3e50',c2:'#1a252f',c3:'#34495e'},
 ];
 
-const DEFAULT_SETTINGS={activityName:'實境解謎',subtitle:'ADVENTURE',welcome:'',finishMsg:'恭喜完成所有挑戰！感謝參與！',stuckMinutes:10,helperName:'活動小幫手',helpMaxTimes:2,helpCooldown:5,hintAfter:2,routeMode:'random',gpsFail:'block',liffId:'',enableGoogleLogin:false,enableFacebookLogin:false,enableGuestLogin:true,allowRetry:true,retryMode:'unlimited',retryCooldownDays:1,rankingScope:'cumulative',rankingTopN:10,checkinStartTime:null,checkinEndTime:null,fixedStartCount:0,fixedEndCount:0,middleMode:'shuffle-all',middleSubsetCount:null,minStagesRequired:null,minScoreRequired:null,enableGPS:true,enableStorySystem:true,entryMethod:'self',allowSkipAI:false,aiSkipSystemFailAfter:2,aiSkipContentFailAfter:3,aiSkipContentFailPenalty:20,openaiKey:'',maxPlayers:null,loginMode:'default'};
+const DEFAULT_SETTINGS={activityName:'實境解謎',subtitle:'ADVENTURE',welcome:'',finishMsg:'恭喜完成所有挑戰！感謝參與！',stuckMinutes:10,helperName:'活動小幫手',helpMaxTimes:2,helpCooldown:5,hintAfter:2,routeMode:'random',gpsFail:'block',liffId:'',enableGoogleLogin:false,enableFacebookLogin:false,enableGuestLogin:true,allowRetry:true,retryMode:'unlimited',retryCooldownDays:1,rankingScope:'cumulative',rankingTopN:10,checkinStartTime:null,checkinEndTime:null,fixedStartCount:0,fixedEndCount:0,middleMode:'shuffle-all',middleSubsetCount:null,minStagesRequired:null,minScoreRequired:null,enableGPS:true,enableStorySystem:true,entryMethod:'self',allowSkipAI:false,aiSkipSystemFailAfter:2,aiSkipContentFailAfter:3,aiSkipContentFailPenalty:20,openaiKey:'',maxPlayers:null,loginMode:'default',termsUrl:'',privacyUrl:''};
 const DEFAULT_SCORING={baseScore:100,timeBonus:50,completionBonus:200,wrongPenalty:10,hintPenalty:5,helpPenalty:30,skipPhotoPenalty:20,skipGPSPenalty:20};
 
 // 全域函數
@@ -2773,6 +2787,28 @@ async function doSkipStageChoice(sessKey, teamName, sessData, curIdx, isLast, mo
 function doSkipStage(sessKey,teamName,sessData,curIdx,isLast,mode){
   doSkipStageChoice(sessKey,teamName,sessData,curIdx,isLast,mode);
 }
+async function cleanOrphanPhotos(){
+  if(currentRole!=='super'){toast('⛔ 只有超級管理者能執行此操作');return;}
+  toast('🔍 掃描中，請稍候...');
+  try{
+    const[photoList,sessSnap]=await Promise.all([
+      listAll(aStorageRef('photos')),
+      get(aRef('sessions')),
+    ]);
+    const validSessionKeys=new Set(sessSnap.exists()?Object.keys(sessSnap.val()):[]);
+    const orphanFolders=photoList.prefixes.filter(folder=>!validSessionKeys.has(folder.name));
+    if(!orphanFolders.length){toast('✅ 沒有找到孤兒照片，Storage很乾淨！');return;}
+    if(!confirm(`找到 ${orphanFolders.length} 個沒有對應闖關紀錄的照片資料夾，確定要全部刪除嗎？\n此操作無法復原！`))return;
+    let deletedFiles=0;
+    for(const folder of orphanFolders){
+      const files=await listAll(folder);
+      const results=await Promise.allSettled(files.items.map(f=>deleteObject(f)));
+      deletedFiles+=results.filter(r=>r.status==='fulfilled').length;
+    }
+    toast(`✅ 已清除 ${orphanFolders.length} 個孤兒照片資料夾，共 ${deletedFiles} 張照片`);
+  }catch(e){toast('❌ 清除失敗：'+e.message);}
+}
+window.cleanOrphanPhotos=cleanOrphanPhotos;
 async function forceLogoutTeam(teamKey,teamName){
   if(currentRole!=='super'){toast('⛔ 只有超級管理者能清除資料（重置會刪除該玩家的闖關紀錄）');return;}
   if(!confirm(`確定要重置「${teamName}」嗎？
@@ -2800,10 +2836,15 @@ async function forceLogoutTeam(teamKey,teamName){
     setTimeout(async()=>{
       for(const k of keysToDelete){
         await set(aRef(`sessions/${k}`),null).catch(()=>{});
+        // 一併清除這個玩家在 Storage 裡上傳過的照片，不然照片檔案會變成孤兒、持續累積佔空間
+        try{
+          const photoList=await listAll(aStorageRef(`photos/${k}`));
+          await Promise.allSettled(photoList.items.map(f=>deleteObject(f)));
+        }catch(e){/* 沒有照片資料夾很正常，忽略 */}
       }
       loadSessions();
     },2500);
-    toast(`✅「${teamName}」已被重置！所有紀錄已清除，可重新登入從頭開始`);
+    toast(`✅「${teamName}」已被重置！所有紀錄與照片已清除，可重新登入從頭開始`);
   } else {
     toast(`找不到「${teamName}」的闖關紀錄`);
   }
@@ -3942,6 +3983,8 @@ async function loadSettings(){
   const acfEl=document.getElementById('settingAiSkipContentFailAfter');if(acfEl)acfEl.value=s.aiSkipContentFailAfter||3;
   const acpEl=document.getElementById('settingAiSkipContentFailPenalty');if(acpEl)acpEl.value=(s.aiSkipContentFailPenalty!=null?s.aiSkipContentFailPenalty:20);
   if(s.watermark!=null)document.getElementById('settingWatermark').value=s.watermark||'';
+  const sTerms=document.getElementById('settingTermsUrl');if(sTerms)sTerms.value=s.termsUrl||'';
+  const sPrivacy=document.getElementById('settingPrivacyUrl');if(sPrivacy)sPrivacy.value=s.privacyUrl||'';
   const svp=document.getElementById('settingViewerPass');if(svp)svp.value='';// 密碼只存雜湊，沒有明文可帶回，留空＝不修改
   if(s.activityEndTime){const dt=new Date(s.activityEndTime);const local=new Date(dt.getTime()-dt.getTimezoneOffset()*60000).toISOString().slice(0,16);document.getElementById('settingEndTime').value=local;}
   const toLocalInput=ms=>{const dt=new Date(ms);return new Date(dt.getTime()-dt.getTimezoneOffset()*60000).toISOString().slice(0,16);};
@@ -4178,6 +4221,8 @@ async function saveSettings(){
     aiSkipContentFailAfter:parseInt((document.getElementById('settingAiSkipContentFailAfter')?document.getElementById('settingAiSkipContentFailAfter').value:''))||3,
     aiSkipContentFailPenalty:(()=>{const v=parseInt((document.getElementById('settingAiSkipContentFailPenalty')?document.getElementById('settingAiSkipContentFailPenalty').value:''));return isNaN(v)?20:v;})(),
     watermark:safeRead('settingWatermark'),
+    termsUrl:safeRead('settingTermsUrl'),
+    privacyUrl:safeRead('settingPrivacyUrl'),
     viewerPassHash:viewerPassHash,
     activityEndTime:endTimeMs,
     checkinStartTime:checkinStartMs,
