@@ -42,6 +42,41 @@ body{font-family:'Noto Sans TC',sans-serif;background:linear-gradient(160deg,#0d
     <div style="font-size:14px;color:#5a8aaa">載入中...</div>
   </div>
 
+  <!-- 關主密碼登入閘門：網址只帶活動代碼、沒有玩家掃碼帶來的參數時顯示 -->
+  <div id="loginGateView" class="hidden">
+    <div class="icon">🔑</div>
+    <div class="title">關主登入</div>
+    <div style="font-size:12px;color:#5a8aaa;margin-bottom:16px">輸入你負責那一關的密碼即可登入，登入後可以看到自己那關的等待名單</div>
+    <div class="info-box" style="text-align:center;margin-bottom:16px">
+      <div class="info-label" style="margin-bottom:2px">活動代碼</div>
+      <div class="info-value" id="gateActivityCode" style="font-size:16px">--</div>
+    </div>
+    <input type="password" id="gatePassInput" placeholder="輸入此關的關主密碼"
+      style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:12px;font-size:15px;font-family:'Noto Sans TC',sans-serif;outline:none;text-align:center;letter-spacing:2px;margin-bottom:8px"/>
+    <div id="gateErrMsg" style="color:#c03020;font-size:12px;text-align:center;min-height:16px;margin-bottom:8px"></div>
+    <button class="btn-pass" onclick="doQueueLogin()">🔓 登入</button>
+  </div>
+
+  <!-- 關主隊列畫面：登入成功後顯示，跟原本admin.html裡的關主頁面功能相同 -->
+  <div id="queueView" class="hidden" style="text-align:left">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="title" style="margin-bottom:0">🔑 關主頁面</div>
+      <button onclick="qLogout()" style="background:#f0f6fa;border:none;color:#5a8aaa;padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;font-family:'Noto Sans TC',sans-serif">登出</button>
+    </div>
+    <div style="font-size:12px;color:#5a8aaa;margin-bottom:16px" id="qStageInfo">負責關卡載入中...</div>
+    <div style="background:#f7fafd;border-radius:14px;padding:14px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:14px;font-weight:700;color:#1a3a5c">👆 等待確認 <span id="qQueueCount" style="color:#3db87a"></span></div>
+        <button onclick="qRefresh()" style="background:white;border:none;border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;color:#1a6fa3">🔄 重新整理</button>
+      </div>
+      <div id="qConfirmList"><div style="text-align:center;color:#999;font-size:13px;padding:16px">目前無隊伍等待確認</div></div>
+    </div>
+    <div style="background:#f7fafd;border-radius:14px;padding:14px">
+      <div style="font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">📊 各隊進度</div>
+      <div id="qProgressList"><div style="text-align:center;color:#999;font-size:13px;padding:10px">載入中...</div></div>
+    </div>
+  </div>
+
   <div id="confirmView" class="hidden">
     <div class="icon">📱</div>
     <div class="title">關主確認頁</div>
@@ -151,7 +186,7 @@ let _reqPassSalt='';// 'sm'（confirm類型）或 'qr'（qrcode類型），跟ad
 let _verifiedPassHash='';// 密碼驗證通過後暫存雜湊值，doApprove()送出給資料庫規則做真正的驗證
 
 function showView(id) {
-  ['loadingView','confirmView','successView','rejectView','errorView']
+  ['loadingView','loginGateView','queueView','confirmView','successView','rejectView','errorView']
     .forEach(v => document.getElementById(v).classList.toggle('hidden', v !== id));
 }
 
@@ -161,10 +196,9 @@ function showError(msg) {
 }
 
 async function init() {
-  if (!sessKey) { showError('缺少必要參數，請重新掃描QR Code'); return; }
-  if (!ACTIVITY_ID) { showError('連結缺少活動代碼，請重新掃描QR Code'); return; }
+  if (!ACTIVITY_ID) { showError('連結缺少活動代碼，請重新掃描QR Code或使用専案管理者提供的關主連結'); return; }
 
-  // 匿名登入
+  // 匿名登入（登入閘門跟單一確認流程都需要）
   try { await signInAnonymously(auth); } catch(e) { showError('連線失敗，請確認網路並重試'); return; }
 
   // 確認活動代碼有效
@@ -172,6 +206,14 @@ async function init() {
     const actSnap = await get(gRef(`activitiesIndex/${ACTIVITY_ID}`));
     if (!actSnap.exists()) { showError('找不到此活動，連結可能已失效'); return; }
   } catch(e) { showError('活動代碼驗證失敗：' + e.message); return; }
+
+  // 沒有玩家掃碼帶來的 sess 參數：不是QR掃碼進來的，走「關主密碼登入」閘門
+  if (!sessKey) {
+    document.getElementById('gateActivityCode').textContent = ACTIVITY_ID;
+    showView('loginGateView');
+    document.getElementById('gatePassInput').addEventListener('keydown', e=>{ if(e.key==='Enter')doQueueLogin(); });
+    return;
+  }
 
   // 讀取 session 資料
   try {
@@ -306,6 +348,169 @@ window.doReject = async function() {
     passBtn.disabled = false; rejectBtn.disabled = false;
     alert('操作失敗：' + e.message);
   }
+};
+
+// ══ 關主密碼登入閘門（沒有sessKey時走這條路，等同於原本admin.html的關主頁面）══
+let qState = {stageKey:null, stageIdx:0, stageName:'', stagePass:'', passSalt:''};
+let qRefreshTimer = null;
+
+window.doQueueLogin = async function(){
+  const pass = document.getElementById('gatePassInput').value.trim();
+  const errEl = document.getElementById('gateErrMsg');
+  errEl.textContent = '';
+  if(!pass){errEl.textContent='請輸入密碼';return;}
+  try{
+    const snap = await get(aRef('stages'));
+    if(!snap.exists()){errEl.textContent='⚠️ 此活動尚未建立關卡';return;}
+    const stages = snap.val();
+    const sorted = Object.entries(stages).sort(([,a],[,b])=>(a.order||0)-(b.order||0));
+    let found=null, foundKey=null, foundIdx=0, foundSalt=null;
+    // 密碼只存雜湊值，逐一算雜湊比對（跟admin.html、資料庫規則用同一套雜湊格式：key_sm_密碼 / key_qr_密碼）
+    for(let i=0;i<sorted.length;i++){
+      const[k,s]=sorted[i];
+      let matched=false, salt=null;
+      if((s.stageType==='confirm'||s.stageType==='password')&&s.stageMasterPassHash){
+        if(await sha256(`${k}_sm_${pass.toLowerCase()}`)===s.stageMasterPassHash){matched=true;salt='sm';}
+      } else if(s.stageType==='qrcode'&&s.qrMasterPassHash){
+        if(await sha256(`${k}_qr_${pass.toLowerCase()}`)===s.qrMasterPassHash){matched=true;salt='qr';}
+      }
+      if(matched){found=s;foundKey=k;foundIdx=i;foundSalt=salt;break;}
+    }
+    if(!found){errEl.textContent='❌ 密碼錯誤，請再試一次';return;}
+    qState = {stageKey:foundKey, stageIdx:foundIdx, stageName:found.title||`第${foundIdx+1}關`, stagePass:pass, passSalt:foundSalt};
+    document.getElementById('qStageInfo').textContent = `負責：${qState.stageName}（第${foundIdx+1}關）`;
+    showView('queueView');
+    qRefresh();
+    // 開放式擺攤現場排隊變動快，8秒自動刷新一次
+    if(qRefreshTimer)clearInterval(qRefreshTimer);
+    qRefreshTimer = setInterval(qRefresh, 8000);
+  }catch(e){ errEl.textContent = '⚠️ 連線失敗：'+e.message; }
+};
+
+window.qLogout = function(){
+  qState = {stageKey:null, stageIdx:0, stageName:'', stagePass:'', passSalt:''};
+  if(qRefreshTimer){clearInterval(qRefreshTimer);qRefreshTimer=null;}
+  document.getElementById('gatePassInput').value='';
+  document.getElementById('gateErrMsg').textContent='';
+  showView('loginGateView');
+};
+
+window.qRefresh = async function(){
+  await qLoadConfirm();
+  await qLoadProgress();
+};
+
+async function qLoadConfirm(){
+  const container = document.getElementById('qConfirmList');
+  const countEl = document.getElementById('qQueueCount');
+  if(!qState.stageKey)return;
+  try{
+    const snap = await get(aRef('sessions'));
+    if(!snap.exists()){
+      if(countEl)countEl.textContent='';
+      container.innerHTML='<div style="text-align:center;color:#999;font-size:13px;padding:16px">目前無隊伍等待確認</div>';
+      return;
+    }
+    const sess = snap.val();
+    let pending=[];
+    Object.entries(sess).forEach(([sessK,s])=>{
+      if(s.status!=='playing')return;
+      const curIdx = s.currentStage||0;
+      const stageKey = (s.stageOrder||[])[curIdx];
+      if(stageKey !== qState.stageKey)return;
+      const log = (s.stageLogs||{})[curIdx]||{};
+      if(log.waitingConfirm && !log.confirmed){
+        pending.push({sessKey:sessK, stageIdx:curIdx, teamName:s.teamName||s.teamKey, photoUrl:log.photoUrl||'', waitSince:log.waitSince||0});
+      }
+    });
+    pending.sort((a,b)=>(a.waitSince||0)-(b.waitSince||0));
+    if(countEl)countEl.textContent = pending.length?`(${pending.length})`:'';
+    if(!pending.length){
+      container.innerHTML='<div style="text-align:center;color:#999;font-size:13px;padding:16px">目前無隊伍等待確認 ✅</div>';
+      return;
+    }
+    container.innerHTML='';
+    pending.forEach((p,i)=>{
+      const card=document.createElement('div');
+      const isFirst=i===0;
+      card.style.cssText=`border:2px solid ${isFirst?'#1a7a40':'#3db87a'};border-radius:12px;padding:12px;margin-bottom:8px;background:${isFirst?'#d8f2e2':'#eaf7ee'}`;
+      const waitSec=Math.floor((Date.now()-p.waitSince)/1000);
+      const waitStr=waitSec>60?`${Math.floor(waitSec/60)}分${waitSec%60}秒`:`${waitSec}秒`;
+      card.innerHTML=`
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-size:11px;font-weight:900;background:${isFirst?'#1a7a40':'#5a8aaa'};color:white;border-radius:99px;padding:2px 8px">第${i+1}位</span>
+          <span style="font-size:13px;font-weight:700;flex:1"></span>
+          <span style="font-size:10px;background:white;border-radius:8px;padding:2px 7px;color:#3db87a">⏱ ${waitStr}</span>
+        </div>
+        ${p.photoUrl?`<img src="${p.photoUrl}" onclick="window.open('${p.photoUrl}','_blank')" style="width:100%;max-height:140px;object-fit:cover;border-radius:8px;margin-bottom:8px;cursor:pointer" alt="照片"/>`:''}
+        <div style="display:flex;gap:6px">
+          <button onclick="qApprove('${p.sessKey}',${p.stageIdx})" style="flex:1;padding:10px;background:#3db87a;color:white;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',sans-serif">✅ 確認通過</button>
+          <button onclick="qReject('${p.sessKey}',${p.stageIdx})" style="flex:1;padding:10px;background:#fff0ee;color:#c04030;border:2px solid #f09070;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',sans-serif">❌ 退回</button>
+        </div>`;
+      card.querySelectorAll('span')[1].textContent=p.teamName;
+      container.appendChild(card);
+    });
+  }catch(e){console.error('qLoadConfirm:',e);}
+}
+
+async function qLoadProgress(){
+  const container = document.getElementById('qProgressList');
+  try{
+    const [sessSnap, stagesSnap] = await Promise.all([get(aRef('sessions')), get(aRef('stages'))]);
+    if(!sessSnap.exists()){container.innerHTML='<div style="color:#999;font-size:13px;text-align:center">尚無隊伍資料</div>';return;}
+    const sess = sessSnap.val();
+    const stages = stagesSnap.val()||{};
+    const sorted = Object.entries(stages).sort(([,a],[,b])=>(a.order||0)-(b.order||0));
+    const totalStages = sorted.length;
+    const latestByTeam={};
+    Object.values(sess).forEach(s=>{if(!latestByTeam[s.teamKey]||s.startTime>latestByTeam[s.teamKey].startTime)latestByTeam[s.teamKey]=s;});
+    container.innerHTML='';
+    const rows = Object.values(latestByTeam).sort((a,b)=>(b.score||0)-(a.score||0));
+    if(!rows.length){container.innerHTML='<div style="color:#999;font-size:13px;text-align:center">尚無隊伍登入</div>';return;}
+    rows.forEach(s=>{
+      const cur = s.status==='finished'?totalStages:(s.currentStage||0)+1;
+      const prog = Math.min(100,Math.round((cur/totalStages)*100));
+      const isMyStage = (s.stageOrder||[])[s.currentStage||0] === qState.stageKey;
+      const div=document.createElement('div');
+      div.style.cssText=`padding:9px;border-radius:9px;margin-bottom:6px;border:1.5px solid ${isMyStage?'#3db87a':'#eee'};background:${isMyStage?'#eaf7ee':'#f8f8f8'}`;
+      div.innerHTML=`<div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:12px;font-weight:700"></span>
+        <span style="font-size:11px;color:#666">${s.status==='finished'?'✅ 完成':`第${cur}/${totalStages}關`}${isMyStage?' ← 在此關':''}</span>
+      </div>
+      <div style="background:#ddd;border-radius:99px;height:5px;overflow:hidden">
+        <div style="height:100%;border-radius:99px;background:${isMyStage?'#3db87a':'#1a6fa3'};width:${prog}%"></div>
+      </div>`;
+      div.querySelector('span').textContent = s.teamName||s.teamKey;
+      container.appendChild(div);
+    });
+  }catch(e){console.error('qLoadProgress:',e);}
+}
+
+window.qApprove = async function(sessK, stgIdx){
+  const btn = event.target;
+  btn.disabled=true;btn.textContent='確認中...';
+  try{
+    // 資料庫規則要求confirmed:true時要嘛有config/users授權，要嘛附上正確的confirmPassHash才會過。
+    // 這裡是密碼登入（匿名auth，沒有config/users紀錄），登入當下已驗證過密碼，用登入時存的
+    // qState.stagePass+passSalt重算一次雜湊寫入，讓規則驗證能通過。
+    if(qState.stagePass&&qState.passSalt){
+      const passHash = await sha256(`${qState.stageKey}_${qState.passSalt}_${qState.stagePass.toLowerCase()}`);
+      await set(aRef(`sessions/${sessK}/stageLogs/${stgIdx}/confirmPassHash`), passHash);
+    }
+    await set(aRef(`sessions/${sessK}/stageLogs/${stgIdx}/confirmed`), true);
+    await set(aRef(`sessions/${sessK}/stageLogs/${stgIdx}/confirmedAt`), serverTimestamp());
+    await set(aRef(`sessions/${sessK}/stageLogs/${stgIdx}/confirmedBy`), `關主(${qState.stageName})`);
+    qRefresh();
+  }catch(e){btn.disabled=false;btn.textContent='✅ 確認通過';alert('操作失敗：'+e.message);}
+};
+
+window.qReject = async function(sessK, stgIdx){
+  if(!confirm('確定退回嗎？玩家需重新完成任務。'))return;
+  try{
+    await set(aRef(`sessions/${sessK}/stageLogs/${stgIdx}/rejected`), true);
+    await set(aRef(`sessions/${sessK}/stageLogs/${stgIdx}/waitingConfirm`), false);
+    qRefresh();
+  }catch(e){alert('操作失敗：'+e.message);}
 };
 
 init();

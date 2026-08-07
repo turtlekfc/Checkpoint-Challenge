@@ -397,14 +397,10 @@ input:checked+.toggle-slider:before{transform:translateX(18px)}
       <div style="flex:1;height:1px;background:#eee"></div>
     </div>
     <div id="stageMasterLoginArea">
-      <div style="display:flex;gap:8px;margin-bottom:10px">
-        <button id="roleBtn-stagemaster" onclick="selectLoginRole('stagemaster')" style="flex:1;padding:9px;border:2px solid #3db87a;border-radius:10px;background:#eaf7ee;color:#1a7a40;font-size:13px;font-weight:700;cursor:pointer">🔑 關主</button>
-        <button id="roleBtn-viewer" onclick="selectLoginRole('viewer')" style="flex:1;padding:9px;border:2px solid #e0e0e0;border-radius:10px;background:white;color:#888;font-size:13px;font-weight:700;cursor:pointer">🙋 協助管理者</button>
-      </div>
       <input type="text" id="activityCodeInput" placeholder="活動代碼（由専案管理者提供的連結會自動帶入）" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:12px;font-size:14px;outline:none;margin-bottom:10px"/>
-      <input type="password" id="stageMasterPassInput" placeholder="輸入關主密碼" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:12px;font-size:14px;outline:none;margin-bottom:10px" onkeydown="if(event.key==='Enter')signInWithStageMasterPass()"/>
-      <button onclick="signInWithStageMasterPass()" style="width:100%;padding:12px;background:linear-gradient(90deg,#1a7a40,#3db87a);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer" id="smLoginBtn">
-        🔑 關主密碼登入
+      <input type="password" id="stageMasterPassInput" placeholder="輸入協助管理者密碼" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:12px;font-size:14px;outline:none;margin-bottom:10px" onkeydown="if(event.key==='Enter')signInWithStageMasterPass()"/>
+      <button onclick="signInWithStageMasterPass()" style="width:100%;padding:12px;background:linear-gradient(90deg,#1a6fa3,#2a9fd6);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer" id="smLoginBtn">
+        🙋 協助管理者密碼登入
       </button>
     </div>
     <div class="login-err" id="loginErr"></div>
@@ -1674,15 +1670,16 @@ async function signInWithStageMasterPass(){
   // 關主/協助管理者是密碼登入，沒有Email可查，必須先確定活動代碼才知道要查哪個活動的資料
   const activityCode = (document.getElementById('activityCodeInput').value||'').trim();
   if(!activityCode){errEl.textContent='⚠️ 請輸入活動代碼（或使用専案管理者提供的完整連結）';return;}
+
+  // 確保匿名登入完成（必須在讀取 activitiesIndex 之前，資料庫規則要求 auth != null 才能讀）
+  try{ await signInAnonymously(auth); }catch(e){ errEl.textContent='⚠️ 連線失敗，請確認網路後重試：'+e.message; return; }
+
   try{
     const idxSnap = await get(gRef(`activitiesIndex/${activityCode}`));
     if(!idxSnap.exists()){errEl.textContent='❌ 找不到此活動代碼';return;}
     ACTIVITY_ID = activityCode;
     ACTIVITY_META = idxSnap.val();
   }catch(e){errEl.textContent='⚠️ 活動代碼驗證失敗：'+e.message;return;}
-
-  // 確保匿名登入完成
-  try{ await signInAnonymously(auth); }catch(e){ /* 已登入則忽略 */ }
 
   // ── 協助管理者路徑（密碼登入，每次都從 Firebase 即時讀取共用密碼）──
   if(_loginRole === 'viewer'){
@@ -1742,7 +1739,7 @@ async function signInWithStageMasterPass(){
 
 window.signInWithStageMasterPass=signInWithStageMasterPass;
 
-let _loginRole = 'stagemaster'; // 預設為關主（密碼登入）
+let _loginRole = 'viewer'; // 固定為協助管理者密碼登入（關主密碼登入已搬到 confirm.html，這裡不再提供入口）
 
 function selectLoginRole(role){
   _loginRole = role;
@@ -3377,7 +3374,7 @@ function populateShareLinks(){
   codeEl.value=ACTIVITY_ID||'';
   if(playerEl)playerEl.value=base+'player.html?a='+encodeURIComponent(ACTIVITY_ID||'');
   if(staffEl)staffEl.value=base+'admin.html?a='+encodeURIComponent(ACTIVITY_ID||'')+'&role=staff';
-  if(smEl)smEl.value=base+'admin.html?a='+encodeURIComponent(ACTIVITY_ID||'');
+  if(smEl)smEl.value=base+'confirm.html?a='+encodeURIComponent(ACTIVITY_ID||'');
 }
 async function copyShareLink(inputId){
   const el=document.getElementById(inputId);
